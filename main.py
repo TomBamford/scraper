@@ -1,10 +1,14 @@
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import re
+import os
 
 URL = "https://bidstreamline.com/catalog"
 MAX_PAGES = 2
 DETAIL_LOOKUPS = True  # False = faster, but less detail
+
+MASTER_CSV = "master.csv"
+WEBSITE_CSV = "cars.csv"
 
 BMW_MODEL_MAP = {
     "1ER": "1 Series",
@@ -327,9 +331,30 @@ def go_to_next_page(page, current_page_num):
     return False
 
 
+def load_existing_keys(csv_path=MASTER_CSV):
+    existing_keys = set()
+
+    if not os.path.exists(csv_path):
+        return existing_keys
+
+    try:
+        existing_df = pd.read_csv(csv_path, dtype=str).fillna("")
+        for _, row in existing_df.iterrows():
+            vin = row.get("vin", "").strip()
+            lot = row.get("lot", "").strip()
+            if vin and lot:
+                existing_keys.add(f"{vin}_{lot}")
+    except Exception as e:
+        print(f"Could not load existing keys from {csv_path}: {e}")
+
+    return existing_keys
+
+
 def main():
     all_data = []
     seen = set()
+    existing_keys = load_existing_keys(MASTER_CSV)
+    print(f"Loaded {len(existing_keys)} existing keys from {MASTER_CSV}")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -359,6 +384,8 @@ def main():
 
                     key = f"{data['vin']}_{data['lot']}"
                     if key in seen:
+                        continue
+                    if key in existing_keys:
                         continue
 
                     if DETAIL_LOOKUPS and data["url"]:
@@ -393,13 +420,8 @@ def main():
 
         browser.close()
 
-    if not all_data:
-        print("No data collected.")
-        return
-
-    df = pd.DataFrame(all_data)
-
-    output_columns = [
+    internal_columns = [
+        "vin",
         "year",
         "make",
         "model",
@@ -414,19 +436,58 @@ def main():
         "state",
     ]
 
-    for col in output_columns:
-        if col not in df.columns:
-            df[col] = ""
+    website_columns = [
+        "year",
+        "make",
+        "model",
+        "trim",
+        "type",
+        "damage",
+        "price",
+        "odometer",
+        "lot",
+        "date",
+        "location",
+        "state",
+    ]
 
-    df = df[output_columns].copy()
-    df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0)
-    clean_df = df[df["price"] > 0].copy()
+    if os.path.exists(MASTER_CSV):
+        master_df = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
+    else:
+        master_df = pd.DataFrame(columns=internal_columns)
 
-    clean_df.to_csv("cars.csv", index=False)
+    if all_data:
+        new_df = pd.DataFrame(all_data)
+
+        for col in internal_columns:
+            if col not in new_df.columns:
+                new_df[col] = ""
+
+        new_df = new_df[internal_columns].copy()
+        new_df["price"] = pd.to_numeric(new_df["price"], errors="coerce").fillna(0)
+        new_df = new_df[new_df["price"] > 0].copy()
+
+        master_df = pd.concat([master_df, new_df], ignore_index=True)
+
+    if not master_df.empty:
+        master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
+
+    master_df.to_csv(MASTER_CSV, index=False)
+
+    website_df = master_df.copy()
+    for col in website_columns:
+        if col not in website_df.columns:
+            website_df[col] = ""
+
+    website_df = website_df[website_columns].copy()
+    website_df["price"] = pd.to_numeric(website_df["price"], errors="coerce").fillna(0)
+    website_df = website_df[website_df["price"] > 0].copy()
+    website_df.to_csv(WEBSITE_CSV, index=False)
 
     print("\nDONE")
-    print(f"Clean rows: {len(clean_df)}")
-    print("Saved to cars.csv")
+    print(f"New rows added this run: {len(all_data)}")
+    print(f"Total rows in {MASTER_CSV}: {len(master_df)}")
+    print(f"Saved {MASTER_CSV} and {WEBSITE_CSV}")
 
 
 if __name__ == "__main__":
