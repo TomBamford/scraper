@@ -396,7 +396,7 @@ def main():
 
         browser.close()
 
-    if not all_data:
+   if not all_data:
         print("No data collected.")
         return
 
@@ -423,18 +423,11 @@ def main():
 
     df = df[output_columns].copy()
 
-    df.to_csv("raw.csv", index=False)
-
     df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0)
     clean_df = df[df["price"] > 0].copy()
 
     clean_df.to_csv("cars.csv", index=False)
 
     print("\nDONE")
-    print(f"Raw rows: {len(df)}")
     print(f"Clean rows: {len(clean_df)}")
-    print("Saved to raw.csv and cars.csv")
-
-
-if __name__ == "__main__":
-    main()
+    print("Saved to cars.csv")
