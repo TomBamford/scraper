@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
 URL = "https://bidstreamline.com/catalog"
-MAX_PAGES = 50
+MAX_PAGES = 2
 DETAIL_LOOKUPS = True  # False = faster, but less detail
 
 BMW_MODEL_MAP = {
