@@ -3,7 +3,7 @@ name: Update CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "37 * * * *"
 
 jobs:
   update-csv:
