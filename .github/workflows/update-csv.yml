@@ -3,7 +3,11 @@ name: Update CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "37 * * * *"
+    - cron: "17 * * * *"
+
+concurrency:
+  group: update-csv-main
+  cancel-in-progress: false
 
 jobs:
   update-csv:
@@ -15,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -34,6 +40,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add cars.csv raw.csv
-          git diff --staged --quiet || git commit -m "Auto update CSV"
-          git push
+
+          git add cars.csv
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Auto update cars.csv"
+          git pull --rebase origin main
+          git push origin main
