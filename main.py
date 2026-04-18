@@ -4,8 +4,8 @@ import re
 import os
 
 URL = "https://bidstreamline.com/catalog"
-MAX_PAGES = 45
-DETAIL_LOOKUPS = True  # False = faster, but less detail
+MAX_PAGES = 300
+DETAIL_LOOKUPS = False  # False = faster, but less detail
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
