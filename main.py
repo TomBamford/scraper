@@ -98,10 +98,8 @@ def extract_trim_and_type(make, model, title):
     if full_name.startswith(base):
         trim = full_name[len(base):].strip()
 
-    model_upper = model.upper()
     title_upper = title.upper()
 
-    car_type = ""
     if any(x in title_upper for x in ["PICKUP", "F150", "F-150", "SILVERADO", "RAM ", "TUNDRA"]):
         car_type = "Truck"
     elif any(x in title_upper for x in ["SUV", "SPORTAGE", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE", "SUBURBAN", "RAV4", "CR-V", "CX-5", "XC90", "DISCOVERY", "SORRENTO", "SORENTO"]):
@@ -150,7 +148,7 @@ def parse_card(text):
     saw_odometer_label = False
     saw_sale_date_label = False
 
-    for i, line in enumerate(lines):
+    for line in lines:
         if "VIN:" in line:
             data["vin"] = line.replace("VIN:", "").strip()
 
@@ -376,7 +374,6 @@ def main():
                         if details["state"]:
                             data["state"] = details["state"]
 
-                    # Sold-only rule
                     if not data["date"] or "Not yet sold" in data["date"]:
                         continue
                     if data["price"] <= 0:
@@ -396,7 +393,7 @@ def main():
 
         browser.close()
 
-   if not all_data:
+    if not all_data:
         print("No data collected.")
         return
 
@@ -422,7 +419,6 @@ def main():
             df[col] = ""
 
     df = df[output_columns].copy()
-
     df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0)
     clean_df = df[df["price"] > 0].copy()
 
@@ -431,3 +427,7 @@ def main():
     print("\nDONE")
     print(f"Clean rows: {len(clean_df)}")
     print("Saved to cars.csv")
+
+
+if __name__ == "__main__":
+    main()
