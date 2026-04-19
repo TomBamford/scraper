@@ -5,7 +5,7 @@ import os
 
 URL = "https://bidstreamline.com/catalog"
 MAX_PAGES = 300
-DETAIL_LOOKUPS = TRUE  # False = faster, but less detail
+DETAIL_LOOKUPS = True  # False = faster, but less detail
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
