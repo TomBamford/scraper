@@ -5,7 +5,7 @@ import os
 
 URL = "https://bidstreamline.com/catalog"
 TARGET_ROWS = 500
-MAX_EMPTY_PAGES = 15
+
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
@@ -356,10 +356,7 @@ def main():
                 print("Reached target.")
                 break
 
-            if empty_pages >= MAX_EMPTY_PAGES:
-                print("Too many empty pages, stopping.")
-                break
-
+    
             moved = go_to_next_page(page, page_num)
             if not moved:
                 print("No next page found, stopping.")
