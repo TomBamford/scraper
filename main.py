@@ -11,7 +11,7 @@ TARGET_ROWS = 500
 # Optional hard cap. Set to None to keep going until target or no more pages.
 MAX_PAGES = None
 
-DETAIL_LOOKUPS = True  # True = open detail pages for better price/date/damage extraction
+DETAIL_LOOKUPS = True
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
@@ -20,10 +20,10 @@ WEBSITE_CSV = "cars.csv"
 REQUIRE_PRICE = True
 REQUIRE_SOLD_DATE = False
 SKIP_UNSOLD = True
-MIN_PRICE = 500  # only count prices >= 500 as valid
+MIN_PRICE = 500
 
-# Only keep California lots
-STATE_FILTER = {"CA", "CALIFORNIA"}
+# Exclude these makes
+EXCLUDED_MAKES = {"LAND ROVER"}
 
 # Safety stop: if this many pages in a row add 0 rows, stop
 MAX_EMPTY_PAGES = 15
@@ -95,21 +95,6 @@ def normalize_make_model(make, model):
         model = BMW_MODEL_MAP.get(model.upper(), model)
 
     return make, model
-
-
-def normalize_state(state):
-    s = str(state).strip().upper()
-    state_map = {
-        "CALIFORNIA": "CA",
-        "CA": "CA",
-    }
-    return state_map.get(s, s)
-
-
-def is_allowed_state(state):
-    normalized = normalize_state(state)
-    allowed = {normalize_state(x) for x in STATE_FILTER}
-    return normalized in allowed
 
 
 def split_title(title_line):
@@ -193,25 +178,6 @@ def parse_location_state(line):
     return line, ""
 
 
-def get_state_from_text(text):
-    text = str(text)
-
-    patterns = [
-        r"\bCalifornia\b",
-        r"\bCA\b",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            return normalize_state(match.group(0))
-
-    match = re.search(r"Location\s*[:\n]\s*([A-Za-z0-9 .,&/\-]+)\s*-\s*([A-Z]{2})", text, re.IGNORECASE)
-    if match:
-        return normalize_state(match.group(2))
-
-    return ""
-
-
 def scroll_page(page, steps=10, delay=800):
     last_height = 0
     for _ in range(steps):
@@ -255,6 +221,11 @@ def extract_detail_fields(detail_page):
         "vin": "",
         "lot": "",
         "title": "",
+        "make": "",
+        "model": "",
+        "year": "",
+        "trim": "",
+        "type": "",
     }
 
     try:
@@ -271,6 +242,13 @@ def extract_detail_fields(detail_page):
         title_match = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z0-9 .&/\-]+\b", text)
         if title_match:
             result["title"] = title_match.group(0).strip()
+            year, make, model = split_title(result["title"])
+            result["year"] = year
+            result["make"] = make
+            result["model"] = model
+            trim, car_type = extract_trim_and_type(make, model, " ".join(result["title"].split()[1:]))
+            result["trim"] = trim
+            result["type"] = car_type
 
         damage_patterns = [
             r"Primary Damage\s*[:\n]\s*([A-Za-z0-9 /&-]+)",
@@ -305,10 +283,7 @@ def extract_detail_fields(detail_page):
             loc_raw = loc_match.group(1).strip()
             loc, st = parse_location_state(loc_raw)
             result["location"] = loc
-            result["state"] = normalize_state(st)
-
-        if not result["state"]:
-            result["state"] = get_state_from_text(text)
+            result["state"] = st
 
         price_patterns = [
             r"Sold For\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
@@ -342,6 +317,11 @@ def scrape_detail_fields(browser, url):
         "vin": "",
         "lot": "",
         "title": "",
+        "make": "",
+        "model": "",
+        "year": "",
+        "trim": "",
+        "type": "",
     }
 
     if not url:
@@ -359,21 +339,15 @@ def scrape_detail_fields(browser, url):
 
 
 def merge_detail_into_data(data, details):
-    if details.get("price", 0) > 0:
-        data["price"] = details["price"]
-
-    for field in ["damage", "odometer", "date", "location", "state"]:
+    for field in [
+        "damage", "odometer", "date", "location", "state",
+        "vin", "lot", "title", "make", "model", "year", "trim", "type"
+    ]:
         if details.get(field):
             data[field] = details[field]
 
-    if details.get("vin") and not data["vin"]:
-        data["vin"] = details["vin"]
-
-    if details.get("lot") and not data["lot"]:
-        data["lot"] = details["lot"]
-
-    if details.get("title") and not data["title"]:
-        data["title"] = details["title"]
+    if details.get("price", 0) > 0:
+        data["price"] = details["price"]
 
     if data["title"] and (not data["year"] or not data["make"] or not data["model"]):
         year, make, model = split_title(data["title"])
@@ -383,9 +357,6 @@ def merge_detail_into_data(data, details):
         trim, car_type = extract_trim_and_type(make, model, " ".join(data["title"].split()[1:]))
         data["trim"] = trim
         data["type"] = car_type
-
-    if data["state"]:
-        data["state"] = normalize_state(data["state"])
 
     if data["date"] and "Not yet sold" not in str(data["date"]):
         data["sold"] = True
@@ -469,6 +440,10 @@ def reached_page_limit(page_num):
     return MAX_PAGES is not None and page_num > MAX_PAGES
 
 
+def is_excluded_make(make):
+    return str(make).strip().upper() in EXCLUDED_MAKES
+
+
 def main():
     all_data = []
     seen = set()
@@ -479,7 +454,7 @@ def main():
         "no_vin": 0,
         "duplicate": 0,
         "existing": 0,
-        "wrong_state": 0,
+        "excluded_make": 0,
         "unsold": 0,
         "no_date": 0,
         "no_price": 0,
@@ -489,7 +464,7 @@ def main():
     }
 
     print(f"Loaded {len(existing_keys)} existing keys from {MASTER_CSV}")
-    print(f"Filtering to states: {STATE_FILTER}")
+    print(f"Excluded makes: {EXCLUDED_MAKES}")
     print(f"Minimum valid price: {MIN_PRICE}")
     print(f"Target new rows this run: {TARGET_ROWS}")
 
@@ -541,8 +516,8 @@ def main():
                         skip_counts["no_vin"] += 1
                         continue
 
-                    if not is_allowed_state(data["state"]):
-                        skip_counts["wrong_state"] += 1
+                    if is_excluded_make(data["make']):
+                        skip_counts["excluded_make"] += 1
                         continue
 
                     key = f"{data['vin']}_{data['lot']}"
@@ -576,7 +551,7 @@ def main():
                     print(
                         f"KEEP {len(all_data)}/{TARGET_ROWS}: "
                         f"{data['year']} {data['make']} {data['model']} | "
-                        f"STATE={data['state']} | VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
+                        f"VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
                     )
 
                 except Exception as e:
@@ -654,13 +629,17 @@ def main():
 
         new_df = new_df[internal_columns].copy()
         new_df["price"] = pd.to_numeric(new_df["price"], errors="coerce").fillna(0)
+        new_df["make"] = new_df["make"].astype(str).str.strip()
         new_df = new_df[new_df["price"] >= MIN_PRICE].copy()
+        new_df = new_df[~new_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
 
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
         master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0)
+        master_df["make"] = master_df["make"].astype(str).str.strip()
         master_df = master_df[master_df["price"] >= MIN_PRICE].copy()
+        master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
 
     master_df.to_csv(MASTER_CSV, index=False)
@@ -670,9 +649,9 @@ def main():
         if col not in website_df.columns:
             website_df[col] = ""
 
-    website_df = website_df[website_columns].copy()
-    website_df["price"] = pd.to_numeric(website_df["price"], errors="coerce").fillna(0)
     website_df = website_df[website_df["price"] >= MIN_PRICE].copy()
+    website_df = website_df[~website_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
+    website_df = website_df[website_columns].copy()
     website_df.to_csv(WEBSITE_CSV, index=False)
 
     print("\nDONE")
