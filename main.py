@@ -5,32 +5,22 @@ import os
 import time
 
 # ─────────────────────────────────────────────
-#  CONFIG
+# CONFIG
 # ─────────────────────────────────────────────
-BASE_URL        = "https://autoconduct.com/auction-prices/"
-MASTER_CSV      = "master.csv"
-WEBSITE_CSV     = "cars.csv"
+BASE_URL = "https://autoconduct.com/auction-prices/"
+MASTER_CSV = "master.csv"
+WEBSITE_CSV = "cars.csv"
 
-TARGET_ROWS     = 150          # new rows per run — accumulates in master.csv over time
-MIN_PRICE       = 500          # skip lots below this
-MAX_PRICE       = 10_000       # skip lots above this
-MAX_EMPTY_PAGES = 3            # lower to avoid wasting time on dead pagination
-MAX_PAGES_PER_MODEL = 5        # hard cap per model to keep runtime under control
+TARGET_ROWS = 150
+MIN_PRICE = 500
+MAX_PRICE = 10_000
 
-EXCLUDED_MAKES  = {"LAND ROVER"}
+MAX_RUN_SECONDS = 20 * 60
+MAX_PAGES = 30
+MAX_EMPTY_PAGES = 2
 
-# Makes to iterate through — autoconduct is organised by /make/model/
-# The scraper discovers models automatically from the make index page.
-TARGET_MAKES = [
-    "toyota", "honda", "ford", "chevrolet", "bmw",
-    "mercedes-benz", "tesla", "jeep", "dodge", "nissan",
-    "hyundai", "kia", "audi", "volkswagen", "subaru",
-    "mazda", "gmc", "ram", "lexus", "acura",
-]
+EXCLUDED_MAKES = {"LAND ROVER"}
 
-# ─────────────────────────────────────────────
-#  HELPERS
-# ─────────────────────────────────────────────
 BMW_MODEL_MAP = {
     "1ER": "1 Series", "2ER": "2 Series", "3ER": "3 Series",
     "4ER": "4 Series", "5ER": "5 Series", "6ER": "6 Series",
@@ -47,6 +37,9 @@ MULTI_WORD_MAKES = {
     "MERCEDES BENZ", "MERCEDES-BENZ", "ROLLS ROYCE", "GENERAL MOTORS",
 }
 
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
 
 def clean_price(text):
     text = str(text).replace("$", "").replace(",", "").strip()
@@ -59,7 +52,6 @@ def clean_price(text):
 
 
 def clean_odometer(text):
-    """Return numeric miles string, stripping ' mi', commas, quotes."""
     text = str(text).replace(",", "").replace('"', "").strip()
     m = re.search(r"(\d+)", text)
     return m.group(1) + " mi" if m else ""
@@ -78,19 +70,23 @@ def split_title(title_line):
     parts = title_line.split()
     if not parts or not re.match(r"^\d{4}$", parts[0]):
         return "", "", ""
+
     year = parts[0]
     rest = " ".join(parts[1:]).strip()
+
     matched_make = None
     for mk in sorted(MULTI_WORD_MAKES, key=len, reverse=True):
         if rest.upper().startswith(mk + " ") or rest.upper() == mk:
             matched_make = mk
             break
+
     if matched_make:
         make = matched_make.title()
         model = rest[len(matched_make):].strip()
     else:
         make = parts[1].title() if len(parts) > 1 else ""
         model = " ".join(parts[2:]) if len(parts) > 2 else ""
+
     make, model = normalize_make_model(make, model)
     return year, make, model
 
@@ -144,61 +140,27 @@ def load_existing_keys(path=MASTER_CSV):
         return set()
 
 
-def scroll_to_bottom(page, steps=2, delay=200):
-    last = 0
-    for _ in range(steps):
-        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        page.wait_for_timeout(delay)
-        h = page.evaluate("document.body.scrollHeight")
-        if h == last:
-            break
-        last = h
+def build_paged_url(base_url, page_num):
+    if page_num <= 1:
+        return base_url
+    if "?" in base_url:
+        return f"{base_url}&page={page_num}"
+    return f"{base_url}?page={page_num}"
+
+
+def goto_fast(page, url, timeout=9000):
+    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    page.wait_for_timeout(200)
 
 
 # ─────────────────────────────────────────────
-#  AUTOCONDUCT SCRAPING LOGIC
+# EXTRACTION
 # ─────────────────────────────────────────────
 
-def get_model_urls(page, make_slug):
-    """
-    Visit /auction-prices/<make>/ and collect all model sub-page links.
-    e.g. /auction-prices/toyota/camry/
-    """
-    url = f"{BASE_URL}{make_slug}/"
-    urls = []
-    try:
-        page.goto(url, wait_until="domcontentloaded", timeout=10000)
-        page.wait_for_timeout(400)
-
-        links = page.locator(f"a[href*='/auction-prices/{make_slug}/']")
-        count = links.count()
-
-        for i in range(count):
-            try:
-                href = links.nth(i).get_attribute("href") or ""
-                clean = href.rstrip("/")
-                parts = [p for p in clean.split("/") if p]
-                if len(parts) == 3 and parts[0] == "auction-prices":
-                    full = "https://autoconduct.com" + href if href.startswith("/") else href
-                    if full not in urls:
-                        urls.append(full)
-            except Exception:
-                pass
-    except Exception as e:
-        print(f"[WARN] Could not load make page {url}: {e}")
-    return urls
-
-
-def extract_rows_from_model_page(page, model_url, make_hint, model_hint):
-    """
-    Load a model results page and extract all table rows.
-    Returns list of dicts with raw field values.
-    """
+def extract_rows_from_page(page, url):
     rows = []
     try:
-        page.goto(model_url, wait_until="domcontentloaded", timeout=12000)
-        page.wait_for_timeout(400)
-        scroll_to_bottom(page)
+        goto_fast(page, url)
 
         table = None
         for sel in ["table", ".auction-results", "[class*='auction']", "[class*='table']", "[class*='results']"]:
@@ -207,18 +169,17 @@ def extract_rows_from_model_page(page, model_url, make_hint, model_hint):
                 break
 
         if table:
-            rows = extract_table_rows(page, table, make_hint, model_hint)
+            rows = extract_table_rows(page, table)
         else:
-            rows = extract_rows_from_text(page, make_hint, model_hint)
+            rows = extract_rows_from_cards(page)
 
     except Exception as e:
-        print(f"[WARN] Error loading {model_url}: {e}")
+        print(f"[WARN] Error loading {url}: {e}")
 
     return rows
 
 
-def extract_table_rows(page, table_sel, make_hint, model_hint):
-    """Extract rows from an HTML table element with a single browser-side evaluation."""
+def extract_table_rows(page, table_sel):
     rows = []
     try:
         data = page.locator(table_sel).first.evaluate("""
@@ -226,11 +187,9 @@ def extract_table_rows(page, table_sel, make_hint, model_hint):
             const headers = Array.from(table.querySelectorAll("th")).map(th =>
                 th.innerText.trim().toLowerCase()
             );
-
             const bodyRows = Array.from(table.querySelectorAll("tbody tr")).map(tr =>
                 Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
             );
-
             return { headers, bodyRows };
         }
         """)
@@ -275,20 +234,20 @@ def extract_table_rows(page, table_sel, make_hint, model_hint):
                 return row[idx].strip() if 0 <= idx < len(row) else ""
 
             raw = {
-                "vin":      cell("vin"),
-                "year":     cell("year"),
-                "make":     cell("make") or make_hint,
-                "model":    cell("model") or model_hint,
-                "trim":     cell("trim"),
-                "damage":   cell("damage"),
-                "price_raw":cell("price"),
-                "odometer": cell("odometer"),
-                "lot":      cell("lot"),
-                "date":     cell("date"),
-                "location": cell("location"),
-                "state":    cell("state"),
-                "source":   cell("source"),
-                "title":    cell("title"),
+                "vin":       cell("vin"),
+                "year":      cell("year"),
+                "make":      cell("make"),
+                "model":     cell("model"),
+                "trim":      cell("trim"),
+                "damage":    cell("damage"),
+                "price_raw": cell("price"),
+                "odometer":  cell("odometer"),
+                "lot":       cell("lot"),
+                "date":      cell("date"),
+                "location":  cell("location"),
+                "state":     cell("state"),
+                "source":    cell("source"),
+                "title":     cell("title"),
             }
 
             if raw["title"] and (not raw["year"] or not raw["make"] or not raw["model"]):
@@ -313,18 +272,15 @@ def extract_table_rows(page, table_sel, make_hint, model_hint):
     return rows
 
 
-def extract_rows_from_text(page, make_hint, model_hint):
-    """
-    Fallback: parse visible text for price/date/damage patterns.
-    Used when no <table> is found (card-layout pages).
-    """
+def extract_rows_from_cards(page):
     rows = []
     try:
         card_selectors = [
             ".auction-card", ".result-card", ".vehicle-card",
             "[class*='card']", "[class*='item']", "[class*='listing']",
-            "article", ".row-item",
+            "article", ".row-item"
         ]
+
         cards = None
         for sel in card_selectors:
             loc = page.locator(sel)
@@ -335,33 +291,34 @@ def extract_rows_from_text(page, make_hint, model_hint):
         if not cards:
             return rows
 
-        count = cards.count()
+        count = min(cards.count(), 50)
         for i in range(count):
             try:
                 text = cards.nth(i).inner_text()
-                raw = parse_text_block(text, make_hint, model_hint)
+                raw = parse_text_block(text)
                 if raw:
                     rows.append(raw)
             except Exception:
                 pass
+
     except Exception as e:
-        print(f"[WARN] Text extract error: {e}")
+        print(f"[WARN] Card extract error: {e}")
+
     return rows
 
 
-def parse_text_block(text, make_hint, model_hint):
-    """Parse a freeform text block from a card element."""
+def parse_text_block(text):
     raw = {
-        "vin": "", "year": "", "make": make_hint, "model": model_hint,
+        "vin": "", "year": "", "make": "", "model": "",
         "trim": "", "damage": "", "price_raw": "", "odometer": "",
-        "lot": "", "date": "", "location": "", "state": "", "source": "", "title": "",
+        "lot": "", "date": "", "location": "", "state": "", "source": "", "title": ""
     }
 
     m = re.search(r"\b(19\d{2}|20\d{2})\b", text)
     if m:
         raw["year"] = m.group(1)
 
-    m = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z][\w ./-]{2,50}", text)
+    m = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z][\w ./-]{2,60}", text)
     if m:
         raw["title"] = m.group(0).strip()
         yr, mk, mo = split_title(raw["title"])
@@ -381,10 +338,10 @@ def parse_text_block(text, make_hint, model_hint):
         raw["lot"] = m.group(1)
 
     for pattern in [
-        r"\$\s?([\d,]+)",
         r"[Ss]old\s+[Ff]or\s+\$?\s?([\d,]+)",
         r"[Ff]inal\s+[Bb]id\s+\$?\s?([\d,]+)",
-        r"[Pp]rice\s+\$?\s?([\d,]+)"
+        r"[Pp]rice\s+\$?\s?([\d,]+)",
+        r"\$\s?([\d,]+)"
     ]:
         m = re.search(pattern, text)
         if m:
@@ -396,8 +353,8 @@ def parse_text_block(text, make_hint, model_hint):
         raw["odometer"] = m.group(1).replace(",", "") + " mi"
 
     for pattern in [
-        r"[Dd]amage\s*[:\-]\s*([A-Za-z &/]+)",
-        r"[Pp]rimary\s+[Dd]amage\s*[:\-]\s*([A-Za-z &/]+)"
+        r"[Dd]amage\s*[:\\-]\s*([A-Za-z &/]+)",
+        r"[Pp]rimary\s+[Dd]amage\s*[:\\-]\s*([A-Za-z &/]+)"
     ]:
         m = re.search(pattern, text)
         if m:
@@ -413,188 +370,87 @@ def parse_text_block(text, make_hint, model_hint):
         raw["location"] = m.group(1).strip()
         raw["state"] = m.group(2).strip()
 
-    return raw if raw["price_raw"] or raw["vin"] else None
-
-
-def try_next_page(page, current_num):
-    """Try various strategies to move to the next page, but only succeed if content really changes."""
-    try:
-        old_url = page.url
-        old_body = page.locator("body").inner_text(timeout=5000)[:3000]
-    except Exception:
-        old_url = page.url
-        old_body = ""
-
-    next_num = str(current_num + 1)
-    selectors = [
-        f"a:has-text('{next_num}')",
-        f"button:has-text('{next_num}')",
-        "a:has-text('Next')",
-        "button:has-text('Next')",
-        "a[rel='next']",
-        "[aria-label='Next page']",
-        "[aria-label='next']",
-        ".pagination .next a",
-        ".next-page",
-    ]
-
-    for sel in selectors:
-        loc = page.locator(sel)
-        if loc.count() > 0:
-            try:
-                loc.first.click()
-                page.wait_for_load_state("domcontentloaded", timeout=8000)
-                page.wait_for_timeout(400)
-
-                new_url = page.url
-                try:
-                    new_body = page.locator("body").inner_text(timeout=5000)[:3000]
-                except Exception:
-                    new_body = ""
-
-                if new_url != old_url or new_body != old_body:
-                    return True
-            except Exception:
-                pass
-
-    try:
-        current_url = page.url
-        if "page=" in current_url:
-            new_url = re.sub(r"page=\d+", f"page={current_num + 1}", current_url)
-        elif "?" in current_url:
-            new_url = current_url + f"&page={current_num + 1}"
-        else:
-            new_url = current_url.rstrip("/") + f"?page={current_num + 1}"
-
-        if new_url == old_url:
-            return False
-
-        page.goto(new_url, wait_until="domcontentloaded", timeout=10000)
-        page.wait_for_timeout(400)
-
-        final_url = page.url
-        try:
-            new_body = page.locator("body").inner_text(timeout=5000)[:3000]
-        except Exception:
-            new_body = ""
-
-        if final_url == old_url and new_body == old_body:
-            return False
-
-        return True
-    except Exception:
-        return False
-
-
-def paginate_and_collect(page, model_url, make_hint, model_hint, existing_keys, seen, all_data, skip_counts):
-    """
-    For a given model URL, iterate through result pages collecting rows.
-    Stops when TARGET_ROWS is reached or no next page found.
-    """
-    page_num = 1
-    empty_pages = 0
-    current_url = model_url
-
-    while page_num <= MAX_PAGES_PER_MODEL:
-        if len(all_data) >= TARGET_ROWS:
-            break
-
-        print(f"  Page {page_num} — {current_url}")
-        before = len(all_data)
-
-        raw_rows = extract_rows_from_model_page(page, current_url, make_hint, model_hint)
-        print(f"  Found {len(raw_rows)} raw rows")
-
-        for raw in raw_rows:
-            if len(all_data) >= TARGET_ROWS:
-                break
-
-            price = clean_price(raw.get("price_raw", ""))
-            if price < MIN_PRICE or price > MAX_PRICE:
-                skip_counts["price_range"] += 1
-                continue
-
-            make = raw.get("make", make_hint).strip()
-            if is_excluded(make):
-                skip_counts["excluded_make"] += 1
-                continue
-
-            vin = raw.get("vin", "").strip()
-            lot = raw.get("lot", "").strip()
-
-            if not vin and not lot:
-                skip_counts["incomplete"] += 1
-                continue
-
-            key = f"{vin}|{lot}"
-
-            if key in seen:
-                skip_counts["duplicate"] += 1
-                continue
-            if key in existing_keys:
-                skip_counts["existing"] += 1
-                continue
-
-            year = raw.get("year", "").strip()
-            model = raw.get("model", model_hint).strip()
-
-            if not year or not make or not model:
-                skip_counts["incomplete"] += 1
-                continue
-
-            car_type = infer_type(f"{make} {model} {raw.get('trim','')}")
-
-            loc_raw = raw.get("location", "")
-            state = raw.get("state", "")
-            if loc_raw and not state:
-                loc_raw, state = parse_location_state(loc_raw)
-
-            record = {
-                "vin":      vin,
-                "year":     year,
-                "make":     make.title(),
-                "model":    model.title(),
-                "trim":     raw.get("trim", "").strip(),
-                "type":     car_type,
-                "damage":   raw.get("damage", "").strip(),
-                "price":    price,
-                "odometer": clean_odometer(raw.get("odometer", "")),
-                "lot":      lot,
-                "date":     raw.get("date", "").strip(),
-                "location": loc_raw.strip(),
-                "state":    state.strip().upper(),
-                "source":   raw.get("source", "").strip(),
-            }
-
-            seen.add(key)
-            existing_keys.add(key)
-            all_data.append(record)
-            skip_counts["kept"] += 1
-            print(f"    KEEP {len(all_data)}/{TARGET_ROWS}: {year} {make} {model} | ${price}")
-
-        added = len(all_data) - before
-        if added == 0:
-            empty_pages += 1
-            if empty_pages >= MAX_EMPTY_PAGES:
-                print("  Too many empty pages, moving on.")
-                break
-        else:
-            empty_pages = 0
-
-        if len(all_data) >= TARGET_ROWS:
-            break
-
-        moved = try_next_page(page, page_num)
-        if not moved:
-            break
-
-        page_num += 1
-        current_url = page.url
+    return raw if raw["price_raw"] or raw["vin"] or raw["title"] else None
 
 
 # ─────────────────────────────────────────────
-#  MAIN
+# RECORD FILTERING
 # ─────────────────────────────────────────────
+
+def build_record(raw, existing_keys, seen, skip_counts):
+    price = clean_price(raw.get("price_raw", ""))
+    if price < MIN_PRICE or price > MAX_PRICE:
+        skip_counts["price_range"] += 1
+        return None
+
+    make = raw.get("make", "").strip()
+    model = raw.get("model", "").strip()
+    year = raw.get("year", "").strip()
+
+    if raw.get("title") and (not year or not make or not model):
+        yr, mk, mo = split_title(raw["title"])
+        if yr and not year:
+            year = yr
+        if mk and not make:
+            make = mk
+        if mo and not model:
+            model = mo
+
+    if is_excluded(make):
+        skip_counts["excluded_make"] += 1
+        return None
+
+    vin = raw.get("vin", "").strip()
+    lot = raw.get("lot", "").strip()
+
+    if not vin and not lot:
+        skip_counts["incomplete"] += 1
+        return None
+
+    key = f"{vin}|{lot}"
+    if key in seen:
+        skip_counts["duplicate"] += 1
+        return None
+    if key in existing_keys:
+        skip_counts["existing"] += 1
+        return None
+
+    if not year or not make or not model:
+        skip_counts["incomplete"] += 1
+        return None
+
+    loc_raw = raw.get("location", "").strip()
+    state = raw.get("state", "").strip()
+    if loc_raw and not state:
+        loc_raw, state = parse_location_state(loc_raw)
+
+    record = {
+        "vin":      vin,
+        "year":     year,
+        "make":     make.title(),
+        "model":    model.title(),
+        "trim":     raw.get("trim", "").strip(),
+        "type":     infer_type(f"{make} {model} {raw.get('trim', '')}"),
+        "damage":   raw.get("damage", "").strip(),
+        "price":    price,
+        "odometer": clean_odometer(raw.get("odometer", "")),
+        "lot":      lot,
+        "date":     raw.get("date", "").strip(),
+        "location": loc_raw,
+        "state":    state.upper(),
+        "source":   raw.get("source", "").strip(),
+    }
+
+    seen.add(key)
+    existing_keys.add(key)
+    skip_counts["kept"] += 1
+    return record
+
+
+# ─────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────
+
 def main():
     all_data = []
     seen = set()
@@ -610,7 +466,6 @@ def main():
     }
 
     run_start = time.time()
-    max_run_seconds = 45 * 60  # stop after 45 min — well inside the 55 min GitHub limit
 
     print(f"Existing records: {len(existing_keys)}")
     print(f"Target new rows:  {TARGET_ROWS}")
@@ -626,10 +481,9 @@ def main():
             ),
             viewport={"width": 1280, "height": 800},
         )
-
         page = context.new_page()
 
-        # Block heavy assets to speed up page loads
+        # Speed up loads by blocking heavy assets
         page.route(
             "**/*",
             lambda route, request: (
@@ -639,37 +493,39 @@ def main():
             ),
         )
 
-        for make_slug in TARGET_MAKES:
+        empty_pages = 0
+
+        for page_num in range(1, MAX_PAGES + 1):
             if len(all_data) >= TARGET_ROWS:
                 break
-            if (time.time() - run_start) > max_run_seconds:
-                print("45 min limit reached — stopping early to allow clean commit.")
+
+            if (time.time() - run_start) > MAX_RUN_SECONDS:
+                print("Runtime limit reached, stopping early.")
                 break
 
-            print(f"\n{'=' * 50}")
-            print(f"Make: {make_slug.upper()}")
+            url = build_paged_url(BASE_URL, page_num)
+            print(f"\nPage {page_num}: {url}")
 
-            model_urls = get_model_urls(page, make_slug)
-            print(f"Found {len(model_urls)} models")
+            raw_rows = extract_rows_from_page(page, url)
+            print(f"Found {len(raw_rows)} raw rows")
 
-            if not model_urls:
-                model_urls = [f"{BASE_URL}{make_slug}/"]
+            if not raw_rows:
+                empty_pages += 1
+                if empty_pages >= MAX_EMPTY_PAGES:
+                    print("Too many empty pages, stopping.")
+                    break
+                continue
 
-            for model_url in model_urls:
+            empty_pages = 0
+
+            for raw in raw_rows:
                 if len(all_data) >= TARGET_ROWS:
                     break
-                if (time.time() - run_start) > max_run_seconds:
-                    break
 
-                slug_parts = model_url.rstrip("/").split("/")
-                model_hint = slug_parts[-1].replace("-", " ").title() if slug_parts else ""
-                make_hint = make_slug.replace("-", " ").title()
-
-                print(f"\n  Model: {model_hint}")
-                paginate_and_collect(
-                    page, model_url, make_hint, model_hint,
-                    existing_keys, seen, all_data, skip_counts
-                )
+                record = build_record(raw, existing_keys, seen, skip_counts)
+                if record:
+                    all_data.append(record)
+                    print(f"  KEEP {len(all_data)}/{TARGET_ROWS}: {record['year']} {record['make']} {record['model']} | ${record['price']}")
 
         browser.close()
 
@@ -698,14 +554,18 @@ def main():
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
-        if "price" in master_df.columns:
-            master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0).astype(int)
-            master_df = master_df[master_df["price"].between(MIN_PRICE, MAX_PRICE)]
-        if "make" in master_df.columns:
-            master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)]
-        for col in ["vin", "lot"]:
-            if col not in master_df.columns:
-                master_df[col] = ""
+        if "price" not in master_df.columns:
+            master_df["price"] = 0
+        if "make" not in master_df.columns:
+            master_df["make"] = ""
+        if "vin" not in master_df.columns:
+            master_df["vin"] = ""
+        if "lot" not in master_df.columns:
+            master_df["lot"] = ""
+
+        master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0).astype(int)
+        master_df = master_df[master_df["price"].between(MIN_PRICE, MAX_PRICE)]
+        master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)]
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
 
     master_df.to_csv(MASTER_CSV, index=False)
@@ -722,6 +582,7 @@ def main():
     print(f"New rows this run:      {len(all_data)}")
     print(f"Total in {MASTER_CSV}: {len(master_df)}")
     print(f"Skip stats: {skip_counts}")
+    print(f"Elapsed seconds:        {int(time.time() - run_start)}")
 
 
 if __name__ == "__main__":
