@@ -3,7 +3,8 @@ name: Update CSV
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 * * * *"
+    # Runs at :37 every hour — adjust cron here if your schedule changes
+    - cron: "37 * * * *"
 
 concurrency:
   group: update-csv-main
@@ -12,7 +13,7 @@ concurrency:
 jobs:
   update-csv:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 55       # hard cap so it never overlaps the next hourly run
     permissions:
       contents: write
 
@@ -22,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -42,17 +43,28 @@ jobs:
         run: |
           python main.py
 
-      - name: Commit and push updated CSV
+      - name: Commit and push updated CSVs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add cars.csv
+          # Stage both output files
+          git add cars.csv master.csv
 
           if git diff --staged --quiet; then
-            echo "No changes to commit."
+            echo "No changes to commit — no new auction data found."
             exit 0
           fi
 
-          git commit -m "Auto update cars.csv"
+          # Count new rows for a meaningful commit message
+          NEW_ROWS=$(python3 -c "
+          import pandas as pd, sys
+          try:
+            df = pd.read_csv('cars.csv')
+            print(len(df))
+          except:
+            print('?')
+          ")
+
+          git commit -m "Auto update: ${NEW_ROWS} total rows in cars.csv [$(date -u '+%Y-%m-%d %H:%M UTC')]"
           git push origin main
