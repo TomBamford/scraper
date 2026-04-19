@@ -4,166 +4,70 @@ import re
 import os
 
 URL = "https://bidstreamline.com/catalog"
-
-# Stop when this many NEW matching rows are collected
 TARGET_ROWS = 500
-
-# Optional hard cap. Set to None to keep going until target or no more pages.
-MAX_PAGES = None
-
-DETAIL_LOOKUPS = True
+MAX_EMPTY_PAGES = 15
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
 
-# Keep only sold cars with a usable price
-REQUIRE_PRICE = True
-REQUIRE_SOLD_DATE = False
-SKIP_UNSOLD = True
 MIN_PRICE = 500
-
-# Exclude these makes
+MAX_PRICE = 9999
 EXCLUDED_MAKES = {"LAND ROVER"}
-
-# Safety stop: if this many pages in a row add 0 rows, stop
-MAX_EMPTY_PAGES = 15
-
-BMW_MODEL_MAP = {
-    "1ER": "1 Series",
-    "2ER": "2 Series",
-    "3ER": "3 Series",
-    "4ER": "4 Series",
-    "5ER": "5 Series",
-    "6ER": "6 Series",
-    "7ER": "7 Series",
-    "8ER": "8 Series",
-    "X1": "X1",
-    "X2": "X2",
-    "X3": "X3",
-    "X4": "X4",
-    "X5": "X5",
-    "X6": "X6",
-    "X7": "X7",
-    "Z3": "Z3",
-    "Z4": "Z4",
-    "M2": "M2",
-    "M3": "M3",
-    "M4": "M4",
-    "M5": "M5",
-    "M6": "M6",
-    "I3": "i3",
-    "I4": "i4",
-    "I7": "i7",
-    "IX": "iX",
-}
-
-MULTI_WORD_MAKES = {
-    "LAND ROVER",
-    "ALFA ROMEO",
-    "ASTON MARTIN",
-    "MERCEDES BENZ",
-    "ROLLS ROYCE",
-    "GENERAL MOTORS",
-}
 
 
 def clean_price(text):
     text = str(text).replace("$", "").replace(",", "").strip()
-
     if not text:
         return 0
-
-    lowered = text.lower()
-    if "no sale recorded" in lowered or "not sold" in lowered:
+    if "no sale recorded" in text.lower() or "not sold" in text.lower():
         return 0
 
     match = re.search(r"(\d+(?:\.\d+)?)", text)
-    if match:
-        try:
-            return int(float(match.group(1)))
-        except Exception:
-            return 0
+    if not match:
+        return 0
 
-    return 0
-
-
-def normalize_make_model(make, model):
-    make = make.strip()
-    model = model.strip()
-
-    if make == "BMW":
-        model = BMW_MODEL_MAP.get(model.upper(), model)
-
-    return make, model
+    try:
+        return int(float(match.group(1)))
+    except Exception:
+        return 0
 
 
 def split_title(title_line):
     title_line = str(title_line).strip()
-    parts = title_line.split()
-    if not parts or not re.match(r"^\d{4}$", parts[0]):
+    match = re.match(r"^(\d{4})\s+(.+)$", title_line)
+    if not match:
         return "", "", ""
 
-    year = parts[0]
-    rest = " ".join(parts[1:]).strip()
+    year = match.group(1)
+    rest = match.group(2).strip()
 
-    matched_make = None
-    for make in sorted(MULTI_WORD_MAKES, key=len, reverse=True):
+    multi_word_makes = [
+        "LAND ROVER",
+        "ALFA ROMEO",
+        "ASTON MARTIN",
+        "MERCEDES BENZ",
+        "ROLLS ROYCE",
+        "GENERAL MOTORS",
+    ]
+
+    for make in sorted(multi_word_makes, key=len, reverse=True):
         if rest.startswith(make + " ") or rest == make:
-            matched_make = make
-            break
+            model = rest[len(make):].strip()
+            return year, make, model
 
-    if matched_make:
-        make = matched_make
-        model = rest[len(matched_make):].strip()
-    else:
-        make = parts[1] if len(parts) > 1 else ""
-        model = " ".join(parts[2:]) if len(parts) > 2 else ""
-
-    make, model = normalize_make_model(make, model)
+    parts = rest.split()
+    make = parts[0] if parts else ""
+    model = " ".join(parts[1:]) if len(parts) > 1 else ""
     return year, make, model
 
 
-def extract_trim_and_type(make, model, title):
+def extract_trim(make, model, title):
     full_name = str(title).strip()
     base = f"{make} {model}".strip()
 
-    trim = ""
     if full_name.startswith(base):
-        trim = full_name[len(base):].strip()
-
-    title_upper = full_name.upper()
-
-    if any(x in title_upper for x in ["PICKUP", "F150", "F-150", "SILVERADO", "RAM ", "TUNDRA"]):
-        car_type = "Truck"
-    elif any(
-        x in title_upper
-        for x in [
-            "SUV",
-            "SPORTAGE",
-            "EXPLORER",
-            "ESCAPE",
-            "ROGUE",
-            "EQUINOX",
-            "TAHOE",
-            "SUBURBAN",
-            "RAV4",
-            "CR-V",
-            "CX-5",
-            "XC90",
-            "DISCOVERY",
-            "SORRENTO",
-            "SORENTO",
-        ]
-    ):
-        car_type = "SUV"
-    elif any(x in title_upper for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "86", "BRZ"]):
-        car_type = "Coupe"
-    elif any(x in title_upper for x in ["VAN", "TRANSIT", "ODYSSEY", "SIENNA", "PACIFICA"]):
-        car_type = "Van"
-    else:
-        car_type = "Sedan"
-
-    return trim, car_type
+        return full_name[len(base):].strip()
+    return ""
 
 
 def parse_location_state(line):
@@ -171,11 +75,6 @@ def parse_location_state(line):
     if " - " in line:
         parts = line.rsplit(" - ", 1)
         return parts[0].strip(), parts[1].strip()
-
-    match = re.match(r"^(.*?)[,\s]+([A-Z]{2})$", line)
-    if match:
-        return match.group(1).strip(), match.group(2).strip()
-
     return line, ""
 
 
@@ -192,41 +91,36 @@ def scroll_page(page, steps=10, delay=800):
 
 def get_listing_urls(page):
     urls = set()
-    try:
-        links = page.locator("a[href*='/car/']")
-        count = links.count()
+    links = page.locator("a[href*='/car/']")
+    count = links.count()
 
-        for i in range(count):
-            try:
-                href = links.nth(i).get_attribute("href")
-                if href and "/car/" in href:
-                    if not href.startswith("http"):
-                        href = "https://bidstreamline.com" + href
-                    urls.add(href)
-            except Exception:
-                pass
-    except Exception:
-        pass
+    for i in range(count):
+        try:
+            href = links.nth(i).get_attribute("href")
+            if href and "/car/" in href:
+                if not href.startswith("http"):
+                    href = "https://bidstreamline.com" + href
+                urls.add(href)
+        except Exception:
+            pass
 
     return list(urls)
 
 
 def extract_detail_fields(detail_page):
     result = {
+        "vin": "",
+        "year": "",
+        "make": "",
+        "model": "",
+        "trim": "",
         "damage": "",
+        "price": 0,
         "odometer": "",
+        "lot": "",
         "date": "",
         "location": "",
         "state": "",
-        "price": 0,
-        "vin": "",
-        "lot": "",
-        "title": "",
-        "make": "",
-        "model": "",
-        "year": "",
-        "trim": "",
-        "type": "",
     }
 
     try:
@@ -242,14 +136,12 @@ def extract_detail_fields(detail_page):
 
         title_match = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z0-9 .&/\-]+\b", text)
         if title_match:
-            result["title"] = title_match.group(0).strip()
-            year, make, model = split_title(result["title"])
+            title = title_match.group(0).strip()
+            year, make, model = split_title(title)
             result["year"] = year
             result["make"] = make
             result["model"] = model
-            trim, car_type = extract_trim_and_type(make, model, " ".join(result["title"].split()[1:]))
-            result["trim"] = trim
-            result["type"] = car_type
+            result["trim"] = extract_trim(make, model, " ".join(title.split()[1:]))
 
         damage_patterns = [
             r"Primary Damage\s*[:\n]\s*([A-Za-z0-9 /&-]+)",
@@ -293,7 +185,6 @@ def extract_detail_fields(detail_page):
             r"Winning Bid\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
             r"Sold Amount\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
         ]
-
         for pattern in price_patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
@@ -307,73 +198,29 @@ def extract_detail_fields(detail_page):
     return result
 
 
-def scrape_detail_fields(browser, url):
-    empty = {
-        "damage": "",
-        "odometer": "",
-        "date": "",
-        "location": "",
-        "state": "",
-        "price": 0,
-        "vin": "",
-        "lot": "",
-        "title": "",
-        "make": "",
-        "model": "",
-        "year": "",
-        "trim": "",
-        "type": "",
-    }
-
-    if not url:
-        return empty
-
-    detail_page = browser.new_page()
+def scrape_detail(browser, url):
+    page = browser.new_page()
     try:
-        detail_page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        detail_page.wait_for_timeout(2500)
-        return extract_detail_fields(detail_page)
+        page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        page.wait_for_timeout(2500)
+        return extract_detail_fields(page)
     except Exception:
-        return empty
+        return {
+            "vin": "",
+            "year": "",
+            "make": "",
+            "model": "",
+            "trim": "",
+            "damage": "",
+            "price": 0,
+            "odometer": "",
+            "lot": "",
+            "date": "",
+            "location": "",
+            "state": "",
+        }
     finally:
-        detail_page.close()
-
-
-def merge_detail_into_data(data, details):
-    for field in [
-        "damage",
-        "odometer",
-        "date",
-        "location",
-        "state",
-        "vin",
-        "lot",
-        "title",
-        "make",
-        "model",
-        "year",
-        "trim",
-        "type",
-    ]:
-        if details.get(field):
-            data[field] = details[field]
-
-    if details.get("price", 0) > 0:
-        data["price"] = details["price"]
-
-    if data["title"] and (not data["year"] or not data["make"] or not data["model"]):
-        year, make, model = split_title(data["title"])
-        data["year"] = year
-        data["make"] = make
-        data["model"] = model
-        trim, car_type = extract_trim_and_type(make, model, " ".join(data["title"].split()[1:]))
-        data["trim"] = trim
-        data["type"] = car_type
-
-    if data["date"] and "Not yet sold" not in str(data["date"]):
-        data["sold"] = True
-
-    return data
+        page.close()
 
 
 def go_to_next_page(page, current_page_num):
@@ -398,87 +245,53 @@ def go_to_next_page(page, current_page_num):
                 page.wait_for_load_state("networkidle", timeout=15000)
                 page.wait_for_timeout(2000)
                 return True
-            except Exception as e:
-                print(f"Could not click selector {selector}: {e}")
+            except Exception:
+                pass
 
     return False
 
 
-def load_existing_keys(csv_path=MASTER_CSV):
+def load_existing_keys(csv_path):
     existing_keys = set()
-
     if not os.path.exists(csv_path):
         return existing_keys
 
     try:
-        existing_df = pd.read_csv(csv_path, dtype=str).fillna("")
-        for _, row in existing_df.iterrows():
+        df = pd.read_csv(csv_path, dtype=str).fillna("")
+        for _, row in df.iterrows():
             vin = row.get("vin", "").strip()
             lot = row.get("lot", "").strip()
             if vin and lot:
                 existing_keys.add(f"{vin}_{lot}")
-    except Exception as e:
-        print(f"Could not load existing keys from {csv_path}: {e}")
+    except Exception:
+        pass
 
     return existing_keys
 
 
-def build_data_from_url(browser, url):
-    data = {
-        "vin": "",
-        "year": "",
-        "make": "",
-        "model": "",
-        "trim": "",
-        "type": "",
-        "damage": "",
-        "price": 0,
-        "odometer": "",
-        "lot": "",
-        "date": "",
-        "location": "",
-        "state": "",
-        "sold": False,
-        "url": url,
-        "title": "",
-    }
+def is_valid_row(data):
+    make = str(data["make"]).strip().upper()
+    price = int(data["price"]) if str(data["price"]).isdigit() else int(float(data["price"] or 0))
 
-    details = scrape_detail_fields(browser, url)
-    data = merge_detail_into_data(data, details)
-    return data
+    if not data["vin"]:
+        return False
+    if make in EXCLUDED_MAKES:
+        return False
+    if "Not yet sold" in str(data["date"]):
+        return False
+    if price < MIN_PRICE:
+        return False
+    if price >= 10000:
+        return False
 
-
-def reached_page_limit(page_num):
-    return MAX_PAGES is not None and page_num > MAX_PAGES
-
-
-def is_excluded_make(make):
-    return str(make).strip().upper() in EXCLUDED_MAKES
+    return True
 
 
 def main():
     all_data = []
     seen = set()
     existing_keys = load_existing_keys(MASTER_CSV)
-    empty_pages_in_a_row = 0
-
-    skip_counts = {
-        "no_vin": 0,
-        "duplicate": 0,
-        "existing": 0,
-        "excluded_make": 0,
-        "unsold": 0,
-        "no_date": 0,
-        "no_price": 0,
-        "low_price": 0,
-        "kept": 0,
-        "detail_fail": 0,
-    }
-
-    print(f"Loaded {len(existing_keys)} existing keys from {MASTER_CSV}")
-    print(f"Excluded makes: {EXCLUDED_MAKES}")
-    print(f"Minimum valid price: {MIN_PRICE}")
-    print(f"Target new rows this run: {TARGET_ROWS}")
+    empty_pages = 0
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -490,134 +303,78 @@ def main():
 
         page_num = 1
 
-        while True:
-            if reached_page_limit(page_num):
-                print(f"Reached MAX_PAGES={MAX_PAGES}, stopping.")
-                break
-
-            if len(all_data) >= TARGET_ROWS:
-                print(f"Reached TARGET_ROWS={TARGET_ROWS}, stopping.")
-                break
-
+        while len(all_data) < TARGET_ROWS:
             print(f"\nScraping page {page_num}")
-            rows_before_page = len(all_data)
+            before_count = len(all_data)
 
             try:
                 scroll_page(page)
                 urls = get_listing_urls(page)
                 print(f"Found {len(urls)} detail urls")
             except Exception as e:
-                print(f"Failed to collect urls on page {page_num}: {e}")
+                print(f"Failed on page {page_num}: {e}")
                 urls = []
 
-            page_seen_urls = set()
+            page_seen = set()
 
             for url in urls:
                 if len(all_data) >= TARGET_ROWS:
-                    print(f"Reached TARGET_ROWS={TARGET_ROWS} mid-page, stopping.")
                     break
-
-                if not url or url in page_seen_urls:
+                if not url or url in page_seen:
                     continue
-                page_seen_urls.add(url)
 
-                try:
-                    data = build_data_from_url(browser, url)
+                page_seen.add(url)
+                data = scrape_detail(browser, url)
+                data["url"] = url
 
-                    if not data["vin"]:
-                        skip_counts["no_vin"] += 1
-                        continue
+                key = f"{data['vin']}_{data['lot']}"
+                if key in seen or key in existing_keys:
+                    continue
 
-                    if is_excluded_make(data["make"]):
-                        skip_counts["excluded_make"] += 1
-                        continue
+                if not is_valid_row(data):
+                    continue
 
-                    key = f"{data['vin']}_{data['lot']}"
-                    if key in seen:
-                        skip_counts["duplicate"] += 1
-                        continue
-                    if key in existing_keys:
-                        skip_counts["existing"] += 1
-                        continue
+                seen.add(key)
+                all_data.append(data)
 
-                    if SKIP_UNSOLD and "Not yet sold" in str(data["date"]):
-                        skip_counts["unsold"] += 1
-                        continue
+                print(
+                    f"KEEP {len(all_data)}/{TARGET_ROWS}: "
+                    f"{data['year']} {data['make']} {data['model']} | "
+                    f"VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
+                )
 
-                    if REQUIRE_SOLD_DATE and not data["date"]:
-                        skip_counts["no_date"] += 1
-                        continue
+            added_this_page = len(all_data) - before_count
+            print(f"Rows added on page {page_num}: {added_this_page}")
 
-                    if REQUIRE_PRICE:
-                        if data["price"] <= 0:
-                            skip_counts["no_price"] += 1
-                            continue
-                        if data["price"] < MIN_PRICE:
-                            skip_counts["low_price"] += 1
-                            continue
-
-                    seen.add(key)
-                    all_data.append(data)
-                    skip_counts["kept"] += 1
-
-                    print(
-                        f"KEEP {len(all_data)}/{TARGET_ROWS}: "
-                        f"{data['year']} {data['make']} {data['model']} | "
-                        f"VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
-                    )
-
-                except Exception as e:
-                    skip_counts["detail_fail"] += 1
-                    print(f"Error parsing detail url {url}: {e}")
-
-            rows_added_this_page = len(all_data) - rows_before_page
-            print(f"Rows added on page {page_num}: {rows_added_this_page}")
-
-            if rows_added_this_page == 0:
-                empty_pages_in_a_row += 1
-                print(f"Empty pages in a row: {empty_pages_in_a_row}/{MAX_EMPTY_PAGES}")
+            if added_this_page == 0:
+                empty_pages += 1
+                print(f"Empty pages in a row: {empty_pages}/{MAX_EMPTY_PAGES}")
             else:
-                empty_pages_in_a_row = 0
+                empty_pages = 0
 
             if len(all_data) >= TARGET_ROWS:
-                print(f"Reached TARGET_ROWS={TARGET_ROWS}, stopping.")
+                print("Reached target.")
                 break
 
-            if empty_pages_in_a_row >= MAX_EMPTY_PAGES:
-                print("Too many pages in a row with no new matching rows, stopping.")
+            if empty_pages >= MAX_EMPTY_PAGES:
+                print("Too many empty pages, stopping.")
                 break
 
             moved = go_to_next_page(page, page_num)
             if not moved:
-                print("No next button found, stopping.")
+                print("No next page found, stopping.")
                 break
 
             page_num += 1
 
         browser.close()
 
-    internal_columns = [
+    columns = [
         "vin",
         "year",
         "make",
         "model",
         "trim",
-        "type",
-        "damage",
-        "price",
-        "odometer",
-        "lot",
-        "date",
-        "location",
-        "state",
-    ]
-
-    website_columns = [
-        "year",
-        "make",
-        "model",
-        "trim",
-        "type",
         "damage",
         "price",
         "odometer",
@@ -630,49 +387,59 @@ def main():
     if os.path.exists(MASTER_CSV):
         master_df = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
     else:
-        master_df = pd.DataFrame(columns=internal_columns)
+        master_df = pd.DataFrame(columns=columns)
 
     if all_data:
         new_df = pd.DataFrame(all_data)
-
-        for col in internal_columns:
+        for col in columns:
             if col not in new_df.columns:
                 new_df[col] = ""
 
-        new_df = new_df[internal_columns].copy()
+        new_df = new_df[columns].copy()
         new_df["price"] = pd.to_numeric(new_df["price"], errors="coerce").fillna(0)
         new_df["make"] = new_df["make"].astype(str).str.strip()
-        new_df = new_df[new_df["price"] >= MIN_PRICE].copy()
-        new_df = new_df[~new_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
+
+        new_df = new_df[
+            (new_df["price"] >= MIN_PRICE)
+            & (new_df["price"] < 10000)
+            & (~new_df["make"].str.upper().isin(EXCLUDED_MAKES))
+        ].copy()
 
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
         master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0)
         master_df["make"] = master_df["make"].astype(str).str.strip()
-        master_df = master_df[master_df["price"] >= MIN_PRICE].copy()
-        master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
+
+        master_df = master_df[
+            (master_df["price"] >= MIN_PRICE)
+            & (master_df["price"] < 10000)
+            & (~master_df["make"].str.upper().isin(EXCLUDED_MAKES))
+        ].copy()
+
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
 
     master_df.to_csv(MASTER_CSV, index=False)
 
-    website_df = master_df.copy()
-    for col in website_columns:
-        if col not in website_df.columns:
-            website_df[col] = ""
-
-    website_df["price"] = pd.to_numeric(website_df["price"], errors="coerce").fillna(0)
-    website_df["make"] = website_df["make"].astype(str).str.strip()
-    website_df = website_df[website_df["price"] >= MIN_PRICE].copy()
-    website_df = website_df[~website_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
-    website_df = website_df[website_columns].copy()
+    website_df = master_df[[
+        "year",
+        "make",
+        "model",
+        "trim",
+        "damage",
+        "price",
+        "odometer",
+        "lot",
+        "date",
+        "location",
+        "state",
+    ]].copy()
     website_df.to_csv(WEBSITE_CSV, index=False)
 
     print("\nDONE")
     print(f"New rows added this run: {len(all_data)}")
     print(f"Total rows in {MASTER_CSV}: {len(master_df)}")
     print(f"Saved {MASTER_CSV} and {WEBSITE_CSV}")
-    print("Skip stats:", skip_counts)
 
 
 if __name__ == "__main__":
