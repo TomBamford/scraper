@@ -98,6 +98,7 @@ def normalize_make_model(make, model):
 
 
 def split_title(title_line):
+    title_line = str(title_line).strip()
     parts = title_line.split()
     if not parts or not re.match(r"^\d{4}$", parts[0]):
         return "", "", ""
@@ -123,14 +124,14 @@ def split_title(title_line):
 
 
 def extract_trim_and_type(make, model, title):
-    full_name = title.strip()
+    full_name = str(title).strip()
     base = f"{make} {model}".strip()
 
     trim = ""
     if full_name.startswith(base):
         trim = full_name[len(base):].strip()
 
-    title_upper = title.upper()
+    title_upper = full_name.upper()
 
     if any(x in title_upper for x in ["PICKUP", "F150", "F-150", "SILVERADO", "RAM ", "TUNDRA"]):
         car_type = "Truck"
@@ -340,8 +341,19 @@ def scrape_detail_fields(browser, url):
 
 def merge_detail_into_data(data, details):
     for field in [
-        "damage", "odometer", "date", "location", "state",
-        "vin", "lot", "title", "make", "model", "year", "trim", "type"
+        "damage",
+        "odometer",
+        "date",
+        "location",
+        "state",
+        "vin",
+        "lot",
+        "title",
+        "make",
+        "model",
+        "year",
+        "trim",
+        "type",
     ]:
         if details.get(field):
             data[field] = details[field]
@@ -516,7 +528,7 @@ def main():
                         skip_counts["no_vin"] += 1
                         continue
 
-                    if is_excluded_make(data["make']):
+                    if is_excluded_make(data["make"]):
                         skip_counts["excluded_make"] += 1
                         continue
 
@@ -649,6 +661,8 @@ def main():
         if col not in website_df.columns:
             website_df[col] = ""
 
+    website_df["price"] = pd.to_numeric(website_df["price"], errors="coerce").fillna(0)
+    website_df["make"] = website_df["make"].astype(str).str.strip()
     website_df = website_df[website_df["price"] >= MIN_PRICE].copy()
     website_df = website_df[~website_df["make"].str.upper().isin(EXCLUDED_MAKES)].copy()
     website_df = website_df[website_columns].copy()
