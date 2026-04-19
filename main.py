@@ -5,10 +5,15 @@ import os
 
 URL = "https://bidstreamline.com/catalog"
 MAX_PAGES = 300
-DETAIL_LOOKUPS = True  # False = faster, but less detail
+DETAIL_LOOKUPS = True  # True = open detail pages for better price/date/damage extraction
 
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
+
+# Keep only sold cars with a usable price
+REQUIRE_PRICE = True
+REQUIRE_SOLD_DATE = False
+SKIP_UNSOLD = True
 
 BMW_MODEL_MAP = {
     "1ER": "1 Series",
@@ -50,13 +55,23 @@ MULTI_WORD_MAKES = {
 
 
 def clean_price(text):
-    text = text.replace("$", "").replace(",", "").strip()
-    if "No sale recorded" in text or text == "":
+    text = str(text).replace("$", "").replace(",", "").strip()
+
+    if not text:
         return 0
-    try:
-        return int(float(text))
-    except Exception:
+
+    lowered = text.lower()
+    if "no sale recorded" in lowered or "not sold" in lowered:
         return 0
+
+    match = re.search(r"(\d+(?:\.\d+)?)", text)
+    if match:
+        try:
+            return int(float(match.group(1)))
+        except Exception:
+            return 0
+
+    return 0
 
 
 def normalize_make_model(make, model):
@@ -106,7 +121,26 @@ def extract_trim_and_type(make, model, title):
 
     if any(x in title_upper for x in ["PICKUP", "F150", "F-150", "SILVERADO", "RAM ", "TUNDRA"]):
         car_type = "Truck"
-    elif any(x in title_upper for x in ["SUV", "SPORTAGE", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE", "SUBURBAN", "RAV4", "CR-V", "CX-5", "XC90", "DISCOVERY", "SORRENTO", "SORENTO"]):
+    elif any(
+        x in title_upper
+        for x in [
+            "SUV",
+            "SPORTAGE",
+            "EXPLORER",
+            "ESCAPE",
+            "ROGUE",
+            "EQUINOX",
+            "TAHOE",
+            "SUBURBAN",
+            "RAV4",
+            "CR-V",
+            "CX-5",
+            "XC90",
+            "DISCOVERY",
+            "SORRENTO",
+            "SORENTO",
+        ]
+    ):
         car_type = "SUV"
     elif any(x in title_upper for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "86", "BRZ"]):
         car_type = "Coupe"
@@ -119,7 +153,7 @@ def extract_trim_and_type(make, model, title):
 
 
 def parse_location_state(line):
-    line = line.strip()
+    line = str(line).strip()
     if " - " in line:
         parts = line.rsplit(" - ", 1)
         return parts[0].strip(), parts[1].strip()
@@ -127,7 +161,7 @@ def parse_location_state(line):
 
 
 def parse_card(text):
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    lines = [l.strip() for l in str(text).split("\n") if l.strip()]
 
     data = {
         "year": "",
@@ -154,13 +188,19 @@ def parse_card(text):
 
     for line in lines:
         if "VIN:" in line:
-            data["vin"] = line.replace("VIN:", "").strip()
+            vin_match = re.search(r"VIN:\s*([A-HJ-NPR-Z0-9]{11,17})", line, re.IGNORECASE)
+            if vin_match:
+                data["vin"] = vin_match.group(1).strip()
+            else:
+                data["vin"] = line.replace("VIN:", "").strip()
 
         elif line.startswith("Lot #"):
             data["lot"] = line.replace("Lot #", "").strip()
 
-        elif "$" in line or "No sale recorded" in line:
-            data["price"] = clean_price(line)
+        elif "$" in line or "No sale recorded" in line or "Final Bid" in line or "Sold For" in line:
+            price = clean_price(line)
+            if price > 0:
+                data["price"] = price
 
         elif line in ["IAAI", "COPART"]:
             pass
@@ -232,6 +272,38 @@ def get_card_url(card):
     return ""
 
 
+def scroll_page(page, steps=10, delay=800):
+    last_height = 0
+    for _ in range(steps):
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        page.wait_for_timeout(delay)
+        new_height = page.evaluate("document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
+def get_listing_urls(page):
+    urls = set()
+    try:
+        links = page.locator("a[href*='/car/']")
+        count = links.count()
+
+        for i in range(count):
+            try:
+                href = links.nth(i).get_attribute("href")
+                if href and "/car/" in href:
+                    if not href.startswith("http"):
+                        href = "https://bidstreamline.com" + href
+                    urls.add(href)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return list(urls)
+
+
 def extract_detail_fields(detail_page):
     result = {
         "damage": "",
@@ -239,10 +311,26 @@ def extract_detail_fields(detail_page):
         "date": "",
         "location": "",
         "state": "",
+        "price": 0,
+        "vin": "",
+        "lot": "",
+        "title": "",
     }
 
     try:
-        text = detail_page.locator("body").inner_text(timeout=10000)
+        text = detail_page.locator("body").inner_text(timeout=15000)
+
+        vin_match = re.search(r"VIN\s*[:#]?\s*([A-HJ-NPR-Z0-9]{11,17})", text, re.IGNORECASE)
+        if vin_match:
+            result["vin"] = vin_match.group(1).strip()
+
+        lot_match = re.search(r"Lot\s*#?\s*[:#]?\s*([A-Za-z0-9-]+)", text, re.IGNORECASE)
+        if lot_match:
+            result["lot"] = lot_match.group(1).strip()
+
+        title_match = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z0-9 .&/\-]+\b", text)
+        if title_match:
+            result["title"] = title_match.group(0).strip()
 
         damage_patterns = [
             r"Primary Damage\s*[:\n]\s*([A-Za-z0-9 /&-]+)",
@@ -254,23 +342,45 @@ def extract_detail_fields(detail_page):
                 result["damage"] = match.group(1).strip()
                 break
 
-        odo_match = re.search(r"Odometer\s*[:\n]\s*([0-9,]+\s*mi)", text, re.IGNORECASE)
+        odo_match = re.search(r"Odometer\s*[:\n]\s*([0-9,]+(?:\s*mi)?)", text, re.IGNORECASE)
         if odo_match:
             result["odometer"] = odo_match.group(1).strip()
 
         if "Not yet sold" in text:
             result["date"] = "Not yet sold"
         else:
-            date_match = re.search(r"Sale Date\s*[:\n]\s*([A-Za-z0-9, /-]+)", text, re.IGNORECASE)
-            if date_match:
-                result["date"] = date_match.group(1).strip()
+            date_patterns = [
+                r"Sale Date\s*[:\n]\s*([A-Za-z0-9, /:-]+)",
+                r"Auction Date\s*[:\n]\s*([A-Za-z0-9, /:-]+)",
+                r"Date Sold\s*[:\n]\s*([A-Za-z0-9, /:-]+)",
+            ]
+            for pattern in date_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    result["date"] = match.group(1).strip()
+                    break
 
-        loc_match = re.search(r"Location\s*[:\n]\s*([A-Za-z0-9 .,&/-]+)", text, re.IGNORECASE)
+        loc_match = re.search(r"Location\s*[:\n]\s*([A-Za-z0-9 .,&/\-]+)", text, re.IGNORECASE)
         if loc_match:
             loc_raw = loc_match.group(1).strip()
             loc, st = parse_location_state(loc_raw)
             result["location"] = loc
             result["state"] = st
+
+        price_patterns = [
+            r"Sold For\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
+            r"Sale Price\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
+            r"Final Bid\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
+            r"Winning Bid\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
+            r"Sold Amount\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
+        ]
+
+        for pattern in price_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                result["price"] = clean_price(match.group(1))
+                if result["price"] > 0:
+                    break
 
     except Exception:
         pass
@@ -286,6 +396,10 @@ def scrape_detail_fields(browser, url):
             "date": "",
             "location": "",
             "state": "",
+            "price": 0,
+            "vin": "",
+            "lot": "",
+            "title": "",
         }
 
     detail_page = browser.new_page()
@@ -300,9 +414,45 @@ def scrape_detail_fields(browser, url):
             "date": "",
             "location": "",
             "state": "",
+            "price": 0,
+            "vin": "",
+            "lot": "",
+            "title": "",
         }
     finally:
         detail_page.close()
+
+
+def merge_detail_into_data(data, details):
+    if details.get("price", 0) > 0:
+        data["price"] = details["price"]
+
+    for field in ["damage", "odometer", "date", "location", "state"]:
+        if details.get(field):
+            data[field] = details[field]
+
+    if details.get("vin") and not data["vin"]:
+        data["vin"] = details["vin"]
+
+    if details.get("lot") and not data["lot"]:
+        data["lot"] = details["lot"]
+
+    if details.get("title") and not data["title"]:
+        data["title"] = details["title"]
+
+    if data["title"] and (not data["year"] or not data["make"] or not data["model"]):
+        year, make, model = split_title(data["title"])
+        data["year"] = year
+        data["make"] = make
+        data["model"] = model
+        trim, car_type = extract_trim_and_type(make, model, " ".join(data["title"].split()[1:]))
+        data["trim"] = trim
+        data["type"] = car_type
+
+    if data["date"] and "Not yet sold" not in str(data["date"]):
+        data["sold"] = True
+
+    return data
 
 
 def go_to_next_page(page, current_page_num):
@@ -315,6 +465,8 @@ def go_to_next_page(page, current_page_num):
         "a:has-text('→')",
         "button:has-text('Next')",
         "a:has-text('Next')",
+        "[aria-label='Next']",
+        "[rel='next']",
     ]
 
     for selector in selectors:
@@ -322,7 +474,7 @@ def go_to_next_page(page, current_page_num):
         if btn.count() > 0:
             try:
                 btn.first.click()
-                page.wait_for_load_state("networkidle")
+                page.wait_for_load_state("networkidle", timeout=15000)
                 page.wait_for_timeout(2000)
                 return True
             except Exception as e:
@@ -350,10 +502,47 @@ def load_existing_keys(csv_path=MASTER_CSV):
     return existing_keys
 
 
+def build_data_from_url(browser, url):
+    data = {
+        "year": "",
+        "make": "",
+        "model": "",
+        "trim": "",
+        "type": "",
+        "damage": "",
+        "price": 0,
+        "odometer": "",
+        "lot": "",
+        "date": "",
+        "location": "",
+        "state": "",
+        "sold": False,
+        "url": url,
+        "title": "",
+        "vin": "",
+    }
+
+    details = scrape_detail_fields(browser, url)
+    data = merge_detail_into_data(data, details)
+    return data
+
+
 def main():
     all_data = []
     seen = set()
     existing_keys = load_existing_keys(MASTER_CSV)
+
+    skip_counts = {
+        "no_vin": 0,
+        "duplicate": 0,
+        "existing": 0,
+        "unsold": 0,
+        "no_date": 0,
+        "no_price": 0,
+        "kept": 0,
+        "detail_fail": 0,
+    }
+
     print(f"Loaded {len(existing_keys)} existing keys from {MASTER_CSV}")
 
     with sync_playwright() as p:
@@ -361,59 +550,69 @@ def main():
         page = browser.new_page()
 
         print("Opening site...")
-        page.goto(URL, wait_until="domcontentloaded")
+        page.goto(URL, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(5000)
 
-        for page_num in range(MAX_PAGES):
-            print(f"Scraping page {page_num + 1}")
+        for page_num in range(1, MAX_PAGES + 1):
+            print(f"\nScraping page {page_num}")
 
-            cards = page.locator("div").filter(has_text="VIN:")
-            count = cards.count()
-            print(f"Found {count} cards")
+            try:
+                scroll_page(page)
+                urls = get_listing_urls(page)
+                print(f"Found {len(urls)} detail urls")
+            except Exception as e:
+                print(f"Failed to collect urls on page {page_num}: {e}")
+                urls = []
 
-            for i in range(count):
+            page_seen_urls = set()
+
+            for url in urls:
+                if not url or url in page_seen_urls:
+                    continue
+                page_seen_urls.add(url)
+
                 try:
-                    card = cards.nth(i)
-                    text = card.inner_text()
-                    data = parse_card(text)
+                    data = build_data_from_url(browser, url)
 
                     if not data["vin"]:
+                        skip_counts["no_vin"] += 1
                         continue
-
-                    data["url"] = get_card_url(card)
 
                     key = f"{data['vin']}_{data['lot']}"
                     if key in seen:
+                        skip_counts["duplicate"] += 1
                         continue
                     if key in existing_keys:
+                        skip_counts["existing"] += 1
                         continue
 
-                    if DETAIL_LOOKUPS and data["url"]:
-                        details = scrape_detail_fields(browser, data["url"])
-                        if details["damage"]:
-                            data["damage"] = details["damage"]
-                        if details["odometer"]:
-                            data["odometer"] = details["odometer"]
-                        if details["date"]:
-                            data["date"] = details["date"]
-                        if details["location"]:
-                            data["location"] = details["location"]
-                        if details["state"]:
-                            data["state"] = details["state"]
-
-                    if not data["date"] or "Not yet sold" in data["date"]:
+                    if SKIP_UNSOLD and "Not yet sold" in str(data["date"]):
+                        skip_counts["unsold"] += 1
                         continue
-                    if data["price"] <= 0:
+
+                    if REQUIRE_SOLD_DATE and not data["date"]:
+                        skip_counts["no_date"] += 1
+                        continue
+
+                    if REQUIRE_PRICE and data["price"] <= 0:
+                        skip_counts["no_price"] += 1
                         continue
 
                     seen.add(key)
                     all_data.append(data)
+                    skip_counts["kept"] += 1
+
+                    print(
+                        f"KEEP: {data['year']} {data['make']} {data['model']} | "
+                        f"VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
+                    )
 
                 except Exception as e:
-                    print("Error parsing card:", e)
+                    skip_counts["detail_fail"] += 1
+                    print(f"Error parsing detail url {url}: {e}")
 
-            if page_num < MAX_PAGES - 1:
-                moved = go_to_next_page(page, page_num + 1)
+            if page_num < MAX_PAGES:
+                moved = go_to_next_page(page, page_num)
                 if not moved:
                     print("No next button found, stopping.")
                     break
@@ -488,6 +687,7 @@ def main():
     print(f"New rows added this run: {len(all_data)}")
     print(f"Total rows in {MASTER_CSV}: {len(master_df)}")
     print(f"Saved {MASTER_CSV} and {WEBSITE_CSV}")
+    print("Skip stats:", skip_counts)
 
 
 if __name__ == "__main__":
