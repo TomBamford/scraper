@@ -4,7 +4,13 @@ import re
 import os
 
 URL = "https://bidstreamline.com/catalog"
-MAX_PAGES = 2000
+
+# Stop when this many NEW matching rows are collected
+TARGET_ROWS = 500
+
+# Optional hard cap. Set to None to keep going until target or no more pages.
+MAX_PAGES = None
+
 DETAIL_LOOKUPS = True  # True = open detail pages for better price/date/damage extraction
 
 MASTER_CSV = "master.csv"
@@ -14,6 +20,13 @@ WEBSITE_CSV = "cars.csv"
 REQUIRE_PRICE = True
 REQUIRE_SOLD_DATE = False
 SKIP_UNSOLD = True
+MIN_PRICE = 500  # only count prices >= 500 as valid
+
+# Only keep California lots
+STATE_FILTER = {"CA", "CALIFORNIA"}
+
+# Safety stop: if this many pages in a row add 0 rows, stop
+MAX_EMPTY_PAGES = 15
 
 BMW_MODEL_MAP = {
     "1ER": "1 Series",
@@ -82,6 +95,21 @@ def normalize_make_model(make, model):
         model = BMW_MODEL_MAP.get(model.upper(), model)
 
     return make, model
+
+
+def normalize_state(state):
+    s = str(state).strip().upper()
+    state_map = {
+        "CALIFORNIA": "CA",
+        "CA": "CA",
+    }
+    return state_map.get(s, s)
+
+
+def is_allowed_state(state):
+    normalized = normalize_state(state)
+    allowed = {normalize_state(x) for x in STATE_FILTER}
+    return normalized in allowed
 
 
 def split_title(title_line):
@@ -157,118 +185,30 @@ def parse_location_state(line):
     if " - " in line:
         parts = line.rsplit(" - ", 1)
         return parts[0].strip(), parts[1].strip()
+
+    match = re.match(r"^(.*?)[,\s]+([A-Z]{2})$", line)
+    if match:
+        return match.group(1).strip(), match.group(2).strip()
+
     return line, ""
 
 
-def parse_card(text):
-    lines = [l.strip() for l in str(text).split("\n") if l.strip()]
+def get_state_from_text(text):
+    text = str(text)
 
-    data = {
-        "year": "",
-        "make": "",
-        "model": "",
-        "trim": "",
-        "type": "",
-        "damage": "",
-        "price": 0,
-        "odometer": "",
-        "lot": "",
-        "date": "",
-        "location": "",
-        "state": "",
-        "sold": False,
-        "url": "",
-        "title": "",
-        "vin": "",
-    }
+    patterns = [
+        r"\bCalifornia\b",
+        r"\bCA\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return normalize_state(match.group(0))
 
-    saw_location_label = False
-    saw_odometer_label = False
-    saw_sale_date_label = False
+    match = re.search(r"Location\s*[:\n]\s*([A-Za-z0-9 .,&/\-]+)\s*-\s*([A-Z]{2})", text, re.IGNORECASE)
+    if match:
+        return normalize_state(match.group(2))
 
-    for line in lines:
-        if "VIN:" in line:
-            vin_match = re.search(r"VIN:\s*([A-HJ-NPR-Z0-9]{11,17})", line, re.IGNORECASE)
-            if vin_match:
-                data["vin"] = vin_match.group(1).strip()
-            else:
-                data["vin"] = line.replace("VIN:", "").strip()
-
-        elif line.startswith("Lot #"):
-            data["lot"] = line.replace("Lot #", "").strip()
-
-        elif "$" in line or "No sale recorded" in line or "Final Bid" in line or "Sold For" in line:
-            price = clean_price(line)
-            if price > 0:
-                data["price"] = price
-
-        elif line in ["IAAI", "COPART"]:
-            pass
-
-        elif re.match(r"^\d{4}\s+", line):
-            data["title"] = line
-            year, make, model = split_title(line)
-            data["year"] = year
-            data["make"] = make
-            data["model"] = model
-            trim, car_type = extract_trim_and_type(make, model, " ".join(line.split()[1:]))
-            data["trim"] = trim
-            data["type"] = car_type
-
-        elif line.upper() == "LOCATION":
-            saw_location_label = True
-
-        elif saw_location_label:
-            loc, st = parse_location_state(line)
-            data["location"] = loc
-            data["state"] = st
-            saw_location_label = False
-
-        elif line.upper() == "ODOMETER":
-            saw_odometer_label = True
-
-        elif saw_odometer_label:
-            data["odometer"] = line
-            saw_odometer_label = False
-
-        elif line.upper() == "SALE DATE":
-            saw_sale_date_label = True
-
-        elif saw_sale_date_label:
-            data["date"] = line
-            if "Not yet sold" not in line:
-                data["sold"] = True
-            saw_sale_date_label = False
-
-        elif "Not yet sold" in line:
-            data["date"] = "Not yet sold"
-            data["sold"] = False
-
-        elif (
-            re.search(r"\b\d{1,2}/\d{1,2}/\d{4}\b", line)
-            or re.search(r"\b[A-Za-z]{3,9}\s+\d{1,2},\s+\d{4}\b", line)
-        ):
-            data["date"] = line
-            data["sold"] = True
-
-    if data["date"] == "":
-        data["sold"] = False
-
-    return data
-
-
-def get_card_url(card):
-    try:
-        links = card.locator("a")
-        count = links.count()
-        for i in range(count):
-            href = links.nth(i).get_attribute("href")
-            if href and "/car/" in href:
-                if href.startswith("http"):
-                    return href
-                return "https://bidstreamline.com" + href
-    except Exception:
-        pass
     return ""
 
 
@@ -365,7 +305,10 @@ def extract_detail_fields(detail_page):
             loc_raw = loc_match.group(1).strip()
             loc, st = parse_location_state(loc_raw)
             result["location"] = loc
-            result["state"] = st
+            result["state"] = normalize_state(st)
+
+        if not result["state"]:
+            result["state"] = get_state_from_text(text)
 
         price_patterns = [
             r"Sold For\s*[:\n]\s*\$?\s*([0-9,]+(?:\.\d{2})?)",
@@ -389,18 +332,20 @@ def extract_detail_fields(detail_page):
 
 
 def scrape_detail_fields(browser, url):
+    empty = {
+        "damage": "",
+        "odometer": "",
+        "date": "",
+        "location": "",
+        "state": "",
+        "price": 0,
+        "vin": "",
+        "lot": "",
+        "title": "",
+    }
+
     if not url:
-        return {
-            "damage": "",
-            "odometer": "",
-            "date": "",
-            "location": "",
-            "state": "",
-            "price": 0,
-            "vin": "",
-            "lot": "",
-            "title": "",
-        }
+        return empty
 
     detail_page = browser.new_page()
     try:
@@ -408,17 +353,7 @@ def scrape_detail_fields(browser, url):
         detail_page.wait_for_timeout(2500)
         return extract_detail_fields(detail_page)
     except Exception:
-        return {
-            "damage": "",
-            "odometer": "",
-            "date": "",
-            "location": "",
-            "state": "",
-            "price": 0,
-            "vin": "",
-            "lot": "",
-            "title": "",
-        }
+        return empty
     finally:
         detail_page.close()
 
@@ -448,6 +383,9 @@ def merge_detail_into_data(data, details):
         trim, car_type = extract_trim_and_type(make, model, " ".join(data["title"].split()[1:]))
         data["trim"] = trim
         data["type"] = car_type
+
+    if data["state"]:
+        data["state"] = normalize_state(data["state"])
 
     if data["date"] and "Not yet sold" not in str(data["date"]):
         data["sold"] = True
@@ -504,6 +442,7 @@ def load_existing_keys(csv_path=MASTER_CSV):
 
 def build_data_from_url(browser, url):
     data = {
+        "vin": "",
         "year": "",
         "make": "",
         "model": "",
@@ -519,7 +458,6 @@ def build_data_from_url(browser, url):
         "sold": False,
         "url": url,
         "title": "",
-        "vin": "",
     }
 
     details = scrape_detail_fields(browser, url)
@@ -527,23 +465,33 @@ def build_data_from_url(browser, url):
     return data
 
 
+def reached_page_limit(page_num):
+    return MAX_PAGES is not None and page_num > MAX_PAGES
+
+
 def main():
     all_data = []
     seen = set()
     existing_keys = load_existing_keys(MASTER_CSV)
+    empty_pages_in_a_row = 0
 
     skip_counts = {
         "no_vin": 0,
         "duplicate": 0,
         "existing": 0,
+        "wrong_state": 0,
         "unsold": 0,
         "no_date": 0,
         "no_price": 0,
+        "low_price": 0,
         "kept": 0,
         "detail_fail": 0,
     }
 
     print(f"Loaded {len(existing_keys)} existing keys from {MASTER_CSV}")
+    print(f"Filtering to states: {STATE_FILTER}")
+    print(f"Minimum valid price: {MIN_PRICE}")
+    print(f"Target new rows this run: {TARGET_ROWS}")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -553,8 +501,19 @@ def main():
         page.goto(URL, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(5000)
 
-        for page_num in range(1, MAX_PAGES + 1):
+        page_num = 1
+
+        while True:
+            if reached_page_limit(page_num):
+                print(f"Reached MAX_PAGES={MAX_PAGES}, stopping.")
+                break
+
+            if len(all_data) >= TARGET_ROWS:
+                print(f"Reached TARGET_ROWS={TARGET_ROWS}, stopping.")
+                break
+
             print(f"\nScraping page {page_num}")
+            rows_before_page = len(all_data)
 
             try:
                 scroll_page(page)
@@ -567,6 +526,10 @@ def main():
             page_seen_urls = set()
 
             for url in urls:
+                if len(all_data) >= TARGET_ROWS:
+                    print(f"Reached TARGET_ROWS={TARGET_ROWS} mid-page, stopping.")
+                    break
+
                 if not url or url in page_seen_urls:
                     continue
                 page_seen_urls.add(url)
@@ -576,6 +539,10 @@ def main():
 
                     if not data["vin"]:
                         skip_counts["no_vin"] += 1
+                        continue
+
+                    if not is_allowed_state(data["state"]):
+                        skip_counts["wrong_state"] += 1
                         continue
 
                     key = f"{data['vin']}_{data['lot']}"
@@ -594,28 +561,51 @@ def main():
                         skip_counts["no_date"] += 1
                         continue
 
-                    if REQUIRE_PRICE and data["price"] <= 0:
-                        skip_counts["no_price"] += 1
-                        continue
+                    if REQUIRE_PRICE:
+                        if data["price"] <= 0:
+                            skip_counts["no_price"] += 1
+                            continue
+                        if data["price"] < MIN_PRICE:
+                            skip_counts["low_price"] += 1
+                            continue
 
                     seen.add(key)
                     all_data.append(data)
                     skip_counts["kept"] += 1
 
                     print(
-                        f"KEEP: {data['year']} {data['make']} {data['model']} | "
-                        f"VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
+                        f"KEEP {len(all_data)}/{TARGET_ROWS}: "
+                        f"{data['year']} {data['make']} {data['model']} | "
+                        f"STATE={data['state']} | VIN={data['vin']} | LOT={data['lot']} | PRICE={data['price']}"
                     )
 
                 except Exception as e:
                     skip_counts["detail_fail"] += 1
                     print(f"Error parsing detail url {url}: {e}")
 
-            if page_num < MAX_PAGES:
-                moved = go_to_next_page(page, page_num)
-                if not moved:
-                    print("No next button found, stopping.")
-                    break
+            rows_added_this_page = len(all_data) - rows_before_page
+            print(f"Rows added on page {page_num}: {rows_added_this_page}")
+
+            if rows_added_this_page == 0:
+                empty_pages_in_a_row += 1
+                print(f"Empty pages in a row: {empty_pages_in_a_row}/{MAX_EMPTY_PAGES}")
+            else:
+                empty_pages_in_a_row = 0
+
+            if len(all_data) >= TARGET_ROWS:
+                print(f"Reached TARGET_ROWS={TARGET_ROWS}, stopping.")
+                break
+
+            if empty_pages_in_a_row >= MAX_EMPTY_PAGES:
+                print("Too many pages in a row with no new matching rows, stopping.")
+                break
+
+            moved = go_to_next_page(page, page_num)
+            if not moved:
+                print("No next button found, stopping.")
+                break
+
+            page_num += 1
 
         browser.close()
 
@@ -664,11 +654,13 @@ def main():
 
         new_df = new_df[internal_columns].copy()
         new_df["price"] = pd.to_numeric(new_df["price"], errors="coerce").fillna(0)
-        new_df = new_df[new_df["price"] > 0].copy()
+        new_df = new_df[new_df["price"] >= MIN_PRICE].copy()
 
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
+        master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0)
+        master_df = master_df[master_df["price"] >= MIN_PRICE].copy()
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
 
     master_df.to_csv(MASTER_CSV, index=False)
@@ -680,7 +672,7 @@ def main():
 
     website_df = website_df[website_columns].copy()
     website_df["price"] = pd.to_numeric(website_df["price"], errors="coerce").fillna(0)
-    website_df = website_df[website_df["price"] > 0].copy()
+    website_df = website_df[website_df["price"] >= MIN_PRICE].copy()
     website_df.to_csv(WEBSITE_CSV, index=False)
 
     print("\nDONE")
