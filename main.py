@@ -4,7 +4,7 @@ import re
 import os
 
 URL = "https://bidstreamline.com/catalog"
-MAX_PAGES = 300
+MAX_PAGES = 2000
 DETAIL_LOOKUPS = True  # True = open detail pages for better price/date/damage extraction
 
 MASTER_CSV = "master.csv"
