@@ -12,7 +12,7 @@ BASE_URL = "https://autoconduct.com/auction-prices/"
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
 
-TARGET_ROWS = 150
+TARGET_ROWS = 2000
 MIN_PRICE = 500
 MAX_PRICE = 10_000
 
