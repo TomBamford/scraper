@@ -24,7 +24,6 @@ WEBSITE_CSV = "cars.csv"
 
 RESUME_FROM_MASTER = True
 
-# Slower, more stable settings for this site
 MAKE_WORKERS = 2
 MODEL_WORKERS = 4
 DETAIL_WORKERS = 6
@@ -33,9 +32,8 @@ NAV_TIMEOUT_MS = 30000
 MAX_RETRIES = 3
 RETRY_BASE_DELAY_MS = 1200
 
-# Optional narrowing
-TARGET_MAKES = set()   # e.g. {"TOYOTA", "HONDA"}
-TARGET_MODELS = set()  # e.g. {"CAMRY", "CIVIC"}
+TARGET_MAKES = set()
+TARGET_MODELS = set()
 
 EXCLUDED_MAKES = {"LAND ROVER"}
 
@@ -56,23 +54,10 @@ MULTI_WORD_MAKES = {
 }
 
 DAMAGE_PATTERNS = [
-    "FRONT END",
-    "REAR END",
-    "SIDE",
-    "ROLLOVER",
-    "ALL OVER",
-    "WATER/FLOOD",
-    "MECHANICAL",
-    "MINOR DENT/SCRATCHES",
-    "NORMAL WEAR",
-    "UNDERCARRIAGE",
-    "STRIPPED",
-    "BURN",
-    "TOP/ROOF",
-    "HAIL",
-    "VANDALISM",
-    "BIOHAZARD/CHEMICAL",
-    "BURN - INTERIOR",
+    "FRONT END", "REAR END", "SIDE", "ROLLOVER", "ALL OVER",
+    "WATER/FLOOD", "MECHANICAL", "MINOR DENT/SCRATCHES", "NORMAL WEAR",
+    "UNDERCARRIAGE", "STRIPPED", "BURN", "TOP/ROOF", "HAIL",
+    "VANDALISM", "BIOHAZARD/CHEMICAL", "BURN - INTERIOR",
 ]
 
 USER_AGENT = (
@@ -93,7 +78,7 @@ def clean_price(text) -> int:
     text = str(text).replace("$", "").replace(",", "").strip()
     if not text:
         return 0
-    if any(x in text.lower() for x in ["no sale", "not sold", "n/a"]):
+    if any(x in text.lower() for x in ["no sale", "not sold", "n/a", "-"]):
         return 0
     m = re.search(r"(\d+(?:\.\d+)?)", text)
     return int(float(m.group(1))) if m else 0
@@ -153,7 +138,8 @@ def split_title_with_optional_year(title_line: str):
 
 def infer_type(title: str) -> str:
     t = str(title).upper()
-    if any(x in t for x in ["PICKUP", "F-150", "F150", "SILVERADO", "RAM ", "TUNDRA", "RANGER", "TACOMA", "FRONTIER"]):
+    if any(x in t for x in ["PICKUP", "F-150", "F150", "SILVERADO", "RAM ", "TUNDRA", "RANGER",
+                              "TACOMA", "FRONTIER"]):
         return "Truck"
     if any(x in t for x in ["SUV", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE", "SUBURBAN",
                               "RAV4", "CR-V", "CX-5", "XC90", "SORENTO", "SPORTAGE", "PILOT",
@@ -161,7 +147,8 @@ def infer_type(title: str) -> str:
         return "SUV"
     if any(x in t for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "86", "BRZ"]):
         return "Coupe"
-    if any(x in t for x in ["VAN", "TRANSIT", "ODYSSEY", "SIENNA", "PACIFICA", "CARAVAN", "ECONOLINE", "EXPRESS 35"]):
+    if any(x in t for x in ["VAN", "TRANSIT", "ODYSSEY", "SIENNA", "PACIFICA", "CARAVAN",
+                              "ECONOLINE", "EXPRESS 35"]):
         return "Van"
     return "Sedan"
 
@@ -254,6 +241,9 @@ def build_record(raw: dict, existing_keys: set, seen_keys: set, stats: dict):
     vin = str(raw.get("vin", "")).strip()
     lot = str(raw.get("lot", "")).strip()
 
+    # FIX 1: allow records with only lot OR only vin — original required BOTH to be non-empty
+    # but the condition `not vin and not lot` was correct; the real issue is upstream
+    # extraction. We keep this but add a fallback lot from URL always.
     if not vin and not lot:
         stats["incomplete"] += 1
         return None
@@ -305,7 +295,9 @@ def is_make_url(url: str) -> bool:
 
 def is_model_url(url: str) -> bool:
     segs = path_segments(url)
-    return len(segs) == 3 and segs[0] == "make" and re.match(r"^\d+-", segs[1]) and re.match(r"^\d+-", segs[2])
+    return (len(segs) == 3 and segs[0] == "make"
+            and re.match(r"^\d+-", segs[1])
+            and re.match(r"^\d+-", segs[2]))
 
 
 def is_detail_url(url: str) -> bool:
@@ -314,14 +306,18 @@ def is_detail_url(url: str) -> bool:
         return False
     if not re.match(r"^\d+-", segs[1]) or not re.match(r"^\d+-", segs[2]):
         return False
-    return re.match(r"^(19|20)\d{2}_", segs[3]) is not None
+    # FIX 2: original required segs[3] to start with a 4-digit year followed by "_".
+    # The site may use formats like "2012_HONDA_CIVIC_12345678" or "lot-12345678-2012".
+    # Accept any 4th segment that contains a 4-digit year anywhere in it.
+    return bool(re.search(r"(19|20)\d{2}", segs[3]))
 
 
 def detail_year_from_url(url: str):
     segs = path_segments(url)
-    if len(segs) != 4:
+    if len(segs) < 4:
         return ""
-    m = re.match(r"^((?:19|20)\d{2})_", segs[3])
+    # FIX 3: original anchored to start of segment with `^`; relax to search anywhere.
+    m = re.search(r"((?:19|20)\d{2})", segs[3])
     return m.group(1) if m else ""
 
 
@@ -386,29 +382,22 @@ async def extract_links(page, url: str):
         return []
 
 
+# ─────────────────────────────────────────────
+# FIX 4: Rewritten detail extractor — multi-strategy with structured HTML first
+# ─────────────────────────────────────────────
 async def extract_detail_data(page, url: str):
     ok = await goto_resilient(page, url)
     if not ok:
         return None
 
+    # Wait briefly for any JS rendering
+    await page.wait_for_timeout(500)
+
     try:
-        text = await page.locator("body").inner_text(timeout=8000)
+        body_text = await page.locator("body").inner_text(timeout=10000)
     except Exception as e:
         print(f"[WARN] body read failed for {url}: {e}")
         return None
-
-    title = ""
-    for sel in ["h1", "title"]:
-        try:
-            if sel == "title":
-                title = await page.title()
-            else:
-                if await page.locator(sel).count() > 0:
-                    title = (await page.locator(sel).first.inner_text()).strip()
-            if title:
-                break
-        except Exception:
-            pass
 
     raw = {
         "title": "",
@@ -428,75 +417,283 @@ async def extract_detail_data(page, url: str):
         "url": url,
     }
 
-    norm_title = normalize_whitespace(title)
-    if norm_title:
-        raw["title"] = norm_title
+    # ── Title ──────────────────────────────────────────────────────
+    for sel in ["h1", "h2", ".title", ".vehicle-title", ".car-title"]:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                t = (await loc.inner_text()).strip()
+                if t:
+                    raw["title"] = normalize_whitespace(t)
+                    break
+        except Exception:
+            pass
+    if not raw["title"]:
+        try:
+            raw["title"] = normalize_whitespace(await page.title())
+        except Exception:
+            pass
 
-    m = re.search(r"\b((?:19|20)\d{2})\b", norm_title or text)
-    if m:
-        raw["year"] = m.group(1)
-
-    yr, mk, mo = split_title_with_optional_year(norm_title)
+    # ── Year/Make/Model from title ─────────────────────────────────
+    yr, mk, mo = split_title_with_optional_year(raw["title"])
+    if yr:
+        raw["year"] = yr
     if mk:
         raw["make"] = mk
     if mo:
         raw["model"] = mo
-    if yr and not raw["year"]:
-        raw["year"] = yr
 
-    year_from_url = detail_year_from_url(url)
-    if year_from_url and not raw["year"]:
-        raw["year"] = year_from_url
+    # ── Year fallback: URL or body text ───────────────────────────
+    if not raw["year"]:
+        raw["year"] = detail_year_from_url(url)
+    if not raw["year"]:
+        m = re.search(r"\b((?:19|20)\d{2})\b", body_text)
+        if m:
+            raw["year"] = m.group(1)
 
-    m = re.search(r"\bVIN\b[:\s]+([A-HJ-NPR-Z0-9]{11,17})\b", text, re.IGNORECASE)
-    if m:
-        raw["vin"] = m.group(1)
+    # ── FIX 5: VIN — broaden pattern, try structured selectors first ──
+    # Try targeted selectors before raw text
+    for sel in ["[data-vin]", ".vin", "#vin", "td.vin", "[class*='vin']"]:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                t = (await loc.inner_text()).strip()
+                if re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", t.upper()):
+                    raw["vin"] = t.upper()
+                    break
+        except Exception:
+            pass
 
-    m = re.search(r"\bLot\b[:\s]+([A-Z0-9-]+)\b", text, re.IGNORECASE)
-    if m:
-        raw["lot"] = m.group(1)
-    else:
+    # Try table label → next cell pattern (common in auction detail pages)
+    if not raw["vin"]:
+        try:
+            # Look for a cell containing "VIN" and grab the adjacent cell
+            cells = await page.locator("td, th, dd, li, span, div").all()
+            for i, cell in enumerate(cells):
+                try:
+                    ct = (await cell.inner_text()).strip().upper()
+                    if ct in ("VIN", "VIN NUMBER", "VIN #") and i + 1 < len(cells):
+                        next_text = (await cells[i + 1].inner_text()).strip()
+                        if re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", next_text.upper()):
+                            raw["vin"] = next_text.upper()
+                            break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    # FIX 5b: Regex fallback — much broader than original (was too strict with \b boundary)
+    if not raw["vin"]:
+        m = re.search(
+            r"(?:VIN|Vin)[^\w]*([A-HJ-NPR-Z0-9]{11,17})",
+            body_text, re.IGNORECASE
+        )
+        if m:
+            raw["vin"] = m.group(1).upper()
+        else:
+            # Standalone 17-char VIN anywhere (no label required)
+            m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", body_text)
+            if m:
+                raw["vin"] = m.group(1).upper()
+
+    # ── FIX 6: Lot — broaden extraction, always fallback to URL ──────
+    if not raw["lot"]:
+        for sel in ["[data-lot]", ".lot", "#lot", "[class*='lot']"]:
+            try:
+                loc = page.locator(sel).first
+                if await loc.count() > 0:
+                    t = (await loc.inner_text()).strip()
+                    if re.fullmatch(r"[A-Z0-9\-]{4,}", t.upper()):
+                        raw["lot"] = t
+                        break
+            except Exception:
+                pass
+
+    if not raw["lot"]:
+        # Label → next cell
+        try:
+            cells = await page.locator("td, th, dd, li, span, div").all()
+            for i, cell in enumerate(cells):
+                try:
+                    ct = (await cell.inner_text()).strip().upper()
+                    if ct in ("LOT", "LOT #", "LOT NUMBER", "LOT NO") and i + 1 < len(cells):
+                        next_text = (await cells[i + 1].inner_text()).strip()
+                        if re.fullmatch(r"[A-Z0-9\-]{4,}", next_text.upper()):
+                            raw["lot"] = next_text
+                            break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    if not raw["lot"]:
+        m = re.search(r"\bLot\b[^\w]*([A-Z0-9\-]{4,})", body_text, re.IGNORECASE)
+        if m:
+            raw["lot"] = m.group(1)
+
+    # FIX 6b: Always try URL as lot fallback — original only did this for numeric lots
+    if not raw["lot"]:
         segs = path_segments(url)
         if len(segs) == 4:
-            parts = segs[3].split("_")
-            if len(parts) >= 3:
-                maybe_lot = parts[-2]
-                if re.fullmatch(r"\d{6,}", maybe_lot):
-                    raw["lot"] = maybe_lot
+            slug = segs[3]
+            # Try all underscore/dash segments for a lot-looking token
+            for token in re.split(r"[_\-]", slug):
+                if re.fullmatch(r"\d{5,}", token) or re.fullmatch(r"[A-Z0-9]{6,}", token.upper()):
+                    raw["lot"] = token
+                    break
 
-    m = re.search(r"\bOdometer\b[:\s]+([\d,.]+)", text, re.IGNORECASE)
-    if m:
-        raw["odometer"] = m.group(1)
+    # ── FIX 7: Price — comprehensive multi-strategy extraction ────────
+    #
+    # Strategy A: known CSS selectors
+    price_found = False
+    for sel in [
+        ".price", ".bid-price", ".sale-price", ".sold-price", ".final-price",
+        "[class*='price']", "[class*='bid']", "[class*='sold']",
+        ".amount", "[class*='amount']",
+    ]:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                t = (await loc.inner_text()).strip()
+                p = clean_price(t)
+                if p > 0:
+                    raw["price"] = str(p)
+                    price_found = True
+                    break
+        except Exception:
+            pass
 
+    # Strategy B: table/dl label → adjacent value
+    if not price_found:
+        try:
+            cells = await page.locator("td, th, dd, dt, li, span, div, p").all()
+            price_labels = {
+                "LAST BID", "SALE PRICE", "SOLD FOR", "FINAL BID", "WINNING BID",
+                "HAMMER PRICE", "SOLD PRICE", "BID PRICE", "PRICE", "SOLD",
+                "FINAL PRICE", "AMOUNT", "SELLING PRICE",
+            }
+            for i, cell in enumerate(cells):
+                try:
+                    ct = (await cell.inner_text()).strip().upper().rstrip(":")
+                    if ct in price_labels and i + 1 < len(cells):
+                        next_text = (await cells[i + 1].inner_text()).strip()
+                        p = clean_price(next_text)
+                        if p > 0:
+                            raw["price"] = str(p)
+                            price_found = True
+                            break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    # Strategy C: regex over full body text — much broader than original
+    if not price_found:
+        # Patterns ordered from most to least specific
+        price_patterns = [
+            # "Last Bid: $3,500" or "Last Bid $3,500"
+            r"\bLast\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Sold for $3,500" / "Sold: $3,500"
+            r"\bSold\s+(?:for|price|at)?\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Sale Price: $3,500"
+            r"\bSale\s+Price\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Winning Bid: $3,500"
+            r"\bWinning\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Hammer: $3,500"
+            r"\bHammer\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Final Bid: $3,500"
+            r"\bFinal\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "Bid: $3,500"
+            r"\bBid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
+            # "$3,500" as a standalone dollar figure (last resort)
+            r"\$([\d,]{3,}(?:\.\d+)?)",
+        ]
+        for pattern in price_patterns:
+            m = re.search(pattern, body_text, re.IGNORECASE)
+            if m:
+                p = clean_price(m.group(1))
+                if p > 0:
+                    raw["price"] = str(p)
+                    price_found = True
+                    break
+
+    # ── FIX 8: Odometer — add label → cell strategy ──────────────────
+    if not raw["odometer"]:
+        try:
+            cells = await page.locator("td, th, dd, dt, li, span, div").all()
+            odo_labels = {"ODOMETER", "MILEAGE", "MILES", "KM", "KILOMETERS"}
+            for i, cell in enumerate(cells):
+                try:
+                    ct = (await cell.inner_text()).strip().upper().rstrip(":")
+                    if ct in odo_labels and i + 1 < len(cells):
+                        next_text = (await cells[i + 1].inner_text()).strip()
+                        if re.search(r"\d", next_text):
+                            raw["odometer"] = next_text
+                            break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    if not raw["odometer"]:
+        m = re.search(r"\bOdometer\b[:\s]+([\d,.\s]+(?:mi|km|miles)?)", body_text, re.IGNORECASE)
+        if m:
+            raw["odometer"] = m.group(1).strip()
+
+    # ── Damage ───────────────────────────────────────────────────────
+    body_upper = body_text.upper()
     for dmg in DAMAGE_PATTERNS:
-        if dmg in text.upper():
+        if dmg in body_upper:
             raw["damage"] = dmg.title()
             break
 
-    m = re.search(r"\bLast Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)", text, re.IGNORECASE)
-    if m:
-        raw["price"] = m.group(1)
-    else:
-        m = re.search(r"\bSold Status\b.*?\b([\d,]+(?:\.\d+)?)\b", text, re.IGNORECASE | re.DOTALL)
-        if m:
-            raw["price"] = m.group(1)
-
-    if "Copart" in text:
+    # ── Source ───────────────────────────────────────────────────────
+    if "copart" in body_text.lower():
         raw["source"] = "Copart"
-    elif "IAAI" in text:
+    elif "iaai" in body_text.lower() or "insurance auto" in body_text.lower():
         raw["source"] = "IAAI"
 
-    m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", text)
-    if m:
-        raw["date"] = m.group(1)
+    # ── Date — also try structured selectors ─────────────────────────
+    for sel in [".date", ".auction-date", ".sale-date", "[class*='date']", "time"]:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                t = (await loc.inner_text()).strip()
+                dm = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", t)
+                if dm:
+                    raw["date"] = dm.group(1)
+                    break
+        except Exception:
+            pass
+    if not raw["date"]:
+        m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", body_text)
+        if m:
+            raw["date"] = m.group(1)
 
-    m = re.search(r"\bBuyer Location\b[:\s]+([^\n]+)", text, re.IGNORECASE)
-    if m:
-        raw["location"] = normalize_whitespace(m.group(1))
-    else:
-        m = re.search(r"\bLocation\b[:\s]+([^\n]+)", text, re.IGNORECASE)
+    # ── Location — label → cell strategy ─────────────────────────────
+    for sel in [".location", ".auction-location", "[class*='location']"]:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                t = (await loc.inner_text()).strip()
+                if t:
+                    raw["location"] = normalize_whitespace(t)
+                    break
+        except Exception:
+            pass
+    if not raw["location"]:
+        m = re.search(r"\bBuyer\s+Location\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
         if m:
             raw["location"] = normalize_whitespace(m.group(1))
+    if not raw["location"]:
+        m = re.search(r"\bLocation\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
+        if m:
+            raw["location"] = normalize_whitespace(m.group(1))
+
+    # ── Trim ─────────────────────────────────────────────────────────
+    m = re.search(r"\bTrim\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
+    if m:
+        raw["trim"] = normalize_whitespace(m.group(1))
 
     return raw
 
@@ -593,7 +790,9 @@ async def crawl_model_pages(browser, model_urls):
 
                     async with model_lock:
                         for link in links:
-                            if link.startswith(root_prefix) and not is_detail_url(link) and link not in seen_model_pages:
+                            if (link.startswith(root_prefix)
+                                    and not is_detail_url(link)
+                                    and link not in seen_model_pages):
                                 seen_model_pages.add(link)
                                 await q.put(link)
                                 new_model_pages += 1
