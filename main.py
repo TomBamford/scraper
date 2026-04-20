@@ -1,9 +1,12 @@
-from playwright.sync_api import sync_playwright
-import pandas as pd
-import re
+import asyncio
 import os
+import re
 import time
-import random
+from typing import Optional, Tuple
+
+import pandas as pd
+from playwright.async_api import async_playwright
+
 
 # ─────────────────────────────────────────────
 # CONFIG
@@ -12,14 +15,21 @@ BASE_URL = "https://autoconduct.com/auction-prices/"
 MASTER_CSV = "master.csv"
 WEBSITE_CSV = "cars.csv"
 
-TARGET_ROWS = 2000
 MIN_PRICE = 500
-MAX_PRICE = 10_000
 
-MAX_RUN_SECONDS = 20 * 60
-MAX_PAGES = 1000000
-MAX_EMPTY_PAGES = 100000
-MAX_RANDOM_PAGE = 100000   # pages sampled randomly from 1..MAX_RANDOM_PAGE
+# Parallel workers. 4-8 is usually a good range.
+WORKERS = 6
+
+# Fallback if pagination count cannot be detected.
+# 49,000 cars / ~24 per page ≈ ~2042 pages, so 2500 is a safe ceiling.
+MAX_PAGE_GUESS = 2500
+
+# If True, skip VIN|LOT pairs already present in master.csv
+RESUME_FROM_MASTER = True
+
+# Stop after this many consecutive completely empty pages
+# when pagination count cannot be determined reliably.
+MAX_CONSECUTIVE_EMPTY_PAGES = 8
 
 EXCLUDED_MAKES = {"LAND ROVER"}
 
@@ -58,15 +68,17 @@ DAMAGE_PATTERNS = [
     "BIOHAZARD/CHEMICAL",
 ]
 
-TITLE_BAD_WORDS = {
-    "VIN", "COPART", "IAAI", "AUTOCONDUCT"
-}
+TITLE_BAD_WORDS = {"VIN", "COPART", "IAAI", "AUTOCONDUCT"}
 
 
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-def clean_price(text):
+def normalize_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text)).strip()
+
+
+def clean_price(text) -> int:
     text = str(text).replace("$", "").replace(",", "").strip()
     if not text:
         return 0
@@ -76,13 +88,13 @@ def clean_price(text):
     return int(float(m.group(1))) if m else 0
 
 
-def clean_odometer(text):
+def clean_odometer(text: str) -> str:
     text = str(text).replace(",", "").replace('"', "").strip()
     m = re.search(r"(\d+)", text)
     return m.group(1) + " mi" if m else ""
 
 
-def normalize_make_model(make, model):
+def normalize_make_model(make: str, model: str) -> Tuple[str, str]:
     make = str(make).strip().upper()
     model = str(model).strip()
     if make == "BMW":
@@ -90,20 +102,20 @@ def normalize_make_model(make, model):
     return make.title(), model
 
 
-def split_title_with_optional_year(title_line):
+def split_title_with_optional_year(title_line: str) -> Tuple[str, str, str]:
     """
     Handles:
       '2021 KIA K5 LXS'
       'KIA K5 LXS'
     """
-    title_line = str(title_line).strip()
+    title_line = normalize_whitespace(title_line)
     if not title_line:
         return "", "", ""
 
     parts = title_line.split()
     year = ""
 
-    if parts and re.match(r"^\d{4}$", parts[0]):
+    if parts and re.fullmatch(r"\d{4}", parts[0]):
         year = parts[0]
         rest_parts = parts[1:]
     else:
@@ -131,7 +143,7 @@ def split_title_with_optional_year(title_line):
     return year, make, model
 
 
-def infer_type(title):
+def infer_type(title: str) -> str:
     t = str(title).upper()
     if any(x in t for x in ["PICKUP", "F-150", "F150", "SILVERADO", "RAM ", "TUNDRA", "RANGER", "TACOMA", "FRONTIER"]):
         return "Truck"
@@ -146,7 +158,7 @@ def infer_type(title):
     return "Sedan"
 
 
-def parse_location_state(raw):
+def parse_location_state(raw: str) -> Tuple[str, str]:
     raw = str(raw).strip()
     for sep in [", ", " - ", " – "]:
         if sep in raw:
@@ -159,12 +171,18 @@ def parse_location_state(raw):
     return raw, ""
 
 
-def is_excluded(make):
+def is_excluded(make: str) -> bool:
     return str(make).strip().upper() in EXCLUDED_MAKES
 
 
-def load_existing_keys(path=MASTER_CSV):
-    if not os.path.exists(path):
+def build_paged_url(page_num: int) -> str:
+    if page_num <= 1:
+        return BASE_URL
+    return f"{BASE_URL}?page={page_num}"
+
+
+def load_existing_keys(path=MASTER_CSV) -> set:
+    if not RESUME_FROM_MASTER or not os.path.exists(path):
         return set()
     try:
         df = pd.read_csv(path, dtype=str).fillna("")
@@ -180,63 +198,7 @@ def load_existing_keys(path=MASTER_CSV):
         return set()
 
 
-def build_paged_url(base_url, page_num):
-    if page_num <= 1:
-        return base_url
-    if "?" in base_url:
-        return f"{base_url}&page={page_num}"
-    return f"{base_url}?page={page_num}"
-
-
-def goto_fast(page, url, timeout=12000):
-    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-    page.wait_for_timeout(300)
-
-
-def normalize_whitespace(text):
-    return re.sub(r"\s+", " ", str(text)).strip()
-
-
-def first_nonempty_text(locator):
-    try:
-        count = min(locator.count(), 10)
-    except Exception:
-        return ""
-
-    for i in range(count):
-        try:
-            txt = locator.nth(i).inner_text().strip()
-            if txt:
-                return txt
-        except Exception:
-            pass
-    return ""
-
-
-def choose_page_sequence(max_random_page, max_pages):
-    population = list(range(1, max_random_page + 1))
-    sample_size = min(max_pages, len(population))
-    sequence = random.sample(population, k=sample_size)
-
-    # Bias a few lower-numbered pages into the run because they often contain fresher data
-    preferred_front = [1, 2, 3, 4, 5, 10, 15, 20]
-    final = []
-
-    for p in preferred_front:
-        if p <= max_random_page and p not in final:
-            final.append(p)
-
-    for p in sequence:
-        if p not in final:
-            final.append(p)
-
-    return final[:max_pages]
-
-
-# ─────────────────────────────────────────────
-# CARD PARSING
-# ─────────────────────────────────────────────
-def extract_card_title_from_lines(lines):
+def extract_card_title_from_lines(lines) -> str:
     for line in lines:
         s = normalize_whitespace(line)
         upper = s.upper()
@@ -255,18 +217,21 @@ def extract_card_title_from_lines(lines):
             continue
         if len(s.split()) < 2:
             continue
-
-        # Reject pure meta lines like "2021 105962 mil FRONT END"
         if re.search(r"\b(?:mil|mi|miles?)\b", s, re.IGNORECASE):
             continue
         if any(dmg in upper for dmg in DAMAGE_PATTERNS):
             continue
-
         return s
     return ""
 
 
-def parse_card_text(text):
+def parse_card_payload(payload: dict) -> Optional[dict]:
+    text = str(payload.get("text", "")).strip()
+    title_hint = normalize_whitespace(payload.get("title", ""))
+
+    if not text:
+        return None
+
     raw = {
         "vin": "",
         "year": "",
@@ -284,10 +249,9 @@ def parse_card_text(text):
         "title": "",
     }
 
-    text = str(text)
     lines = [normalize_whitespace(line) for line in text.splitlines() if normalize_whitespace(line)]
 
-    raw["title"] = extract_card_title_from_lines(lines)
+    raw["title"] = title_hint or extract_card_title_from_lines(lines)
 
     if raw["title"]:
         yr, mk, mo = split_title_with_optional_year(raw["title"])
@@ -305,6 +269,10 @@ def parse_card_text(text):
         m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", text)
         if m:
             raw["vin"] = m.group(1)
+
+    m = re.search(r"\b(?:LOT|LOT#|LOT #)\s*[:#]?\s*([A-Z0-9-]+)\b", text, re.IGNORECASE)
+    if m:
+        raw["lot"] = m.group(1)
 
     m = re.search(r"\b(19\d{2}|20\d{2})\b", text)
     if m:
@@ -345,96 +313,15 @@ def parse_card_text(text):
     elif "IAAI" in upper_text:
         raw["source"] = "IAAI"
 
-    return raw if raw["title"] or raw["vin"] or raw["price_raw"] else None
+    if raw["title"] or raw["vin"] or raw["price_raw"]:
+        return raw
+    return None
 
 
-def extract_rows_from_cards(page):
-    rows = []
-    try:
-        candidate_selectors = [
-            "article",
-            "[class*='card']",
-            "[class*='Card']",
-            "[class*='listing']",
-            "[class*='Listing']",
-            "[class*='vehicle']",
-            "[class*='Vehicle']",
-            "[class*='result']",
-            "[class*='Result']",
-        ]
-
-        cards = None
-        best_count = 0
-
-        for sel in candidate_selectors:
-            try:
-                loc = page.locator(sel)
-                count = loc.count()
-                if count > best_count:
-                    best_count = count
-                    cards = loc
-            except Exception:
-                pass
-
-        if not cards or best_count == 0:
-            return rows
-
-        count = min(cards.count(), 100)
-
-        for i in range(count):
-            try:
-                card = cards.nth(i)
-                card_text = card.inner_text().strip()
-                if not card_text:
-                    continue
-
-                upper = card_text.upper()
-                if "VIN" not in upper and "$" not in upper:
-                    continue
-
-                raw = parse_card_text(card_text)
-                if not raw:
-                    continue
-
-                title_text = first_nonempty_text(
-                    card.locator("h1, h2, h3, h4, [class*='title'], [class*='Title'], [class*='name'], [class*='Name']")
-                )
-                if title_text:
-                    better_title = normalize_whitespace(title_text)
-                    yr, mk, mo = split_title_with_optional_year(better_title)
-                    if mk and mo:
-                        raw["title"] = better_title
-                        if yr and not raw["year"]:
-                            raw["year"] = yr
-                        raw["make"] = mk
-                        raw["model"] = mo
-
-                rows.append(raw)
-            except Exception:
-                pass
-
-    except Exception as e:
-        print(f"[WARN] Card extract error: {e}")
-
-    return rows
-
-
-def extract_rows_from_page(page, url):
-    try:
-        goto_fast(page, url)
-        return extract_rows_from_cards(page)
-    except Exception as e:
-        print(f"[WARN] Error loading {url}: {e}")
-        return []
-
-
-# ─────────────────────────────────────────────
-# RECORD FILTERING
-# ─────────────────────────────────────────────
-def build_record(raw, existing_keys, seen, skip_counts):
+def build_record(raw: dict, existing_keys: set, seen: set, skip_counts: dict) -> Optional[dict]:
     price = clean_price(raw.get("price_raw", ""))
-    if price < MIN_PRICE or price > MAX_PRICE:
-        skip_counts["price_range"] += 1
+    if price < MIN_PRICE:
+        skip_counts["price_below_min"] += 1
         return None
 
     make = str(raw.get("make", "")).strip()
@@ -502,91 +389,157 @@ def build_record(raw, existing_keys, seen, skip_counts):
 
 
 # ─────────────────────────────────────────────
-# MAIN
+# PAGE EXTRACTION
 # ─────────────────────────────────────────────
-def main():
-    all_data = []
-    seen = set()
-    existing_keys = load_existing_keys(MASTER_CSV)
+async def goto_fast(page, url: str, timeout=15000):
+    await page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    await page.wait_for_timeout(200)
 
-    skip_counts = {
-        "price_range": 0,
-        "excluded_make": 0,
-        "duplicate": 0,
-        "existing": 0,
-        "incomplete": 0,
-        "kept": 0,
+
+async def get_total_pages(page) -> int:
+    await goto_fast(page, BASE_URL)
+    try:
+        max_page = await page.evaluate("""
+        () => {
+            const nums = [];
+            const anchors = Array.from(document.querySelectorAll("a, button, span"));
+            for (const el of anchors) {
+                const txt = (el.textContent || "").trim();
+                if (/^\\d+$/.test(txt)) nums.push(parseInt(txt, 10));
+            }
+            return nums.length ? Math.max(...nums) : null;
+        }
+        """)
+        if isinstance(max_page, int) and max_page > 0:
+            return max_page
+    except Exception:
+        pass
+    return MAX_PAGE_GUESS
+
+
+async def extract_cards_from_page(page, page_num: int) -> list:
+    url = build_paged_url(page_num)
+    await goto_fast(page, url)
+
+    payloads = await page.evaluate("""
+    () => {
+        const selectors = [
+            "article",
+            "[class*='card']",
+            "[class*='Card']",
+            "[class*='listing']",
+            "[class*='Listing']",
+            "[class*='vehicle']",
+            "[class*='Vehicle']",
+            "[class*='result']",
+            "[class*='Result']"
+        ];
+
+        let best = [];
+        for (const sel of selectors) {
+            const nodes = Array.from(document.querySelectorAll(sel));
+            if (nodes.length > best.length) best = nodes;
+        }
+
+        const results = [];
+        for (const node of best) {
+            const text = (node.innerText || "").trim();
+            if (!text) continue;
+
+            const upper = text.toUpperCase();
+            if (!upper.includes("VIN") && !text.includes("$")) continue;
+
+            let title = "";
+            const titleNode = node.querySelector("h1, h2, h3, h4, [class*='title'], [class*='Title'], [class*='name'], [class*='Name']");
+            if (titleNode) title = (titleNode.innerText || "").trim();
+
+            results.push({ text, title });
+        }
+
+        return results;
     }
+    """)
 
-    run_start = time.time()
+    rows = []
+    for payload in payloads:
+        raw = parse_card_payload(payload)
+        if raw:
+            rows.append(raw)
+    return rows
 
-    print(f"Existing records: {len(existing_keys)}")
-    print(f"Target new rows:  {TARGET_ROWS}")
-    print(f"Price filter:     ${MIN_PRICE} – ${MAX_PRICE}")
 
-    page_sequence = choose_page_sequence(MAX_RANDOM_PAGE, MAX_PAGES)
-    print(f"Page sequence: {page_sequence}")
+# ─────────────────────────────────────────────
+# WORKER
+# ─────────────────────────────────────────────
+async def worker(worker_id: int, browser, page_numbers: asyncio.Queue, all_data: list,
+                 seen: set, existing_keys: set, skip_counts: dict,
+                 data_lock: asyncio.Lock, progress: dict):
+    context = await browser.new_context(
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        viewport={"width": 1400, "height": 1000},
+    )
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-            viewport={"width": 1400, "height": 1000},
-        )
-        page = context.new_page()
+    await context.route(
+        "**/*",
+        lambda route: route.abort() if route.request.resource_type in {"image", "font", "media"} else route.continue_()
+    )
 
-        page.route(
-            "**/*",
-            lambda route, request: (
-                route.abort()
-                if request.resource_type in {"image", "font", "media"}
-                else route.continue_()
-            ),
-        )
+    page = await context.new_page()
 
-        empty_pages = 0
-
-        for page_num in page_sequence:
-            if len(all_data) >= TARGET_ROWS:
+    try:
+        while True:
+            page_num = await page_numbers.get()
+            if page_num is None:
+                page_numbers.task_done()
                 break
 
-            if (time.time() - run_start) > MAX_RUN_SECONDS:
-                print("Runtime limit reached, stopping early.")
-                break
+            try:
+                raw_rows = await extract_cards_from_page(page, page_num)
+                print(f"[W{worker_id}] Page {page_num}: found {len(raw_rows)} raw rows")
 
-            url = build_paged_url(BASE_URL, page_num)
-            print(f"\nPage {page_num}: {url}")
+                if not raw_rows:
+                    async with data_lock:
+                        progress["consecutive_empty"] += 1
+                    page_numbers.task_done()
+                    continue
 
-            raw_rows = extract_rows_from_page(page, url)
-            print(f"Found {len(raw_rows)} raw rows")
+                async with data_lock:
+                    progress["consecutive_empty"] = 0
 
-            if not raw_rows:
-                empty_pages += 1
-                if empty_pages >= MAX_EMPTY_PAGES:
-                    print("Too many empty pages, stopping.")
-                    break
-                continue
+                kept_here = 0
+                new_records = []
 
-            empty_pages = 0
+                async with data_lock:
+                    for raw in raw_rows:
+                        record = build_record(raw, existing_keys, seen, skip_counts)
+                        if record:
+                            new_records.append(record)
+                            kept_here += 1
 
-            for raw in raw_rows:
-                if len(all_data) >= TARGET_ROWS:
-                    break
+                    all_data.extend(new_records)
+                    progress["pages_done"] += 1
+                    progress["rows_kept"] = len(all_data)
 
-                record = build_record(raw, existing_keys, seen, skip_counts)
-                if record:
-                    all_data.append(record)
-                    print(
-                        f"  KEEP {len(all_data)}/{TARGET_ROWS}: "
-                        f"{record['year']} {record['make']} {record['model']} | ${record['price']}"
-                    )
+                print(f"[W{worker_id}] Page {page_num}: kept {kept_here}")
 
-        browser.close()
+            except Exception as e:
+                print(f"[W{worker_id}] Page {page_num}: ERROR {e}")
 
+            page_numbers.task_done()
+
+    finally:
+        await page.close()
+        await context.close()
+
+
+# ─────────────────────────────────────────────
+# CSV OUTPUT
+# ─────────────────────────────────────────────
+def write_csvs(all_data: list):
     internal_cols = [
         "vin", "year", "make", "model", "trim", "type", "damage",
         "price", "odometer", "lot", "date", "location", "state", "source"
@@ -611,17 +564,12 @@ def main():
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
-        if "price" not in master_df.columns:
-            master_df["price"] = 0
-        if "make" not in master_df.columns:
-            master_df["make"] = ""
-        if "vin" not in master_df.columns:
-            master_df["vin"] = ""
-        if "lot" not in master_df.columns:
-            master_df["lot"] = ""
+        for col in ["price", "make", "vin", "lot"]:
+            if col not in master_df.columns:
+                master_df[col] = ""
 
         master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0).astype(int)
-        master_df = master_df[master_df["price"].between(MIN_PRICE, MAX_PRICE)]
+        master_df = master_df[master_df["price"] >= MIN_PRICE]
         master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)]
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
 
@@ -634,13 +582,92 @@ def main():
     website_df = website_df[website_cols]
     website_df.to_csv(WEBSITE_CSV, index=False)
 
-    print(f"\n{'=' * 50}")
+    return len(master_df)
+
+
+# ─────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────
+async def main():
+    run_start = time.time()
+
+    all_data = []
+    seen = set()
+    existing_keys = load_existing_keys(MASTER_CSV)
+
+    skip_counts = {
+        "price_below_min": 0,
+        "excluded_make": 0,
+        "duplicate": 0,
+        "existing": 0,
+        "incomplete": 0,
+        "kept": 0,
+    }
+
+    progress = {
+        "pages_done": 0,
+        "rows_kept": 0,
+        "consecutive_empty": 0,
+    }
+
+    print(f"Existing records: {len(existing_keys)}")
+    print(f"Minimum price:    ${MIN_PRICE}")
+    print(f"Workers:          {WORKERS}")
+    print(f"Resume existing:  {RESUME_FROM_MASTER}")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+
+        page_for_count = await browser.new_page()
+        try:
+            total_pages = await get_total_pages(page_for_count)
+        finally:
+            await page_for_count.close()
+
+        if not isinstance(total_pages, int) or total_pages <= 0:
+            total_pages = MAX_PAGE_GUESS
+
+        print(f"Total pages target: {total_pages}")
+
+        q = asyncio.Queue()
+        for page_num in range(1, total_pages + 1):
+            await q.put(page_num)
+
+        for _ in range(WORKERS):
+            await q.put(None)
+
+        data_lock = asyncio.Lock()
+
+        tasks = [
+            asyncio.create_task(
+                worker(
+                    worker_id=i + 1,
+                    browser=browser,
+                    page_numbers=q,
+                    all_data=all_data,
+                    seen=seen,
+                    existing_keys=existing_keys,
+                    skip_counts=skip_counts,
+                    data_lock=data_lock,
+                    progress=progress,
+                )
+            )
+            for i in range(WORKERS)
+        ]
+
+        await q.join()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await browser.close()
+
+    total_master = write_csvs(all_data)
+
+    print("\n" + "=" * 50)
     print("DONE")
     print(f"New rows this run:      {len(all_data)}")
-    print(f"Total in {MASTER_CSV}: {len(master_df)}")
-    print(f"Skip stats: {skip_counts}")
-    print(f"Elapsed seconds:        {int(time.time() - run_start)}")
+    print(f"Total in {MASTER_CSV}: {total_master}")
+    print(f"Skip stats:            {skip_counts}")
+    print(f"Elapsed seconds:       {int(time.time() - run_start)}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
