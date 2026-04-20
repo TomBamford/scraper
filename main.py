@@ -1,19 +1,34 @@
+"""
+Salvage auction history scraper — Poctra.com
+============================================
+Poctra archives Copart & IAAI US sales since 2017.
+No login required. No API. Free public browse.
+
+URL patterns:
+  Make list:    https://poctra.com/makes
+  Model list:   https://poctra.com/{MAKE}-for-sale-1   (e.g. TOYT-for-sale-1)
+  Model page:   https://poctra.com/{MAKE}-{MODEL}-for-sale-{N}
+  Detail page:  https://poctra.com/car/{LOT_OR_ID}/{SLUG}
+
+Run:
+    pip install playwright pandas
+    playwright install chromium
+    python scraper_poctra.py
+"""
+
 import asyncio
 import os
 import re
 import time
 import random
-from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 from playwright.async_api import async_playwright
 
-
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-BASE_URL = "https://carsbidshistory.com/"
-MAKE_LIST_PAGES = 35
+BASE_URL = "https://poctra.com"
 
 YEAR_MIN = 2008
 YEAR_MAX = 2015
@@ -24,41 +39,21 @@ WEBSITE_CSV = "cars.csv"
 
 RESUME_FROM_MASTER = True
 
-MAKE_WORKERS = 2
-MODEL_WORKERS = 4
-DETAIL_WORKERS = 6
+# How many listing pages to crawl per make/model combo (each page ~20 cars)
+MAX_LISTING_PAGES = 50
 
-NAV_TIMEOUT_MS = 30000
+MODEL_WORKERS = 3
+DETAIL_WORKERS = 5
+
+NAV_TIMEOUT_MS = 30_000
 MAX_RETRIES = 3
-RETRY_BASE_DELAY_MS = 1200
+RETRY_DELAY_MS = 1_500
 
-TARGET_MAKES = set()
-TARGET_MODELS = set()
+# Leave empty to scrape all; populate to narrow scope
+TARGET_MAKES: set = set()   # e.g. {"TOYT", "HOND"}
+TARGET_MODELS: set = set()  # e.g. {"CAMRY", "CIVIC"}
 
-EXCLUDED_MAKES = {"LAND ROVER"}
-
-BMW_MODEL_MAP = {
-    "1ER": "1 Series", "2ER": "2 Series", "3ER": "3 Series",
-    "4ER": "4 Series", "5ER": "5 Series", "6ER": "6 Series",
-    "7ER": "7 Series", "8ER": "8 Series",
-    "X1": "X1", "X2": "X2", "X3": "X3", "X4": "X4",
-    "X5": "X5", "X6": "X6", "X7": "X7",
-    "Z3": "Z3", "Z4": "Z4",
-    "M2": "M2", "M3": "M3", "M4": "M4", "M5": "M5", "M6": "M6",
-    "I3": "i3", "I4": "i4", "I7": "i7", "IX": "iX",
-}
-
-MULTI_WORD_MAKES = {
-    "LAND ROVER", "ALFA ROMEO", "ASTON MARTIN",
-    "MERCEDES BENZ", "MERCEDES-BENZ", "ROLLS ROYCE", "GENERAL MOTORS",
-}
-
-DAMAGE_PATTERNS = [
-    "FRONT END", "REAR END", "SIDE", "ROLLOVER", "ALL OVER",
-    "WATER/FLOOD", "MECHANICAL", "MINOR DENT/SCRATCHES", "NORMAL WEAR",
-    "UNDERCARRIAGE", "STRIPPED", "BURN", "TOP/ROOF", "HAIL",
-    "VANDALISM", "BIOHAZARD/CHEMICAL", "BURN - INTERIOR",
-]
+EXCLUDED_MAKES = {"LAND ROVER", "LNDR"}
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -66,124 +61,74 @@ USER_AGENT = (
     "Chrome/124.0.0.0 Safari/537.36"
 )
 
+DAMAGE_PATTERNS = [
+    "FRONT END", "REAR END", "SIDE", "ROLLOVER", "ALL OVER",
+    "WATER/FLOOD", "FLOOD", "MECHANICAL", "MINOR DENT", "NORMAL WEAR",
+    "UNDERCARRIAGE", "STRIPPED", "BURN", "TOP/ROOF", "HAIL",
+    "VANDALISM", "BIOHAZARD", "FIRE",
+]
 
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-def normalize_whitespace(text: str) -> str:
+def nw(text: str) -> str:
+    """Normalize whitespace."""
     return re.sub(r"\s+", " ", str(text)).strip()
 
 
 def clean_price(text) -> int:
-    text = str(text).replace("$", "").replace(",", "").strip()
-    if not text:
+    s = str(text).replace("$", "").replace(",", "").strip()
+    if not s or any(x in s.lower() for x in ["no sale", "not sold", "n/a"]):
         return 0
-    if any(x in text.lower() for x in ["no sale", "not sold", "n/a", "-"]):
-        return 0
-    m = re.search(r"(\d+(?:\.\d+)?)", text)
+    m = re.search(r"(\d+(?:\.\d+)?)", s)
     return int(float(m.group(1))) if m else 0
 
 
 def clean_odometer(text: str) -> str:
-    text = str(text).replace(",", "").replace('"', "").strip()
-    m = re.search(r"(\d+(?:\.\d+)?)", text)
+    s = str(text).replace(",", "").strip()
+    m = re.search(r"([\d.]+)", s)
     if not m:
         return ""
-    return str(int(float(m.group(1)))) + " mi"
+    unit = "km" if "km" in s.lower() else "mi"
+    return f"{int(float(m.group(1)))} {unit}"
 
 
-def normalize_make_model(make: str, model: str):
-    make = str(make).strip().upper()
-    model = str(model).strip()
-    if make == "BMW":
-        model = BMW_MODEL_MAP.get(model.upper(), model)
-    return make.title(), model
+def year_in_range(y) -> bool:
+    try:
+        return YEAR_MIN <= int(str(y).strip()) <= YEAR_MAX
+    except Exception:
+        return False
 
 
-def split_title_with_optional_year(title_line: str):
-    title_line = normalize_whitespace(title_line)
-    if not title_line:
-        return "", "", ""
-
-    parts = title_line.split()
-    year = ""
-
-    if parts and re.fullmatch(r"\d{4}", parts[0]):
-        year = parts[0]
-        rest_parts = parts[1:]
-    else:
-        rest_parts = parts
-
-    if not rest_parts:
-        return year, "", ""
-
-    rest = " ".join(rest_parts).strip()
-    matched_make = None
-
-    for mk in sorted(MULTI_WORD_MAKES, key=len, reverse=True):
-        if rest.upper().startswith(mk + " ") or rest.upper() == mk:
-            matched_make = mk
-            break
-
-    if matched_make:
-        make = matched_make.title()
-        model = rest[len(matched_make):].strip()
-    else:
-        make = rest_parts[0].title() if len(rest_parts) > 0 else ""
-        model = " ".join(rest_parts[1:]) if len(rest_parts) > 1 else ""
-
-    make, model = normalize_make_model(make, model)
-    return year, make, model
-
-
-def infer_type(title: str) -> str:
-    t = str(title).upper()
-    if any(x in t for x in ["PICKUP", "F-150", "F150", "SILVERADO", "RAM ", "TUNDRA", "RANGER",
-                              "TACOMA", "FRONTIER"]):
+def infer_type(text: str) -> str:
+    t = text.upper()
+    if any(x in t for x in ["PICKUP", "F-150", "F150", "SILVERADO", "RAM 1", "TUNDRA",
+                              "RANGER", "TACOMA", "FRONTIER", "COLORADO", "CANYON"]):
         return "Truck"
-    if any(x in t for x in ["SUV", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE", "SUBURBAN",
-                              "RAV4", "CR-V", "CX-5", "XC90", "SORENTO", "SPORTAGE", "PILOT",
-                              "HIGHLANDER", "PATHFINDER", "TRAVERSE", "EXPEDITION", "SOUL"]):
+    if any(x in t for x in ["SUV", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE",
+                              "SUBURBAN", "RAV4", "CR-V", "CX-5", "XC90", "SORENTO",
+                              "SPORTAGE", "PILOT", "HIGHLANDER", "PATHFINDER", "TRAVERSE",
+                              "EXPEDITION", "4RUNNER", "SANTA FE", "TUCSON", "OUTLANDER"]):
         return "SUV"
-    if any(x in t for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "86", "BRZ"]):
+    if any(x in t for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "BRZ", "86"]):
         return "Coupe"
     if any(x in t for x in ["VAN", "TRANSIT", "ODYSSEY", "SIENNA", "PACIFICA", "CARAVAN",
-                              "ECONOLINE", "EXPRESS 35"]):
+                              "ECONOLINE", "EXPRESS", "SAVANA", "MINIVAN"]):
         return "Van"
     return "Sedan"
 
 
 def parse_location_state(raw: str):
     raw = str(raw).strip()
-    for sep in [", ", " - ", " – ", " / "]:
+    for sep in [", ", " - ", " – "]:
         if sep in raw:
             parts = raw.rsplit(sep, 1)
-            if len(parts[1]) == 2 and parts[1].isalpha():
+            if len(parts) == 2 and len(parts[1]) == 2 and parts[1].isalpha():
                 return parts[0].strip(), parts[1].strip().upper()
     m = re.match(r"^(.*?)\s+([A-Z]{2})$", raw)
     if m:
         return m.group(1).strip(), m.group(2).strip()
     return raw, ""
-
-
-def is_excluded(make: str) -> bool:
-    return str(make).strip().upper() in EXCLUDED_MAKES
-
-
-def year_in_range(year_text: str) -> bool:
-    try:
-        y = int(str(year_text).strip())
-        return YEAR_MIN <= y <= YEAR_MAX
-    except Exception:
-        return False
-
-
-def canonical_url(url: str) -> str:
-    return url.rstrip("/")
-
-
-def path_segments(url: str):
-    return [x for x in urlparse(url).path.strip("/").split("/") if x]
 
 
 def load_existing_keys(path=MASTER_CSV):
@@ -213,37 +158,21 @@ def build_record(raw: dict, existing_keys: set, seen_keys: set, stats: dict):
     make = str(raw.get("make", "")).strip()
     model = str(raw.get("model", "")).strip()
 
-    if raw.get("title") and (not year or not make or not model):
-        yr, mk, mo = split_title_with_optional_year(raw["title"])
-        if yr and not year:
-            year = yr
-        if mk and not make:
-            make = mk
-        if mo and not model:
-            model = mo
-
     if not year_in_range(year):
         stats["year_out_of_range"] += 1
         return None
 
-    if is_excluded(make):
+    if not make or not model:
+        stats["incomplete"] += 1
+        return None
+
+    if make.upper() in EXCLUDED_MAKES:
         stats["excluded_make"] += 1
         return None
 
-    if TARGET_MAKES and make.upper() not in TARGET_MAKES:
-        stats["filtered_make"] += 1
-        return None
-
-    if TARGET_MODELS and model.upper() not in TARGET_MODELS:
-        stats["filtered_model"] += 1
-        return None
-
-    vin = str(raw.get("vin", "")).strip()
+    vin = str(raw.get("vin", "")).strip().upper()
     lot = str(raw.get("lot", "")).strip()
 
-    # FIX 1: allow records with only lot OR only vin — original required BOTH to be non-empty
-    # but the condition `not vin and not lot` was correct; the real issue is upstream
-    # extraction. We keep this but add a fallback lot from URL always.
     if not vin and not lot:
         stats["incomplete"] += 1
         return None
@@ -275,7 +204,7 @@ def build_record(raw: dict, existing_keys: set, seen_keys: set, stats: dict):
         "date": str(raw.get("date", "")).strip(),
         "location": loc_raw,
         "state": state.upper(),
-        "source": str(raw.get("source", "")).strip(),
+        "source": str(raw.get("source", "Poctra/Copart-IAAI")).strip(),
         "url": str(raw.get("url", "")).strip(),
     }
 
@@ -286,585 +215,481 @@ def build_record(raw: dict, existing_keys: set, seen_keys: set, stats: dict):
 
 
 # ─────────────────────────────────────────────
-# URL CLASSIFIERS
-# ─────────────────────────────────────────────
-def is_make_url(url: str) -> bool:
-    segs = path_segments(url)
-    return len(segs) == 2 and segs[0] == "make" and re.match(r"^\d+-", segs[1]) is not None
-
-
-def is_model_url(url: str) -> bool:
-    segs = path_segments(url)
-    return (len(segs) == 3 and segs[0] == "make"
-            and re.match(r"^\d+-", segs[1])
-            and re.match(r"^\d+-", segs[2]))
-
-
-def is_detail_url(url: str) -> bool:
-    segs = path_segments(url)
-    if len(segs) != 4 or segs[0] != "make":
-        return False
-    if not re.match(r"^\d+-", segs[1]) or not re.match(r"^\d+-", segs[2]):
-        return False
-    # FIX 2: original required segs[3] to start with a 4-digit year followed by "_".
-    # The site may use formats like "2012_HONDA_CIVIC_12345678" or "lot-12345678-2012".
-    # Accept any 4th segment that contains a 4-digit year anywhere in it.
-    return bool(re.search(r"(19|20)\d{2}", segs[3]))
-
-
-def detail_year_from_url(url: str):
-    segs = path_segments(url)
-    if len(segs) < 4:
-        return ""
-    # FIX 3: original anchored to start of segment with `^`; relax to search anywhere.
-    m = re.search(r"((?:19|20)\d{2})", segs[3])
-    return m.group(1) if m else ""
-
-
-# ─────────────────────────────────────────────
-# BROWSER
+# BROWSER HELPERS
 # ─────────────────────────────────────────────
 async def new_context(browser):
-    context = await browser.new_context(
+    ctx = await browser.new_context(
         user_agent=USER_AGENT,
-        viewport={"width": 1400, "height": 1000},
+        viewport={"width": 1440, "height": 900},
+        extra_http_headers={
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
     )
-    await context.route(
+    # Block images/fonts/media to speed up
+    await ctx.route(
         "**/*",
         lambda route: route.abort()
-        if route.request.resource_type in {"image", "font", "media"}
+        if route.request.resource_type in {"image", "font", "media", "stylesheet"}
         else route.continue_()
     )
-    return context
+    return ctx
 
 
-async def goto_resilient(page, url: str, timeout=NAV_TIMEOUT_MS):
-    last_error = None
+async def goto_resilient(page, url: str, wait_until="domcontentloaded"):
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-            await page.wait_for_timeout(random.randint(250, 600))
+            await page.goto(url, wait_until=wait_until, timeout=NAV_TIMEOUT_MS)
+            await page.wait_for_timeout(random.randint(400, 900))
             return True
         except Exception as e:
-            last_error = e
-            try:
-                await page.goto(url, wait_until="load", timeout=timeout)
-                await page.wait_for_timeout(random.randint(300, 700))
-                return True
-            except Exception as e2:
-                last_error = e2
-                delay = RETRY_BASE_DELAY_MS * attempt + random.randint(100, 500)
-                print(f"[WARN] goto retry {attempt}/{MAX_RETRIES} for {url}")
-                await page.wait_for_timeout(delay)
-
-    print(f"[ERROR] giving up on {url}: {last_error}")
+            if attempt == MAX_RETRIES:
+                print(f"[ERROR] gave up on {url}: {e}")
+                return False
+            delay = RETRY_DELAY_MS * attempt + random.randint(200, 600)
+            print(f"[WARN] retry {attempt}/{MAX_RETRIES} for {url}")
+            await page.wait_for_timeout(delay)
     return False
 
 
-async def extract_links(page, url: str):
-    ok = await goto_resilient(page, url)
-    if not ok:
-        return []
-
+async def safe_text(loc) -> str:
     try:
-        hrefs = await page.evaluate("""
-        () => Array.from(document.querySelectorAll("a[href]"))
-          .map(a => a.href)
-          .filter(Boolean)
-        """)
-        out = []
-        for h in hrefs:
-            if h.startswith("https://carsbidshistory.com/"):
-                out.append(canonical_url(h))
-        return list(dict.fromkeys(out))
-    except Exception as e:
-        print(f"[WARN] extract_links failed for {url}: {e}")
-        return []
+        return nw(await loc.inner_text(timeout=4000))
+    except Exception:
+        return ""
 
 
 # ─────────────────────────────────────────────
-# FIX 4: Rewritten detail extractor — multi-strategy with structured HTML first
+# STEP 1: Discover make codes from /makes page
 # ─────────────────────────────────────────────
-async def extract_detail_data(page, url: str):
-    ok = await goto_resilient(page, url)
-    if not ok:
-        return None
-
-    # Wait briefly for any JS rendering
-    await page.wait_for_timeout(500)
-
+async def discover_makes(browser) -> list[dict]:
+    """
+    Returns list of dicts: {"code": "TOYT", "name": "Toyota", "url": "..."}
+    Poctra's /makes page has links like /TOYT-for-sale-1
+    """
+    ctx = await new_context(browser)
+    page = await ctx.new_page()
+    makes = []
     try:
-        body_text = await page.locator("body").inner_text(timeout=10000)
-    except Exception as e:
-        print(f"[WARN] body read failed for {url}: {e}")
-        return None
-
-    raw = {
-        "title": "",
-        "year": "",
-        "make": "",
-        "model": "",
-        "trim": "",
-        "damage": "",
-        "price": "",
-        "odometer": "",
-        "lot": "",
-        "date": "",
-        "location": "",
-        "state": "",
-        "source": "",
-        "vin": "",
-        "url": url,
-    }
-
-    # ── Title ──────────────────────────────────────────────────────
-    for sel in ["h1", "h2", ".title", ".vehicle-title", ".car-title"]:
-        try:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                t = (await loc.inner_text()).strip()
-                if t:
-                    raw["title"] = normalize_whitespace(t)
-                    break
-        except Exception:
-            pass
-    if not raw["title"]:
-        try:
-            raw["title"] = normalize_whitespace(await page.title())
-        except Exception:
-            pass
-
-    # ── Year/Make/Model from title ─────────────────────────────────
-    yr, mk, mo = split_title_with_optional_year(raw["title"])
-    if yr:
-        raw["year"] = yr
-    if mk:
-        raw["make"] = mk
-    if mo:
-        raw["model"] = mo
-
-    # ── Year fallback: URL or body text ───────────────────────────
-    if not raw["year"]:
-        raw["year"] = detail_year_from_url(url)
-    if not raw["year"]:
-        m = re.search(r"\b((?:19|20)\d{2})\b", body_text)
-        if m:
-            raw["year"] = m.group(1)
-
-    # ── FIX 5: VIN — broaden pattern, try structured selectors first ──
-    # Try targeted selectors before raw text
-    for sel in ["[data-vin]", ".vin", "#vin", "td.vin", "[class*='vin']"]:
-        try:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                t = (await loc.inner_text()).strip()
-                if re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", t.upper()):
-                    raw["vin"] = t.upper()
-                    break
-        except Exception:
-            pass
-
-    # Try table label → next cell pattern (common in auction detail pages)
-    if not raw["vin"]:
-        try:
-            # Look for a cell containing "VIN" and grab the adjacent cell
-            cells = await page.locator("td, th, dd, li, span, div").all()
-            for i, cell in enumerate(cells):
-                try:
-                    ct = (await cell.inner_text()).strip().upper()
-                    if ct in ("VIN", "VIN NUMBER", "VIN #") and i + 1 < len(cells):
-                        next_text = (await cells[i + 1].inner_text()).strip()
-                        if re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", next_text.upper()):
-                            raw["vin"] = next_text.upper()
-                            break
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-    # FIX 5b: Regex fallback — much broader than original (was too strict with \b boundary)
-    if not raw["vin"]:
-        m = re.search(
-            r"(?:VIN|Vin)[^\w]*([A-HJ-NPR-Z0-9]{11,17})",
-            body_text, re.IGNORECASE
-        )
-        if m:
-            raw["vin"] = m.group(1).upper()
-        else:
-            # Standalone 17-char VIN anywhere (no label required)
-            m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", body_text)
-            if m:
-                raw["vin"] = m.group(1).upper()
-
-    # ── FIX 6: Lot — broaden extraction, always fallback to URL ──────
-    if not raw["lot"]:
-        for sel in ["[data-lot]", ".lot", "#lot", "[class*='lot']"]:
+        ok = await goto_resilient(page, f"{BASE_URL}/makes")
+        if not ok:
+            return []
+        # Each make is an <a> with href like /TOYT-for-sale-1
+        links = await page.locator("a[href]").all()
+        for link in links:
             try:
-                loc = page.locator(sel).first
-                if await loc.count() > 0:
-                    t = (await loc.inner_text()).strip()
-                    if re.fullmatch(r"[A-Z0-9\-]{4,}", t.upper()):
-                        raw["lot"] = t
-                        break
+                href = await link.get_attribute("href") or ""
+                m = re.match(r"^/([A-Z0-9]{2,6})-for-sale-\d+$", href)
+                if m:
+                    code = m.group(1)
+                    name = nw(await link.inner_text())
+                    makes.append({
+                        "code": code,
+                        "name": name or code,
+                        "url": BASE_URL + href,
+                    })
+            except Exception:
+                pass
+        # Deduplicate by code
+        seen = set()
+        unique = []
+        for mk in makes:
+            if mk["code"] not in seen:
+                seen.add(mk["code"])
+                unique.append(mk)
+        print(f"[makes] Found {len(unique)} make codes")
+        return unique
+    finally:
+        await page.close()
+        await ctx.close()
+
+
+# ─────────────────────────────────────────────
+# STEP 2: Discover model URLs for each make
+# ─────────────────────────────────────────────
+async def discover_models_for_make(page, make: dict) -> list[str]:
+    """
+    From the make's first listing page, find model sub-pages.
+    Poctra sidebar/nav has links like /TOYT-CAMRY-for-sale-1
+    """
+    ok = await goto_resilient(page, f"{BASE_URL}/{make['code']}-for-sale-1")
+    if not ok:
+        return []
+
+    model_urls = set()
+    links = await page.locator("a[href]").all()
+    for link in links:
+        try:
+            href = await link.get_attribute("href") or ""
+            # Model page pattern: /MAKE-MODEL-for-sale-N (make code is known)
+            pattern = rf"^/({re.escape(make['code'])}-[A-Z0-9_\-]+-for-sale)-\d+$"
+            m = re.match(pattern, href, re.IGNORECASE)
+            if m:
+                base = m.group(1)
+                model_urls.add(f"{BASE_URL}/{base}-1")
+        except Exception:
+            pass
+
+    # Also include the make-level URL itself as a fallback
+    model_urls.add(f"{BASE_URL}/{make['code']}-for-sale-1")
+    return sorted(model_urls)
+
+
+# ─────────────────────────────────────────────
+# STEP 3: Collect detail page URLs from listing pages
+# ─────────────────────────────────────────────
+async def collect_detail_urls_from_listing(page, listing_base_url: str) -> list[str]:
+    """
+    Paginate through listing pages and collect detail URLs.
+    Detail URL pattern: /car/{id}/{slug}
+    """
+    detail_urls = []
+    seen = set()
+    found_out_of_range = 0  # if we see many out-of-range years, stop early
+
+    for page_num in range(1, MAX_LISTING_PAGES + 1):
+        url = re.sub(r"-for-sale-\d+$", f"-for-sale-{page_num}", listing_base_url)
+        ok = await goto_resilient(page, url)
+        if not ok:
+            break
+
+        # Check if page actually has content (Poctra returns 200 for empty pages)
+        body = await safe_text(page.locator("body"))
+        if "no vehicles" in body.lower() or "no results" in body.lower():
+            break
+
+        links = await page.locator("a[href]").all()
+        page_details = []
+        page_years = []
+
+        for link in links:
+            try:
+                href = await link.get_attribute("href") or ""
+                # Detail: /car/12345678/2012-toyota-camry or similar
+                if re.match(r"^/car/[^/]+/", href):
+                    full = BASE_URL + href if href.startswith("/") else href
+                    if full not in seen:
+                        seen.add(full)
+                        # Extract year from URL slug
+                        yr_m = re.search(r"/((?:19|20)\d{2})-", href)
+                        if yr_m:
+                            yr = int(yr_m.group(1))
+                            page_years.append(yr)
+                            if year_in_range(yr):
+                                page_details.append(full)
+                        else:
+                            # No year in URL — keep it, will filter at detail stage
+                            page_details.append(full)
             except Exception:
                 pass
 
-    if not raw["lot"]:
-        # Label → next cell
+        detail_urls.extend(page_details)
+
+        # Early stop: if we've gone past our year range
+        if page_years:
+            min_yr = min(page_years)
+            if min_yr > YEAR_MAX:
+                # Poctra lists newest first — once all on page are too new keep going
+                pass
+            if min_yr < YEAR_MIN and max(page_years) < YEAR_MIN:
+                print(f"  [listing] all years < {YEAR_MIN} on page {page_num}, stopping")
+                break
+
+        if not page_details:
+            break
+
+        print(f"  [listing] {url} -> {len(page_details)} detail URLs (total {len(detail_urls)})")
+
+    return detail_urls
+
+
+# ─────────────────────────────────────────────
+# STEP 4: Scrape a single detail page
+# ─────────────────────────────────────────────
+async def scrape_detail(page, url: str) -> dict | None:
+    ok = await goto_resilient(page, url)
+    if not ok:
+        return None
+
+    # Wait for main content
+    try:
+        await page.wait_for_selector("h1, .car-title, .vehicle-title, table", timeout=8000)
+    except Exception:
+        pass
+
+    body = await safe_text(page.locator("body"))
+    if not body:
+        return None
+
+    raw = {
+        "url": url, "title": "", "year": "", "make": "", "model": "",
+        "trim": "", "damage": "", "price": "", "odometer": "", "lot": "",
+        "date": "", "location": "", "state": "", "source": "", "vin": "",
+    }
+
+    # ── Title ──────────────────────────────────────────────────────
+    for sel in ["h1", ".car-title", ".vehicle-title", "title"]:
         try:
-            cells = await page.locator("td, th, dd, li, span, div").all()
-            for i, cell in enumerate(cells):
-                try:
-                    ct = (await cell.inner_text()).strip().upper()
-                    if ct in ("LOT", "LOT #", "LOT NUMBER", "LOT NO") and i + 1 < len(cells):
-                        next_text = (await cells[i + 1].inner_text()).strip()
-                        if re.fullmatch(r"[A-Z0-9\-]{4,}", next_text.upper()):
-                            raw["lot"] = next_text
-                            break
-                except Exception:
+            if sel == "title":
+                t = await page.title()
+            else:
+                loc = page.locator(sel).first
+                if await loc.count() > 0:
+                    t = await safe_text(loc)
+                else:
                     continue
+            if t:
+                raw["title"] = nw(t)
+                break
         except Exception:
             pass
 
+    # ── Year from URL (most reliable on Poctra) ────────────────────
+    yr_url = re.search(r"/((?:19|20)\d{2})-", url)
+    if yr_url:
+        raw["year"] = yr_url.group(1)
+
+    # ── Year/Make/Model from title ─────────────────────────────────
+    title = raw["title"]
+    title_m = re.match(r"(\d{4})\s+(\w[\w\s-]*)", title)
+    if title_m:
+        if not raw["year"]:
+            raw["year"] = title_m.group(1)
+        rest = title_m.group(2).strip()
+        parts = rest.split()
+        if parts:
+            raw["make"] = parts[0]
+        if len(parts) > 1:
+            raw["model"] = " ".join(parts[1:3])  # model is usually 1-2 words
+
+    # ── Structured field extraction via Poctra's label:value pattern ─
+    # Poctra detail pages use a definition table with rows like:
+    #   <td class="label">VIN</td><td class="value">1HGCM82633A123456</td>
+    # OR a two-column <table> with alternating label/value cells.
+    field_map = {
+        # label text (upper) -> raw dict key
+        "VIN": "vin",
+        "VIN NUMBER": "vin",
+        "LOT": "lot",
+        "LOT #": "lot",
+        "LOT NUMBER": "lot",
+        "STOCK #": "lot",
+        "ODOMETER": "odometer",
+        "MILEAGE": "odometer",
+        "MILES": "odometer",
+        "PRIMARY DAMAGE": "damage",
+        "DAMAGE": "damage",
+        "SECONDARY DAMAGE": "trim",   # repurpose trim field if needed
+        "SALE DATE": "date",
+        "AUCTION DATE": "date",
+        "DATE": "date",
+        "LOCATION": "location",
+        "YARD": "location",
+        "AUCTION": "source",
+        "SOURCE": "source",
+        "TRIM": "trim",
+        "SERIES": "trim",
+        "MAKE": "make",
+        "MODEL": "model",
+        "YEAR": "year",
+        "LAST BID": "price",
+        "FINAL BID": "price",
+        "SOLD FOR": "price",
+        "SALE PRICE": "price",
+        "BID": "price",
+        "WINNING BID": "price",
+        "HAMMER PRICE": "price",
+        "PRICE": "price",
+    }
+
+    # Try to read all table rows
+    try:
+        rows = await page.locator("tr").all()
+        for row in rows:
+            cells = await row.locator("td, th").all()
+            if len(cells) >= 2:
+                label = nw(await safe_text(cells[0])).upper().rstrip(":")
+                value = nw(await safe_text(cells[1]))
+                if label in field_map and value:
+                    key = field_map[label]
+                    if not raw.get(key):
+                        raw[key] = value
+    except Exception:
+        pass
+
+    # Try dl/dt/dd pattern
+    try:
+        dts = await page.locator("dt").all()
+        dds = await page.locator("dd").all()
+        for dt, dd in zip(dts, dds):
+            label = nw(await safe_text(dt)).upper().rstrip(":")
+            value = nw(await safe_text(dd))
+            if label in field_map and value:
+                key = field_map[label]
+                if not raw.get(key):
+                    raw[key] = value
+    except Exception:
+        pass
+
+    # Try div/span label:value pairs (common in card-style layouts)
+    try:
+        items = await page.locator(
+            ".detail-item, .info-item, .spec-item, .car-spec, .vehicle-spec, [class*='detail']"
+        ).all()
+        for item in items:
+            txt = nw(await safe_text(item))
+            if ":" in txt:
+                parts = txt.split(":", 1)
+                label = parts[0].strip().upper()
+                value = parts[1].strip()
+                if label in field_map and value:
+                    key = field_map[label]
+                    if not raw.get(key):
+                        raw[key] = value
+    except Exception:
+        pass
+
+    # ── Regex fallbacks on full body text ─────────────────────────
+
+    if not raw["vin"]:
+        m = re.search(r"(?:VIN)[^\w]*([A-HJ-NPR-Z0-9]{17})\b", body, re.IGNORECASE)
+        if m:
+            raw["vin"] = m.group(1).upper()
+        else:
+            m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", body)
+            if m:
+                raw["vin"] = m.group(1).upper()
+
     if not raw["lot"]:
-        m = re.search(r"\bLot\b[^\w]*([A-Z0-9\-]{4,})", body_text, re.IGNORECASE)
+        m = re.search(r"(?:Lot|LOT|Stock)[^\w#]*[#]?\s*([A-Z0-9\-]{5,})", body, re.IGNORECASE)
         if m:
             raw["lot"] = m.group(1)
 
-    # FIX 6b: Always try URL as lot fallback — original only did this for numeric lots
     if not raw["lot"]:
-        segs = path_segments(url)
-        if len(segs) == 4:
-            slug = segs[3]
-            # Try all underscore/dash segments for a lot-looking token
-            for token in re.split(r"[_\-]", slug):
-                if re.fullmatch(r"\d{5,}", token) or re.fullmatch(r"[A-Z0-9]{6,}", token.upper()):
-                    raw["lot"] = token
-                    break
+        # Extract from URL: /car/12345678/slug → lot = 12345678
+        m = re.search(r"/car/([^/]+)/", url)
+        if m:
+            raw["lot"] = m.group(1)
 
-    # ── FIX 7: Price — comprehensive multi-strategy extraction ────────
-    #
-    # Strategy A: known CSS selectors
-    price_found = False
-    for sel in [
-        ".price", ".bid-price", ".sale-price", ".sold-price", ".final-price",
-        "[class*='price']", "[class*='bid']", "[class*='sold']",
-        ".amount", "[class*='amount']",
-    ]:
-        try:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                t = (await loc.inner_text()).strip()
-                p = clean_price(t)
-                if p > 0:
-                    raw["price"] = str(p)
-                    price_found = True
-                    break
-        except Exception:
-            pass
-
-    # Strategy B: table/dl label → adjacent value
-    if not price_found:
-        try:
-            cells = await page.locator("td, th, dd, dt, li, span, div, p").all()
-            price_labels = {
-                "LAST BID", "SALE PRICE", "SOLD FOR", "FINAL BID", "WINNING BID",
-                "HAMMER PRICE", "SOLD PRICE", "BID PRICE", "PRICE", "SOLD",
-                "FINAL PRICE", "AMOUNT", "SELLING PRICE",
-            }
-            for i, cell in enumerate(cells):
-                try:
-                    ct = (await cell.inner_text()).strip().upper().rstrip(":")
-                    if ct in price_labels and i + 1 < len(cells):
-                        next_text = (await cells[i + 1].inner_text()).strip()
-                        p = clean_price(next_text)
-                        if p > 0:
-                            raw["price"] = str(p)
-                            price_found = True
-                            break
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-    # Strategy C: regex over full body text — much broader than original
-    if not price_found:
-        # Patterns ordered from most to least specific
-        price_patterns = [
-            # "Last Bid: $3,500" or "Last Bid $3,500"
-            r"\bLast\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Sold for $3,500" / "Sold: $3,500"
-            r"\bSold\s+(?:for|price|at)?\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Sale Price: $3,500"
-            r"\bSale\s+Price\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Winning Bid: $3,500"
-            r"\bWinning\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Hammer: $3,500"
-            r"\bHammer\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Final Bid: $3,500"
-            r"\bFinal\s+Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "Bid: $3,500"
-            r"\bBid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)",
-            # "$3,500" as a standalone dollar figure (last resort)
-            r"\$([\d,]{3,}(?:\.\d+)?)",
-        ]
-        for pattern in price_patterns:
-            m = re.search(pattern, body_text, re.IGNORECASE)
+    if not raw["price"]:
+        for pattern in [
+            r"\bLast\s+Bid\b[^\d$]*\$?\s*([\d,]+)",
+            r"\bFinal\s+Bid\b[^\d$]*\$?\s*([\d,]+)",
+            r"\bSold\s+(?:for|price)?\b[^\d$]*\$?\s*([\d,]+)",
+            r"\bSale\s+Price\b[^\d$]*\$?\s*([\d,]+)",
+            r"\bWinning\s+Bid\b[^\d$]*\$?\s*([\d,]+)",
+            r"\bHammer\b[^\d$]*\$?\s*([\d,]+)",
+            r"\$([\d,]{3,})\b",
+        ]:
+            m = re.search(pattern, body, re.IGNORECASE)
             if m:
                 p = clean_price(m.group(1))
                 if p > 0:
                     raw["price"] = str(p)
-                    price_found = True
                     break
 
-    # ── FIX 8: Odometer — add label → cell strategy ──────────────────
     if not raw["odometer"]:
-        try:
-            cells = await page.locator("td, th, dd, dt, li, span, div").all()
-            odo_labels = {"ODOMETER", "MILEAGE", "MILES", "KM", "KILOMETERS"}
-            for i, cell in enumerate(cells):
-                try:
-                    ct = (await cell.inner_text()).strip().upper().rstrip(":")
-                    if ct in odo_labels and i + 1 < len(cells):
-                        next_text = (await cells[i + 1].inner_text()).strip()
-                        if re.search(r"\d", next_text):
-                            raw["odometer"] = next_text
-                            break
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-    if not raw["odometer"]:
-        m = re.search(r"\bOdometer\b[:\s]+([\d,.\s]+(?:mi|km|miles)?)", body_text, re.IGNORECASE)
+        m = re.search(r"(\d[\d,]*)\s*(?:miles?|mi|km)", body, re.IGNORECASE)
         if m:
-            raw["odometer"] = m.group(1).strip()
+            raw["odometer"] = m.group(0).strip()
 
-    # ── Damage ───────────────────────────────────────────────────────
-    body_upper = body_text.upper()
-    for dmg in DAMAGE_PATTERNS:
-        if dmg in body_upper:
-            raw["damage"] = dmg.title()
-            break
+    if not raw["damage"]:
+        body_up = body.upper()
+        for dmg in DAMAGE_PATTERNS:
+            if dmg in body_up:
+                raw["damage"] = dmg.title()
+                break
 
-    # ── Source ───────────────────────────────────────────────────────
-    if "copart" in body_text.lower():
-        raw["source"] = "Copart"
-    elif "iaai" in body_text.lower() or "insurance auto" in body_text.lower():
-        raw["source"] = "IAAI"
-
-    # ── Date — also try structured selectors ─────────────────────────
-    for sel in [".date", ".auction-date", ".sale-date", "[class*='date']", "time"]:
-        try:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                t = (await loc.inner_text()).strip()
-                dm = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", t)
-                if dm:
-                    raw["date"] = dm.group(1)
-                    break
-        except Exception:
-            pass
     if not raw["date"]:
-        m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", body_text)
+        m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", body)
         if m:
             raw["date"] = m.group(1)
+        else:
+            m = re.search(r"\b(\d{1,2}/\d{1,2}/\d{4})\b", body)
+            if m:
+                raw["date"] = m.group(1)
 
-    # ── Location — label → cell strategy ─────────────────────────────
-    for sel in [".location", ".auction-location", "[class*='location']"]:
-        try:
-            loc = page.locator(sel).first
-            if await loc.count() > 0:
-                t = (await loc.inner_text()).strip()
-                if t:
-                    raw["location"] = normalize_whitespace(t)
-                    break
-        except Exception:
-            pass
-    if not raw["location"]:
-        m = re.search(r"\bBuyer\s+Location\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
-        if m:
-            raw["location"] = normalize_whitespace(m.group(1))
-    if not raw["location"]:
-        m = re.search(r"\bLocation\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
-        if m:
-            raw["location"] = normalize_whitespace(m.group(1))
+    if not raw["source"]:
+        b_lower = body.lower()
+        if "copart" in b_lower:
+            raw["source"] = "Copart"
+        elif "iaai" in b_lower or "insurance auto" in b_lower:
+            raw["source"] = "IAAI"
 
-    # ── Trim ─────────────────────────────────────────────────────────
-    m = re.search(r"\bTrim\b[:\s]+([^\n]+)", body_text, re.IGNORECASE)
-    if m:
-        raw["trim"] = normalize_whitespace(m.group(1))
+    if not raw["year"]:
+        m = re.search(r"\b((?:19|20)\d{2})\b", body)
+        if m:
+            raw["year"] = m.group(1)
 
     return raw
 
 
 # ─────────────────────────────────────────────
-# DISCOVERY
+# WORKERS
 # ─────────────────────────────────────────────
-async def seed_make_urls(browser):
-    make_urls = set()
-    context = await new_context(browser)
-    page = await context.new_page()
-    try:
-        for p in range(1, MAKE_LIST_PAGES + 1):
-            url = urljoin(BASE_URL, f"make/page-{p}")
-            links = await extract_links(page, url)
-            page_add = 0
-            for link in links:
-                if is_make_url(link) and link not in make_urls:
-                    make_urls.add(link)
-                    page_add += 1
-            print(f"[seed] make page {p}: +{page_add}, total {len(make_urls)}")
-    finally:
-        await page.close()
-        await context.close()
-    return sorted(make_urls)
-
-
-async def make_worker(worker_id, browser, in_q, model_urls, model_urls_lock):
-    context = await new_context(browser)
-    page = await context.new_page()
+async def model_worker(worker_id, browser, in_q, detail_q, detail_seen, detail_lock):
+    """Reads model listing URLs, paginates them, feeds detail URLs to detail_q."""
+    ctx = await new_context(browser)
+    page = await ctx.new_page()
     try:
         while True:
-            url = await in_q.get()
-            if url is None:
+            item = await in_q.get()
+            if item is None:
                 in_q.task_done()
                 break
-
+            listing_url = item
             try:
-                links = await extract_links(page, url)
-                discovered = 0
-                async with model_urls_lock:
-                    for link in links:
-                        if is_model_url(link) and link not in model_urls:
-                            model_urls.add(link)
-                            discovered += 1
-                print(f"[make W{worker_id}] {url} -> +{discovered} models")
+                urls = await collect_detail_urls_from_listing(page, listing_url)
+                added = 0
+                async with detail_lock:
+                    for u in urls:
+                        if u not in detail_seen:
+                            detail_seen.add(u)
+                            await detail_q.put(u)
+                            added += 1
+                print(f"[model W{worker_id}] {listing_url} → +{added} detail URLs")
             except Exception as e:
-                print(f"[make W{worker_id}] error {url}: {e}")
+                print(f"[model W{worker_id}] error for {listing_url}: {e}")
             finally:
                 in_q.task_done()
     finally:
         await page.close()
-        await context.close()
+        await ctx.close()
 
 
-async def crawl_model_pages(browser, model_urls):
-    detail_urls = set()
-    seen_model_pages = set()
-    q = asyncio.Queue()
-
-    for u in model_urls:
-        u = canonical_url(u)
-        await q.put(u)
-        seen_model_pages.add(u)
-
-    detail_lock = asyncio.Lock()
-    model_lock = asyncio.Lock()
-
-    async def worker(worker_id):
-        context = await new_context(browser)
-        page = await context.new_page()
-        try:
-            while True:
-                url = await q.get()
-                if url is None:
-                    q.task_done()
-                    break
-
-                try:
-                    links = await extract_links(page, url)
-                    new_detail = 0
-                    new_model_pages = 0
-
-                    async with detail_lock:
-                        for link in links:
-                            if is_detail_url(link):
-                                y = detail_year_from_url(link)
-                                if year_in_range(y) and link not in detail_urls:
-                                    detail_urls.add(link)
-                                    new_detail += 1
-
-                    root = "/".join(path_segments(url)[:3])
-                    root_prefix = urljoin(BASE_URL, root + "/")
-
-                    async with model_lock:
-                        for link in links:
-                            if (link.startswith(root_prefix)
-                                    and not is_detail_url(link)
-                                    and link not in seen_model_pages):
-                                seen_model_pages.add(link)
-                                await q.put(link)
-                                new_model_pages += 1
-
-                    print(f"[model W{worker_id}] {url} -> +{new_detail} details, +{new_model_pages} pages")
-                except Exception as e:
-                    print(f"[model W{worker_id}] error {url}: {e}")
-                finally:
-                    q.task_done()
-        finally:
-            await page.close()
-            await context.close()
-
-    tasks = [asyncio.create_task(worker(i + 1)) for i in range(MODEL_WORKERS)]
-    await q.join()
-    for _ in tasks:
-        await q.put(None)
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    return sorted(detail_urls)
-
-
-async def scrape_detail_urls(browser, detail_urls, existing_keys, stats):
-    data = []
-    seen_keys = set()
-    q = asyncio.Queue()
-    for u in detail_urls:
-        await q.put(u)
-
-    data_lock = asyncio.Lock()
-
-    async def worker(worker_id):
-        context = await new_context(browser)
-        page = await context.new_page()
-        try:
-            while True:
-                url = await q.get()
-                if url is None:
-                    q.task_done()
-                    break
-                try:
-                    raw = await extract_detail_data(page, url)
-                    if raw is None:
-                        q.task_done()
-                        continue
-                    async with data_lock:
-                        record = build_record(raw, existing_keys, seen_keys, stats)
-                        if record:
-                            data.append(record)
-                            if len(data) % 100 == 0:
-                                print(f"[detail W{worker_id}] kept {len(data)}")
-                except Exception as e:
-                    print(f"[detail W{worker_id}] error {url}: {e}")
-                finally:
-                    q.task_done()
-        finally:
-            await page.close()
-            await context.close()
-
-    tasks = [asyncio.create_task(worker(i + 1)) for i in range(DETAIL_WORKERS)]
-    await q.join()
-    for _ in tasks:
-        await q.put(None)
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    return data
+async def detail_worker(worker_id, browser, detail_q, results, results_lock,
+                        existing_keys, seen_keys, stats):
+    """Reads detail URLs, scrapes them, appends valid records to results."""
+    ctx = await new_context(browser)
+    page = await ctx.new_page()
+    try:
+        while True:
+            url = await detail_q.get()
+            if url is None:
+                detail_q.task_done()
+                break
+            try:
+                raw = await scrape_detail(page, url)
+                if raw:
+                    async with results_lock:
+                        rec = build_record(raw, existing_keys, seen_keys, stats)
+                        if rec:
+                            results.append(rec)
+                            if len(results) % 50 == 0:
+                                print(f"[detail W{worker_id}] ✓ kept {len(results)} records so far")
+            except Exception as e:
+                print(f"[detail W{worker_id}] error for {url}: {e}")
+            finally:
+                detail_q.task_done()
+    finally:
+        await page.close()
+        await ctx.close()
 
 
 # ─────────────────────────────────────────────
 # CSV OUTPUT
 # ─────────────────────────────────────────────
-def write_csvs(all_data: list):
+def write_csvs(all_data: list) -> int:
     internal_cols = [
         "vin", "year", "make", "model", "trim", "type", "damage",
         "price", "odometer", "lot", "date", "location", "state", "source", "url"
@@ -889,15 +714,12 @@ def write_csvs(all_data: list):
         master_df = pd.concat([master_df, new_df], ignore_index=True)
 
     if not master_df.empty:
-        for col in ["price", "make", "vin", "lot", "year"]:
-            if col not in master_df.columns:
-                master_df[col] = ""
-
         master_df["price"] = pd.to_numeric(master_df["price"], errors="coerce").fillna(0).astype(int)
         master_df["year_num"] = pd.to_numeric(master_df["year"], errors="coerce")
         master_df = master_df[master_df["price"] >= MIN_PRICE]
         master_df = master_df[master_df["year_num"].between(YEAR_MIN, YEAR_MAX, inclusive="both")]
-        master_df = master_df[~master_df["make"].str.upper().isin(EXCLUDED_MAKES)]
+        make_col = master_df.get("make", pd.Series(dtype=str)).str.upper()
+        master_df = master_df[~make_col.isin(EXCLUDED_MAKES)]
         master_df = master_df.drop_duplicates(subset=["vin", "lot"], keep="first")
         master_df = master_df.drop(columns=["year_num"])
 
@@ -917,77 +739,100 @@ def write_csvs(all_data: list):
 # MAIN
 # ─────────────────────────────────────────────
 async def main():
-    run_start = time.time()
-    existing_keys = load_existing_keys(MASTER_CSV)
+    t0 = time.time()
+    existing_keys = load_existing_keys()
+    seen_keys: set = set()
+    stats = {k: 0 for k in [
+        "price_below_min", "year_out_of_range", "excluded_make",
+        "duplicate", "existing", "incomplete", "kept"
+    ]}
 
-    stats = {
-        "price_below_min": 0,
-        "year_out_of_range": 0,
-        "excluded_make": 0,
-        "filtered_make": 0,
-        "filtered_model": 0,
-        "duplicate": 0,
-        "existing": 0,
-        "incomplete": 0,
-        "kept": 0,
-    }
+    print(f"Year range:       {YEAR_MIN}–{YEAR_MAX}")
+    print(f"Min price:        ${MIN_PRICE}")
+    print(f"Resume from CSV:  {RESUME_FROM_MASTER}")
+    print(f"Existing records: {len(existing_keys)}")
 
-    print(f"Year range:        {YEAR_MIN}-{YEAR_MAX}")
-    print(f"Minimum price:     ${MIN_PRICE}")
-    print(f"Resume existing:   {RESUME_FROM_MASTER}")
-    print(f"Existing records:  {len(existing_keys)}")
-    print(f"Workers:           make={MAKE_WORKERS}, model={MODEL_WORKERS}, detail={DETAIL_WORKERS}")
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        # ── 1. Discover makes ───────────────────────────────────────
+        all_makes = await discover_makes(browser)
+        if TARGET_MAKES:
+            all_makes = [m for m in all_makes if m["code"].upper() in TARGET_MAKES]
+        print(f"Makes to process: {len(all_makes)}")
 
-        make_urls = await seed_make_urls(browser)
-        print(f"Discovered make URLs: {len(make_urls)}")
+        # ── 2. Discover model listing URLs ──────────────────────────
+        model_listing_urls: list[str] = []
+        ctx = await new_context(browser)
+        page = await ctx.new_page()
+        try:
+            for mk in all_makes:
+                models = await discover_models_for_make(page, mk)
+                if TARGET_MODELS:
+                    models = [
+                        u for u in models
+                        if any(tm in u.upper() for tm in TARGET_MODELS)
+                    ]
+                model_listing_urls.extend(models)
+                print(f"  {mk['name']:20s} → {len(models)} model URLs")
+        finally:
+            await page.close()
+            await ctx.close()
 
-        make_q = asyncio.Queue()
-        for u in make_urls:
-            await make_q.put(u)
+        model_listing_urls = list(dict.fromkeys(model_listing_urls))
+        print(f"\nTotal model listing URLs: {len(model_listing_urls)}")
 
-        model_urls = set()
-        model_urls_lock = asyncio.Lock()
+        # ── 3. Parallel crawl of listing pages + detail scraping ────
+        model_q: asyncio.Queue = asyncio.Queue()
+        for u in model_listing_urls:
+            await model_q.put(u)
 
-        make_tasks = [
-            asyncio.create_task(make_worker(i + 1, browser, make_q, model_urls, model_urls_lock))
-            for i in range(MAKE_WORKERS)
+        detail_q: asyncio.Queue = asyncio.Queue()
+        detail_seen: set = set()
+        detail_lock = asyncio.Lock()
+
+        results: list = []
+        results_lock = asyncio.Lock()
+
+        # Start model workers (feed detail_q)
+        model_tasks = [
+            asyncio.create_task(
+                model_worker(i + 1, browser, model_q, detail_q, detail_seen, detail_lock)
+            )
+            for i in range(MODEL_WORKERS)
         ]
-        await make_q.join()
-        for _ in make_tasks:
-            await make_q.put(None)
-        await asyncio.gather(*make_tasks, return_exceptions=True)
 
-        model_urls = sorted(model_urls)
-        print(f"Discovered model URLs: {len(model_urls)}")
+        # Start detail workers (consume detail_q)
+        detail_tasks = [
+            asyncio.create_task(
+                detail_worker(i + 1, browser, detail_q, results, results_lock,
+                              existing_keys, seen_keys, stats)
+            )
+            for i in range(DETAIL_WORKERS)
+        ]
 
-        if TARGET_MODELS:
-            filtered = []
-            for u in model_urls:
-                seg = path_segments(u)[-1]
-                label = seg.split("-", 1)[-1].replace("-", " ").upper()
-                if any(t in label for t in TARGET_MODELS):
-                    filtered.append(u)
-            model_urls = filtered
-            print(f"After TARGET_MODELS filter: {len(model_urls)} model URLs")
+        # Wait for model workers to finish
+        await model_q.join()
+        for _ in model_tasks:
+            await model_q.put(None)
+        await asyncio.gather(*model_tasks, return_exceptions=True)
 
-        detail_urls = await crawl_model_pages(browser, model_urls)
-        print(f"Discovered detail URLs in year range: {len(detail_urls)}")
-
-        all_data = await scrape_detail_urls(browser, detail_urls, existing_keys, stats)
+        # Wait for detail workers to drain
+        await detail_q.join()
+        for _ in detail_tasks:
+            await detail_q.put(None)
+        await asyncio.gather(*detail_tasks, return_exceptions=True)
 
         await browser.close()
 
-    total_master = write_csvs(all_data)
+    total = write_csvs(results)
 
     print("\n" + "=" * 60)
     print("DONE")
-    print(f"New rows this run:      {len(all_data)}")
-    print(f"Total in {MASTER_CSV}: {total_master}")
-    print(f"Skip stats:            {stats}")
-    print(f"Elapsed seconds:       {int(time.time() - run_start)}")
+    print(f"New rows this run:    {len(results)}")
+    print(f"Total in master CSV:  {total}")
+    print(f"Skip stats:           {stats}")
+    print(f"Elapsed:              {int(time.time() - t0)}s")
 
 
 if __name__ == "__main__":
