@@ -22,14 +22,14 @@ WORKERS = 6
 
 # Fallback if pagination count cannot be detected.
 # 49,000 cars / ~24 per page ≈ ~2042 pages, so 2500 is a safe ceiling.
-MAX_PAGE_GUESS = 2500
+MAX_PAGE_GUESS = 4000
 
 # If True, skip VIN|LOT pairs already present in master.csv
 RESUME_FROM_MASTER = True
 
 # Stop after this many consecutive completely empty pages
 # when pagination count cannot be determined reliably.
-MAX_CONSECUTIVE_EMPTY_PAGES = 8
+MAX_CONSECUTIVE_EMPTY_PAGES = 200
 
 EXCLUDED_MAKES = {"LAND ROVER"}
 
