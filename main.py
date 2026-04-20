@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import time
+import random
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
@@ -12,7 +13,8 @@ from playwright.async_api import async_playwright
 # CONFIG
 # ─────────────────────────────────────────────
 BASE_URL = "https://carsbidshistory.com/"
-MAKE_LIST_PAGES = 35          # public make index shows 35 pages
+MAKE_LIST_PAGES = 35
+
 YEAR_MIN = 2008
 YEAR_MAX = 2015
 MIN_PRICE = 500
@@ -22,13 +24,18 @@ WEBSITE_CSV = "cars.csv"
 
 RESUME_FROM_MASTER = True
 
-MAKE_WORKERS = 4
-MODEL_WORKERS = 8
-DETAIL_WORKERS = 12
+# Slower, more stable settings for this site
+MAKE_WORKERS = 2
+MODEL_WORKERS = 4
+DETAIL_WORKERS = 6
 
-# Optional narrowing. Leave empty to crawl all.
-TARGET_MAKES = set()          # e.g. {"TOYOTA", "HONDA", "FORD"}
-TARGET_MODELS = set()         # e.g. {"CAMRY", "CIVIC", "ACCORD"}
+NAV_TIMEOUT_MS = 30000
+MAX_RETRIES = 3
+RETRY_BASE_DELAY_MS = 1200
+
+# Optional narrowing
+TARGET_MAKES = set()   # e.g. {"TOYOTA", "HONDA"}
+TARGET_MODELS = set()  # e.g. {"CAMRY", "CIVIC"}
 
 EXCLUDED_MAKES = {"LAND ROVER"}
 
@@ -109,11 +116,6 @@ def normalize_make_model(make: str, model: str):
 
 
 def split_title_with_optional_year(title_line: str):
-    """
-    Handles:
-      '2010 TOYOTA PRIUS'
-      'TOYOTA PRIUS'
-    """
     title_line = normalize_whitespace(title_line)
     if not title_line:
         return "", "", ""
@@ -324,7 +326,7 @@ def detail_year_from_url(url: str):
 
 
 # ─────────────────────────────────────────────
-# BROWSER EXTRACTION
+# BROWSER
 # ─────────────────────────────────────────────
 async def new_context(browser):
     context = await browser.new_context(
@@ -340,28 +342,60 @@ async def new_context(browser):
     return context
 
 
-async def goto_fast(page, url: str, timeout=20000):
-    await page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-    await page.wait_for_timeout(200)
+async def goto_resilient(page, url: str, timeout=NAV_TIMEOUT_MS):
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+            await page.wait_for_timeout(random.randint(250, 600))
+            return True
+        except Exception as e:
+            last_error = e
+            try:
+                await page.goto(url, wait_until="load", timeout=timeout)
+                await page.wait_for_timeout(random.randint(300, 700))
+                return True
+            except Exception as e2:
+                last_error = e2
+                delay = RETRY_BASE_DELAY_MS * attempt + random.randint(100, 500)
+                print(f"[WARN] goto retry {attempt}/{MAX_RETRIES} for {url}")
+                await page.wait_for_timeout(delay)
+
+    print(f"[ERROR] giving up on {url}: {last_error}")
+    return False
 
 
 async def extract_links(page, url: str):
-    await goto_fast(page, url)
-    hrefs = await page.evaluate("""
-    () => Array.from(document.querySelectorAll("a[href]"))
-      .map(a => a.href)
-      .filter(Boolean)
-    """)
-    out = []
-    for h in hrefs:
-        if h.startswith("https://carsbidshistory.com/"):
-            out.append(canonical_url(h))
-    return list(dict.fromkeys(out))
+    ok = await goto_resilient(page, url)
+    if not ok:
+        return []
+
+    try:
+        hrefs = await page.evaluate("""
+        () => Array.from(document.querySelectorAll("a[href]"))
+          .map(a => a.href)
+          .filter(Boolean)
+        """)
+        out = []
+        for h in hrefs:
+            if h.startswith("https://carsbidshistory.com/"):
+                out.append(canonical_url(h))
+        return list(dict.fromkeys(out))
+    except Exception as e:
+        print(f"[WARN] extract_links failed for {url}: {e}")
+        return []
 
 
 async def extract_detail_data(page, url: str):
-    await goto_fast(page, url)
-    text = await page.locator("body").inner_text()
+    ok = await goto_resilient(page, url)
+    if not ok:
+        return None
+
+    try:
+        text = await page.locator("body").inner_text(timeout=8000)
+    except Exception as e:
+        print(f"[WARN] body read failed for {url}: {e}")
+        return None
 
     title = ""
     for sel in ["h1", "title"]:
@@ -410,7 +444,6 @@ async def extract_detail_data(page, url: str):
     if yr and not raw["year"]:
         raw["year"] = yr
 
-    # URL fallback is very reliable on this site
     year_from_url = detail_year_from_url(url)
     if year_from_url and not raw["year"]:
         raw["year"] = year_from_url
@@ -423,7 +456,6 @@ async def extract_detail_data(page, url: str):
     if m:
         raw["lot"] = m.group(1)
     else:
-        # URL often contains lot before VIN
         segs = path_segments(url)
         if len(segs) == 4:
             parts = segs[3].split("_")
@@ -441,7 +473,6 @@ async def extract_detail_data(page, url: str):
             raw["damage"] = dmg.title()
             break
 
-    # Prefer "Last Bid"
     m = re.search(r"\bLast Bid\b[^\d$]*\$?\s*([\d,]+(?:\.\d+)?)", text, re.IGNORECASE)
     if m:
         raw["price"] = m.group(1)
@@ -450,18 +481,15 @@ async def extract_detail_data(page, url: str):
         if m:
             raw["price"] = m.group(1)
 
-    # Auction/source
     if "Copart" in text:
         raw["source"] = "Copart"
     elif "IAAI" in text:
         raw["source"] = "IAAI"
 
-    # Date
     m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", text)
     if m:
         raw["date"] = m.group(1)
 
-    # Location
     m = re.search(r"\bBuyer Location\b[:\s]+([^\n]+)", text, re.IGNORECASE)
     if m:
         raw["location"] = normalize_whitespace(m.group(1))
@@ -483,21 +511,20 @@ async def seed_make_urls(browser):
     try:
         for p in range(1, MAKE_LIST_PAGES + 1):
             url = urljoin(BASE_URL, f"make/page-{p}")
-            try:
-                links = await extract_links(page, url)
-                for link in links:
-                    if is_make_url(link):
-                        make_urls.add(link)
-                print(f"[seed] make page {p}: total makes so far {len(make_urls)}")
-            except Exception as e:
-                print(f"[seed] make page {p} error: {e}")
+            links = await extract_links(page, url)
+            page_add = 0
+            for link in links:
+                if is_make_url(link) and link not in make_urls:
+                    make_urls.add(link)
+                    page_add += 1
+            print(f"[seed] make page {p}: +{page_add}, total {len(make_urls)}")
     finally:
         await page.close()
         await context.close()
     return sorted(make_urls)
 
 
-async def make_worker(worker_id, browser, in_q, model_urls, model_urls_lock, seen_make_urls):
+async def make_worker(worker_id, browser, in_q, model_urls, model_urls_lock):
     context = await new_context(browser)
     page = await context.new_page()
     try:
@@ -526,15 +553,14 @@ async def make_worker(worker_id, browser, in_q, model_urls, model_urls_lock, see
 
 
 async def crawl_model_pages(browser, model_urls):
-    """
-    For each model page, crawl pagination within that model section and collect detail URLs.
-    """
     detail_urls = set()
     seen_model_pages = set()
     q = asyncio.Queue()
+
     for u in model_urls:
-        await q.put(canonical_url(u))
-        seen_model_pages.add(canonical_url(u))
+        u = canonical_url(u)
+        await q.put(u)
+        seen_model_pages.add(u)
 
     detail_lock = asyncio.Lock()
     model_lock = asyncio.Lock()
@@ -551,7 +577,6 @@ async def crawl_model_pages(browser, model_urls):
 
                 try:
                     links = await extract_links(page, url)
-
                     new_detail = 0
                     new_model_pages = 0
 
@@ -563,9 +588,9 @@ async def crawl_model_pages(browser, model_urls):
                                     detail_urls.add(link)
                                     new_detail += 1
 
-                    # pagination / related model pages inside same model root
                     root = "/".join(path_segments(url)[:3])
                     root_prefix = urljoin(BASE_URL, root + "/")
+
                     async with model_lock:
                         for link in links:
                             if link.startswith(root_prefix) and not is_detail_url(link) and link not in seen_model_pages:
@@ -574,7 +599,6 @@ async def crawl_model_pages(browser, model_urls):
                                 new_model_pages += 1
 
                     print(f"[model W{worker_id}] {url} -> +{new_detail} details, +{new_model_pages} pages")
-
                 except Exception as e:
                     print(f"[model W{worker_id}] error {url}: {e}")
                 finally:
@@ -612,6 +636,9 @@ async def scrape_detail_urls(browser, detail_urls, existing_keys, stats):
                     break
                 try:
                     raw = await extract_detail_data(page, url)
+                    if raw is None:
+                        q.task_done()
+                        continue
                     async with data_lock:
                         record = build_record(raw, existing_keys, seen_keys, stats)
                         if record:
@@ -681,7 +708,6 @@ def write_csvs(all_data: list):
     for col in website_cols:
         if col not in website_df.columns:
             website_df[col] = ""
-    website_df = website_df[website_df[website_cols[0:]].columns.intersection(website_cols)]
     website_df = website_df.reindex(columns=website_cols, fill_value="")
     website_df.to_csv(WEBSITE_CSV, index=False)
 
@@ -711,27 +737,23 @@ async def main():
     print(f"Minimum price:     ${MIN_PRICE}")
     print(f"Resume existing:   {RESUME_FROM_MASTER}")
     print(f"Existing records:  {len(existing_keys)}")
+    print(f"Workers:           make={MAKE_WORKERS}, model={MODEL_WORKERS}, detail={DETAIL_WORKERS}")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
 
-        # Step 1: discover make URLs
         make_urls = await seed_make_urls(browser)
         print(f"Discovered make URLs: {len(make_urls)}")
 
-        # Step 2: discover model URLs from make pages
         make_q = asyncio.Queue()
         for u in make_urls:
             await make_q.put(u)
 
         model_urls = set()
         model_urls_lock = asyncio.Lock()
-        seen_make_urls = set(make_urls)
 
         make_tasks = [
-            asyncio.create_task(
-                make_worker(i + 1, browser, make_q, model_urls, model_urls_lock, seen_make_urls)
-            )
+            asyncio.create_task(make_worker(i + 1, browser, make_q, model_urls, model_urls_lock))
             for i in range(MAKE_WORKERS)
         ]
         await make_q.join()
@@ -742,7 +764,6 @@ async def main():
         model_urls = sorted(model_urls)
         print(f"Discovered model URLs: {len(model_urls)}")
 
-        # Optional model narrowing by slug text
         if TARGET_MODELS:
             filtered = []
             for u in model_urls:
@@ -753,11 +774,9 @@ async def main():
             model_urls = filtered
             print(f"After TARGET_MODELS filter: {len(model_urls)} model URLs")
 
-        # Step 3: crawl model pages and discover detail URLs
         detail_urls = await crawl_model_pages(browser, model_urls)
         print(f"Discovered detail URLs in year range: {len(detail_urls)}")
 
-        # Step 4: scrape detail pages
         all_data = await scrape_detail_urls(browser, detail_urls, existing_keys, stats)
 
         await browser.close()
