@@ -16,7 +16,7 @@ MIN_PRICE = 500
 MAX_PRICE = 10_000
 
 MAX_RUN_SECONDS = 20 * 60
-MAX_PAGES = 30
+MAX_PAGES = 40
 MAX_EMPTY_PAGES = 2
 
 EXCLUDED_MAKES = {"LAND ROVER"}
@@ -37,10 +37,29 @@ MULTI_WORD_MAKES = {
     "MERCEDES BENZ", "MERCEDES-BENZ", "ROLLS ROYCE", "GENERAL MOTORS",
 }
 
+DAMAGE_PATTERNS = [
+    "FRONT END",
+    "REAR END",
+    "SIDE",
+    "ROLLOVER",
+    "ALL OVER",
+    "WATER/FLOOD",
+    "MECHANICAL",
+    "MINOR DENT/SCRATCHES",
+    "NORMAL WEAR",
+    "UNDERCARRIAGE",
+    "STRIPPED",
+    "BURN",
+    "TOP/ROOF",
+    "HAIL",
+    "VANDALISM",
+    "BIOHAZARD/CHEMICAL",
+]
+
+
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
 def clean_price(text):
     text = str(text).replace("$", "").replace(",", "").strip()
     if not text:
@@ -65,16 +84,31 @@ def normalize_make_model(make, model):
     return make.title(), model
 
 
-def split_title(title_line):
+def split_title_with_optional_year(title_line):
+    """
+    Handles both:
+      '2021 KIA K5 LXS'
+      'KIA K5 LXS'
+    """
     title_line = str(title_line).strip()
-    parts = title_line.split()
-    if not parts or not re.match(r"^\d{4}$", parts[0]):
+    if not title_line:
         return "", "", ""
 
-    year = parts[0]
-    rest = " ".join(parts[1:]).strip()
+    parts = title_line.split()
+    year = ""
 
+    if parts and re.match(r"^\d{4}$", parts[0]):
+        year = parts[0]
+        rest_parts = parts[1:]
+    else:
+        rest_parts = parts
+
+    if not rest_parts:
+        return year, "", ""
+
+    rest = " ".join(rest_parts).strip()
     matched_make = None
+
     for mk in sorted(MULTI_WORD_MAKES, key=len, reverse=True):
         if rest.upper().startswith(mk + " ") or rest.upper() == mk:
             matched_make = mk
@@ -84,8 +118,8 @@ def split_title(title_line):
         make = matched_make.title()
         model = rest[len(matched_make):].strip()
     else:
-        make = parts[1].title() if len(parts) > 1 else ""
-        model = " ".join(parts[2:]) if len(parts) > 2 else ""
+        make = rest_parts[0].title() if len(rest_parts) > 0 else ""
+        model = " ".join(rest_parts[1:]) if len(rest_parts) > 1 else ""
 
     make, model = normalize_make_model(make, model)
     return year, make, model
@@ -97,7 +131,7 @@ def infer_type(title):
         return "Truck"
     if any(x in t for x in ["SUV", "EXPLORER", "ESCAPE", "ROGUE", "EQUINOX", "TAHOE", "SUBURBAN",
                               "RAV4", "CR-V", "CX-5", "XC90", "SORENTO", "SPORTAGE", "PILOT",
-                              "HIGHLANDER", "PATHFINDER", "TRAVERSE", "EXPEDITION"]):
+                              "HIGHLANDER", "PATHFINDER", "TRAVERSE", "EXPEDITION", "SOUL"]):
         return "SUV"
     if any(x in t for x in ["COUPE", "MUSTANG", "CHALLENGER", "CAMARO", "86", "BRZ"]):
         return "Coupe"
@@ -148,156 +182,204 @@ def build_paged_url(base_url, page_num):
     return f"{base_url}?page={page_num}"
 
 
-def goto_fast(page, url, timeout=9000):
+def goto_fast(page, url, timeout=12000):
     page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-    page.wait_for_timeout(200)
+    page.wait_for_timeout(300)
+
+
+def first_nonempty_text(locator):
+    try:
+        count = min(locator.count(), 10)
+    except Exception:
+        return ""
+
+    for i in range(count):
+        try:
+            txt = locator.nth(i).inner_text().strip()
+            if txt:
+                return txt
+        except Exception:
+            pass
+    return ""
 
 
 # ─────────────────────────────────────────────
-# EXTRACTION
+# CARD PARSING
 # ─────────────────────────────────────────────
+def parse_card_text(text):
+    raw = {
+        "vin": "",
+        "year": "",
+        "make": "",
+        "model": "",
+        "trim": "",
+        "damage": "",
+        "price_raw": "",
+        "odometer": "",
+        "lot": "",
+        "date": "",
+        "location": "",
+        "state": "",
+        "source": "",
+        "title": "",
+    }
 
-def extract_rows_from_page(page, url):
-    rows = []
-    try:
-        goto_fast(page, url)
+    text = str(text)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
 
-        table = None
-        for sel in ["table", ".auction-results", "[class*='auction']", "[class*='table']", "[class*='results']"]:
-            if page.locator(sel).count() > 0:
-                table = sel
-                break
+    # Title line: first line that is not VIN/date/price/damage/year-only/source
+    for line in lines:
+        upper = line.upper()
+        if (
+            "VIN" in upper
+            or "$" in upper
+            or "COPART" == upper
+            or "IAAI" == upper
+            or re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", line)
+            or re.fullmatch(r"\d{1,2}/\d{1,2}/\d{2,4}", line)
+        ):
+            continue
 
-        if table:
-            rows = extract_table_rows(page, table)
-        else:
-            rows = extract_rows_from_cards(page)
+        # If it's mostly title-like text, take it
+        if len(line.split()) >= 2 and not re.fullmatch(r"\d{4}", line):
+            raw["title"] = line
+            break
 
-    except Exception as e:
-        print(f"[WARN] Error loading {url}: {e}")
+    if raw["title"]:
+        yr, mk, mo = split_title_with_optional_year(raw["title"])
+        if yr:
+            raw["year"] = yr
+        if mk:
+            raw["make"] = mk
+        if mo:
+            raw["model"] = mo
 
-    return rows
+    # VIN
+    m = re.search(r"\bVIN:\s*([A-HJ-NPR-Z0-9]{11,17})\b", text, re.IGNORECASE)
+    if m:
+        raw["vin"] = m.group(1)
+    else:
+        m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", text)
+        if m:
+            raw["vin"] = m.group(1)
 
+    # Year
+    m = re.search(r"\b(19\d{2}|20\d{2})\b", text)
+    if m:
+        raw["year"] = m.group(1)
 
-def extract_table_rows(page, table_sel):
-    rows = []
-    try:
-        data = page.locator(table_sel).first.evaluate("""
-        table => {
-            const headers = Array.from(table.querySelectorAll("th")).map(th =>
-                th.innerText.trim().toLowerCase()
-            );
-            const bodyRows = Array.from(table.querySelectorAll("tbody tr")).map(tr =>
-                Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
-            );
-            return { headers, bodyRows };
-        }
-        """)
+    # Odometer: supports "15872 mil" from screenshot
+    m = re.search(r"([\d,]+)\s*(?:mil|mi|miles?)\b", text, re.IGNORECASE)
+    if m:
+        raw["odometer"] = m.group(1).replace(",", "") + " mi"
 
-        headers = data.get("headers", [])
-        body_rows = data.get("bodyRows", [])
+    # Damage
+    upper_text = text.upper()
+    for dmg in DAMAGE_PATTERNS:
+        if dmg in upper_text:
+            raw["damage"] = dmg.title()
+            break
 
-        col_map = {}
-        for i, h in enumerate(headers):
-            if any(x in h for x in ["year", "yr"]):
-                col_map["year"] = i
-            elif "make" in h:
-                col_map["make"] = i
-            elif "model" in h:
-                col_map["model"] = i
-            elif "trim" in h:
-                col_map["trim"] = i
-            elif any(x in h for x in ["damage", "primary"]):
-                col_map["damage"] = i
-            elif any(x in h for x in ["price", "sale", "bid", "sold"]):
-                col_map["price"] = i
-            elif any(x in h for x in ["odometer", "odo", "mile", "mileage"]):
-                col_map["odometer"] = i
-            elif "lot" in h:
-                col_map["lot"] = i
-            elif "vin" in h:
-                col_map["vin"] = i
-            elif "date" in h:
-                col_map["date"] = i
-            elif any(x in h for x in ["location", "loc", "city", "yard"]):
-                col_map["location"] = i
-            elif "state" in h:
-                col_map["state"] = i
-            elif any(x in h for x in ["source", "auction"]):
-                col_map["source"] = i
-            elif any(x in h for x in ["title", "vehicle", "car", "name"]):
-                col_map["title"] = i
+    # Price
+    for pattern in [
+        r"\$\s*([\d,]+)",
+        r"[Ss]old\s+[Ff]or\s+\$?\s*([\d,]+)",
+        r"[Ff]inal\s+[Bb]id\s+\$?\s*([\d,]+)",
+        r"[Pp]rice\s+\$?\s*([\d,]+)",
+    ]:
+        m = re.search(pattern, text)
+        if m:
+            raw["price_raw"] = m.group(1)
+            break
 
-        for row in body_rows:
-            def cell(key):
-                idx = col_map.get(key, -1)
-                return row[idx].strip() if 0 <= idx < len(row) else ""
+    # Date
+    m = re.search(r"(\d{2}\.\d{2}\.\d{4}|\d{1,2}/\d{1,2}/\d{2,4}|[A-Za-z]+ \d{1,2},?\s*\d{4})", text)
+    if m:
+        raw["date"] = m.group(1).strip()
 
-            raw = {
-                "vin":       cell("vin"),
-                "year":      cell("year"),
-                "make":      cell("make"),
-                "model":     cell("model"),
-                "trim":      cell("trim"),
-                "damage":    cell("damage"),
-                "price_raw": cell("price"),
-                "odometer":  cell("odometer"),
-                "lot":       cell("lot"),
-                "date":      cell("date"),
-                "location":  cell("location"),
-                "state":     cell("state"),
-                "source":    cell("source"),
-                "title":     cell("title"),
-            }
+    # Location/state if present
+    m = re.search(r"([A-Za-z .'-]+),\s*([A-Z]{2})\b", text)
+    if m:
+        raw["location"] = m.group(1).strip()
+        raw["state"] = m.group(2).strip()
 
-            if raw["title"] and (not raw["year"] or not raw["make"] or not raw["model"]):
-                yr, mk, mo = split_title(raw["title"])
-                if yr:
-                    raw["year"] = yr
-                if mk:
-                    raw["make"] = mk
-                if mo:
-                    raw["model"] = mo
+    # Auction source
+    if "COPART" in upper_text:
+        raw["source"] = "Copart"
+    elif "IAAI" in upper_text:
+        raw["source"] = "IAAI"
 
-            if raw["location"] and not raw["state"]:
-                loc, st = parse_location_state(raw["location"])
-                raw["location"] = loc
-                raw["state"] = st
-
-            rows.append(raw)
-
-    except Exception as e:
-        print(f"[WARN] Table extract error: {e}")
-
-    return rows
+    return raw if raw["title"] or raw["vin"] or raw["price_raw"] else None
 
 
 def extract_rows_from_cards(page):
+    """
+    Built for the card layout shown in the screenshot.
+    """
     rows = []
     try:
-        card_selectors = [
-            ".auction-card", ".result-card", ".vehicle-card",
-            "[class*='card']", "[class*='item']", "[class*='listing']",
-            "article", ".row-item"
+        candidate_selectors = [
+            "article",
+            "[class*='card']",
+            "[class*='Card']",
+            "[class*='listing']",
+            "[class*='Listing']",
+            "[class*='vehicle']",
+            "[class*='Vehicle']",
+            "[class*='result']",
+            "[class*='Result']",
         ]
 
         cards = None
-        for sel in card_selectors:
-            loc = page.locator(sel)
-            if loc.count() > 2:
-                cards = loc
-                break
+        best_count = 0
 
-        if not cards:
+        for sel in candidate_selectors:
+            try:
+                loc = page.locator(sel)
+                count = loc.count()
+                if count > best_count:
+                    best_count = count
+                    cards = loc
+            except Exception:
+                pass
+
+        if not cards or best_count == 0:
             return rows
 
-        count = min(cards.count(), 50)
+        count = min(cards.count(), 80)
+
         for i in range(count):
             try:
-                text = cards.nth(i).inner_text()
-                raw = parse_text_block(text)
-                if raw:
-                    rows.append(raw)
+                card = cards.nth(i)
+                card_text = card.inner_text().strip()
+                if not card_text:
+                    continue
+
+                upper = card_text.upper()
+
+                # Skip non-vehicle containers
+                if "VIN" not in upper and "$" not in upper:
+                    continue
+
+                raw = parse_card_text(card_text)
+                if not raw:
+                    continue
+
+                # Try to improve title using DOM title-like elements inside card
+                title_text = first_nonempty_text(
+                    card.locator("h1, h2, h3, h4, [class*='title'], [class*='Title'], [class*='name'], [class*='Name']")
+                )
+                if title_text:
+                    raw["title"] = title_text.strip()
+                    yr, mk, mo = split_title_with_optional_year(raw["title"])
+                    if yr and not raw["year"]:
+                        raw["year"] = yr
+                    if mk:
+                        raw["make"] = mk
+                    if mo:
+                        raw["model"] = mo
+
+                rows.append(raw)
             except Exception:
                 pass
 
@@ -307,76 +389,18 @@ def extract_rows_from_cards(page):
     return rows
 
 
-def parse_text_block(text):
-    raw = {
-        "vin": "", "year": "", "make": "", "model": "",
-        "trim": "", "damage": "", "price_raw": "", "odometer": "",
-        "lot": "", "date": "", "location": "", "state": "", "source": "", "title": ""
-    }
-
-    m = re.search(r"\b(19\d{2}|20\d{2})\b", text)
-    if m:
-        raw["year"] = m.group(1)
-
-    m = re.search(r"\b(19\d{2}|20\d{2})\s+[A-Za-z][\w ./-]{2,60}", text)
-    if m:
-        raw["title"] = m.group(0).strip()
-        yr, mk, mo = split_title(raw["title"])
-        if yr:
-            raw["year"] = yr
-        if mk:
-            raw["make"] = mk
-        if mo:
-            raw["model"] = mo
-
-    m = re.search(r"\b([A-HJ-NPR-Z0-9]{11,17})\b", text)
-    if m:
-        raw["vin"] = m.group(1)
-
-    m = re.search(r"[Ll]ot\s*#?\s*([A-Za-z0-9-]+)", text)
-    if m:
-        raw["lot"] = m.group(1)
-
-    for pattern in [
-        r"[Ss]old\s+[Ff]or\s+\$?\s?([\d,]+)",
-        r"[Ff]inal\s+[Bb]id\s+\$?\s?([\d,]+)",
-        r"[Pp]rice\s+\$?\s?([\d,]+)",
-        r"\$\s?([\d,]+)"
-    ]:
-        m = re.search(pattern, text)
-        if m:
-            raw["price_raw"] = m.group(1)
-            break
-
-    m = re.search(r"([\d,]+)\s*mi(?:les?)?", text, re.IGNORECASE)
-    if m:
-        raw["odometer"] = m.group(1).replace(",", "") + " mi"
-
-    for pattern in [
-        r"[Dd]amage\s*[:\\-]\s*([A-Za-z &/]+)",
-        r"[Pp]rimary\s+[Dd]amage\s*[:\\-]\s*([A-Za-z &/]+)"
-    ]:
-        m = re.search(pattern, text)
-        if m:
-            raw["damage"] = m.group(1).strip()
-            break
-
-    m = re.search(r"([A-Za-z]+ \d{1,2},?\s*\d{4}|\d{1,2}/\d{1,2}/\d{2,4})", text)
-    if m:
-        raw["date"] = m.group(1).strip()
-
-    m = re.search(r"([A-Za-z ]+),\s*([A-Z]{2})\b", text)
-    if m:
-        raw["location"] = m.group(1).strip()
-        raw["state"] = m.group(2).strip()
-
-    return raw if raw["price_raw"] or raw["vin"] or raw["title"] else None
+def extract_rows_from_page(page, url):
+    try:
+        goto_fast(page, url)
+        return extract_rows_from_cards(page)
+    except Exception as e:
+        print(f"[WARN] Error loading {url}: {e}")
+        return []
 
 
 # ─────────────────────────────────────────────
 # RECORD FILTERING
 # ─────────────────────────────────────────────
-
 def build_record(raw, existing_keys, seen, skip_counts):
     price = clean_price(raw.get("price_raw", ""))
     if price < MIN_PRICE or price > MAX_PRICE:
@@ -388,7 +412,7 @@ def build_record(raw, existing_keys, seen, skip_counts):
     year = raw.get("year", "").strip()
 
     if raw.get("title") and (not year or not make or not model):
-        yr, mk, mo = split_title(raw["title"])
+        yr, mk, mo = split_title_with_optional_year(raw["title"])
         if yr and not year:
             year = yr
         if mk and not make:
@@ -425,20 +449,20 @@ def build_record(raw, existing_keys, seen, skip_counts):
         loc_raw, state = parse_location_state(loc_raw)
 
     record = {
-        "vin":      vin,
-        "year":     year,
-        "make":     make.title(),
-        "model":    model.title(),
-        "trim":     raw.get("trim", "").strip(),
-        "type":     infer_type(f"{make} {model} {raw.get('trim', '')}"),
-        "damage":   raw.get("damage", "").strip(),
-        "price":    price,
+        "vin": vin,
+        "year": year,
+        "make": make.title(),
+        "model": model.title(),
+        "trim": raw.get("trim", "").strip(),
+        "type": infer_type(f"{make} {model} {raw.get('trim', '')}"),
+        "damage": raw.get("damage", "").strip(),
+        "price": price,
         "odometer": clean_odometer(raw.get("odometer", "")),
-        "lot":      lot,
-        "date":     raw.get("date", "").strip(),
+        "lot": lot,
+        "date": raw.get("date", "").strip(),
         "location": loc_raw,
-        "state":    state.upper(),
-        "source":   raw.get("source", "").strip(),
+        "state": state.upper(),
+        "source": raw.get("source", "").strip(),
     }
 
     seen.add(key)
@@ -450,19 +474,18 @@ def build_record(raw, existing_keys, seen, skip_counts):
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
-
 def main():
     all_data = []
     seen = set()
     existing_keys = load_existing_keys(MASTER_CSV)
 
     skip_counts = {
-        "price_range":   0,
+        "price_range": 0,
         "excluded_make": 0,
-        "duplicate":     0,
-        "existing":      0,
-        "incomplete":    0,
-        "kept":          0,
+        "duplicate": 0,
+        "existing": 0,
+        "incomplete": 0,
+        "kept": 0,
     }
 
     run_start = time.time()
@@ -479,11 +502,11 @@ def main():
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
-            viewport={"width": 1280, "height": 800},
+            viewport={"width": 1400, "height": 1000},
         )
         page = context.new_page()
 
-        # Speed up loads by blocking heavy assets
+        # Block heavy assets but keep CSS/js
         page.route(
             "**/*",
             lambda route, request: (
@@ -525,7 +548,10 @@ def main():
                 record = build_record(raw, existing_keys, seen, skip_counts)
                 if record:
                     all_data.append(record)
-                    print(f"  KEEP {len(all_data)}/{TARGET_ROWS}: {record['year']} {record['make']} {record['model']} | ${record['price']}")
+                    print(
+                        f"  KEEP {len(all_data)}/{TARGET_ROWS}: "
+                        f"{record['year']} {record['make']} {record['model']} | ${record['price']}"
+                    )
 
         browser.close()
 
