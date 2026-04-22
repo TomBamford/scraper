@@ -1,16 +1,20 @@
 """
 Copart Upcoming Lots Scraper — California only
 ===============================================
-Scrapes Copart for CA vehicles going up for auction in the next 7 days
-and writes upcoming.csv to this repo.
+Uses ScraperAPI to bypass Copart's Imperva/Incapsula bot protection,
+which blocks direct requests from GitHub Actions IPs.
 
-Uses Copart's public lotSearchResults API — the same endpoint their
-website uses, which works without a browser session.
+Setup (one time):
+  1. Sign up free at https://www.scraperapi.com — 5,000 free calls/month
+  2. Copy your API key from the dashboard
+  3. In your GitHub repo → Settings → Secrets and variables → Actions
+     → New repository secret → Name: SCRAPER_API_KEY → paste your key
 
 Install:
     pip install requests pandas
 
-Run manually:
+Run manually (set env var first):
+    export SCRAPER_API_KEY=your_key_here
     python scrape_upcoming.py
 
 Runs automatically via GitHub Actions once a day.
@@ -32,7 +36,10 @@ UPCOMING_CSV      = "upcoming.csv"
 
 ROWS_PER_PAGE = 100
 MAX_PAGES     = 500
-REQUEST_DELAY = 2.0
+REQUEST_DELAY = 1.5
+
+# ScraperAPI key — read from environment variable (set as GitHub secret)
+SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")
 
 US_STATES = {
     "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -41,43 +48,80 @@ US_STATES = {
     "VA","WA","WV","WI","WY","DC","PR","VI","GU",
 }
 
+COPART_SEARCH_URL = "https://www.copart.com/public/lots/search-results"
+
 # ─────────────────────────────────────────────────────────────
-# COPART PUBLIC API  — no login required
+# SCRAPERAPI WRAPPER
+# Sends any request through ScraperAPI's rotating proxy + browser pool,
+# which handles cookies, bot detection, and JavaScript rendering.
 # ─────────────────────────────────────────────────────────────
-# This is the endpoint Copart's own website calls for its search results page.
-# It accepts a JSON search criteria and returns paginated lot data.
-SEARCH_URL = "https://www.copart.com/public/lots/search-results"
 
-# Rotate user agents to reduce blocking
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
-]
+def scraper_api_post(url: str, json_body: dict, session_number: int = 1) -> requests.Response | None:
+    """
+    POST request routed through ScraperAPI.
+    ScraperAPI handles Imperva/Incapsula automatically.
+    session_number keeps the same proxy IP across pages (important for cookies).
+    """
+    if not SCRAPER_API_KEY:
+        raise RuntimeError(
+            "SCRAPER_API_KEY environment variable not set.\n"
+            "Sign up free at https://www.scraperapi.com and add it as a GitHub secret."
+        )
 
+    # ScraperAPI POST endpoint
+    proxy_url = "https://api.scraperapi.com/"
 
-def get_headers() -> dict:
-    return {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Content-Type": "application/json",
-        "Origin": "https://www.copart.com",
-        "Referer": "https://www.copart.com/lotSearchResults",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-        "Connection": "keep-alive",
+    params = {
+        "api_key":        SCRAPER_API_KEY,
+        "url":            url,
+        "session_number": session_number,   # sticky session = same IP = cookies persist
+        "render":         "false",          # no JS rendering needed — it's a JSON API
+        "country_code":   "us",             # use US IPs
+        "premium":        "false",
     }
 
+    headers = {
+        "Content-Type": "application/json",
+        "Accept":        "application/json, text/plain, */*",
+        "Origin":        "https://www.copart.com",
+        "Referer":       "https://www.copart.com/lotSearchResults",
+    }
+
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                proxy_url,
+                params=params,
+                json=json_body,
+                headers=headers,
+                timeout=60,   # ScraperAPI can be slow — give it time
+            )
+            if resp.status_code == 200:
+                return resp
+            elif resp.status_code == 403:
+                print(f"    ScraperAPI 403 (attempt {attempt+1}) — retrying...")
+                time.sleep(5 * (attempt + 1))
+            elif resp.status_code == 429:
+                print(f"    Rate limited (attempt {attempt+1}) — waiting 15s...")
+                time.sleep(15)
+            else:
+                print(f"    ScraperAPI HTTP {resp.status_code} (attempt {attempt+1})")
+                print(f"    Response: {resp.text[:300]}")
+                time.sleep(5)
+        except requests.exceptions.Timeout:
+            print(f"    Timeout (attempt {attempt+1})")
+            time.sleep(10)
+        except Exception as e:
+            print(f"    Error: {e} (attempt {attempt+1})")
+            time.sleep(5)
+    return None
+
+
+# ─────────────────────────────────────────────────────────────
+# PAYLOAD
+# ─────────────────────────────────────────────────────────────
 
 def build_payload(page: int) -> dict:
-    """
-    Mirrors exactly what Copart's own search page sends.
-    Filters: CA state, automobiles only, years 2000-2027, upcoming auction date.
-    """
     today     = datetime.now(timezone.utc)
     cutoff    = today + timedelta(days=UPCOMING_DAYS)
     today_ms  = int(today.timestamp() * 1000)
@@ -102,108 +146,13 @@ def build_payload(page: int) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────
-# SESSION — seeds cookies like a real browser visit
+# PARSING
 # ─────────────────────────────────────────────────────────────
-
-def get_session() -> requests.Session:
-    s = requests.Session()
-
-    # Step 1: Hit the homepage to get initial cookies
-    try:
-        print("  Seeding session cookies from Copart homepage...")
-        r = s.get(
-            "https://www.copart.com/",
-            headers={
-                "User-Agent": random.choice(USER_AGENTS),
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-            },
-            timeout=20,
-        )
-        print(f"  Homepage: {r.status_code}, cookies: {list(s.cookies.keys())}")
-        time.sleep(random.uniform(1.5, 2.5))
-    except Exception as e:
-        print(f"  [WARN] Homepage seed failed: {e}")
-
-    # Step 2: Hit the search results page to get the search-specific cookies
-    try:
-        print("  Seeding search page cookies...")
-        r = s.get(
-            "https://www.copart.com/lotSearchResults",
-            headers={
-                "User-Agent": random.choice(USER_AGENTS),
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Referer": "https://www.copart.com/",
-            },
-            timeout=20,
-        )
-        print(f"  Search page: {r.status_code}, cookies: {list(s.cookies.keys())}")
-        time.sleep(random.uniform(1.0, 2.0))
-    except Exception as e:
-        print(f"  [WARN] Search page seed failed: {e}")
-
-    return s
-
-
-# ─────────────────────────────────────────────────────────────
-# HTTP
-# ─────────────────────────────────────────────────────────────
-
-def fetch_page(session: requests.Session, page: int) -> dict | None:
-    payload = build_payload(page)
-    headers = get_headers()
-
-    for attempt in range(4):
-        try:
-            resp = session.post(
-                SEARCH_URL,
-                json=payload,
-                headers=headers,
-                timeout=30,
-            )
-
-            print(f"    Status: {resp.status_code}", end=" ")
-
-            if resp.status_code == 200:
-                try:
-                    data = resp.json()
-                    # Copart wraps in data.data, data.returnValue, or returns directly
-                    return data.get("data") or data.get("returnValue") or data
-                except Exception as e:
-                    print(f"JSON parse error: {e}")
-                    print(f"    Response text: {resp.text[:300]}")
-                    return None
-
-            elif resp.status_code == 403:
-                print(f"403 — blocked, waiting {10 * (attempt+1)}s...")
-                time.sleep(10 * (attempt + 1))
-            elif resp.status_code == 429:
-                print(f"429 — rate limited, waiting 30s...")
-                time.sleep(30)
-            else:
-                print(f"unexpected status")
-                print(f"    Response: {resp.text[:200]}")
-                time.sleep(5)
-
-        except requests.exceptions.Timeout:
-            print(f"  [WARN] Timeout on page {page} attempt {attempt+1}")
-            time.sleep(5)
-        except Exception as e:
-            print(f"  [WARN] Error: {e}")
-            time.sleep(5)
-
-    return None
-
 
 def extract_lots(data: dict) -> list[dict]:
     try:
-        results = (
-            data.get("results", {})
-            or data.get("lotSearchResults", {})
-            or {}
-        )
-        content = results.get("content") or data.get("content") or []
-        return list(content)
+        results = data.get("results", {}) or data.get("lotSearchResults", {}) or {}
+        return list(results.get("content") or data.get("content") or [])
     except Exception as e:
         print(f"  [WARN] extract_lots: {e}")
         return []
@@ -217,10 +166,6 @@ def total_pages(data: dict) -> int:
     except Exception:
         return 1
 
-
-# ─────────────────────────────────────────────────────────────
-# FIELD EXTRACTION
-# ─────────────────────────────────────────────────────────────
 
 def gf(lot: dict, *keys) -> str:
     for k in keys:
@@ -358,27 +303,47 @@ def main():
     t0 = time.time()
 
     print("=" * 60)
-    print(f"  Copart Upcoming Lots Scraper")
+    print(f"  Copart Upcoming Lots Scraper (via ScraperAPI)")
     print(f"  State  : {UPCOMING_STATE} (California)")
     print(f"  Window : next {UPCOMING_DAYS} days")
     print(f"  Date   : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  Key    : {'set ✓' if SCRAPER_API_KEY else 'MISSING — set SCRAPER_API_KEY'}")
     print("=" * 60)
 
-    session  = get_session()
+    if not SCRAPER_API_KEY:
+        print("\nERROR: SCRAPER_API_KEY not set.")
+        print("Sign up free at https://www.scraperapi.com")
+        print("Then add it as a GitHub Actions secret named SCRAPER_API_KEY")
+        raise SystemExit(1)
+
+    # Use a fixed session number so ScraperAPI keeps the same IP + cookies
+    # across all page requests — important for Copart's session validation
+    SESSION_NUM = random.randint(1, 9999)
+
     all_lots = []
     total_pg = None
 
     for page in range(0, MAX_PAGES):
         print(f"\n  Page {page+1}{f'/{total_pg}' if total_pg else ''}...", end=" ", flush=True)
-        data = fetch_page(session, page)
 
-        if data is None:
-            print("no data — stopping")
+        payload = build_payload(page)
+        resp    = scraper_api_post(COPART_SEARCH_URL, payload, SESSION_NUM)
+
+        if resp is None:
+            print("failed — stopping")
             break
 
-        # Debug: show raw keys on first page
+        try:
+            raw = resp.json()
+            data = raw.get("data") or raw.get("returnValue") or raw
+        except Exception as e:
+            print(f"JSON parse error: {e}")
+            print(f"Response text: {resp.text[:400]}")
+            break
+
+        # Debug first page
         if page == 0:
-            print(f"\n  Response keys: {list(data.keys())[:8]}")
+            print(f"\n  Response keys: {list(data.keys())[:10]}")
 
         lots = extract_lots(data)
         if not lots:
@@ -425,11 +390,11 @@ def main():
 
     if not records:
         print("\n  [INFO] No CA lots found — writing empty upcoming.csv")
-        print("  [DEBUG] Raw lots received:", len(all_lots))
         if all_lots:
-            print("  [DEBUG] Sample raw lot keys:", list(all_lots[0].keys())[:15])
+            print("  [DEBUG] Raw lots received but all filtered out. Sample raw lot:")
             sample = lot_to_raw(all_lots[0])
-            print("  [DEBUG] Sample mapped:", sample)
+            for k, v in sample.items():
+                print(f"    {k}: {v}")
         pd.DataFrame(columns=cols).to_csv(UPCOMING_CSV, index=False)
     else:
         df = pd.DataFrame(records)
@@ -438,7 +403,7 @@ def main():
                 df[c] = ""
         df = df[cols].sort_values("sale_date")
         df.to_csv(UPCOMING_CSV, index=False)
-        print(f"\n  Sample output:")
+        print(f"\n  Sample output (first 3 rows):")
         print(df.head(3).to_string())
 
     elapsed = int(time.time() - t0)
@@ -446,7 +411,7 @@ def main():
     print(f"  Raw lots received : {len(all_lots)}")
     print(f"  CA lots written   : {len(records)}")
     print(f"  Skipped           : {skipped}")
-    print(f"  Output file       : {UPCOMING_CSV}")
+    print(f"  Output            : {UPCOMING_CSV}")
     print(f"  Elapsed           : {elapsed}s")
     print("=" * 60)
 
