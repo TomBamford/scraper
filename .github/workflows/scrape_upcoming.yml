@@ -1,0 +1,36 @@
+on:
+  schedule:
+    # Runs every day at 8:00 AM UTC (1:00 AM PT / midnight PT in summer)
+    # Copart auctions typically start mid-morning PT, so this captures
+    # all lots going up in the next 7 days fresh each morning.
+    - cron: '0 8 * * *'
+  workflow_dispatch:  # Allow manual trigger from the GitHub Actions tab
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Run upcoming lots scraper
+        run: python scrape_upcoming.py
+
+      - name: Commit and push upcoming.csv
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add upcoming.csv
+          git diff --staged --quiet || git commit -m "auto: upcoming lots $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
