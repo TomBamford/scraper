@@ -1,464 +1,478 @@
 """
-Salvage auction scraper — Copart.com internal search API
-=========================================================
-Copart powers its own website with a JSON REST API. This scraper
-calls that API directly with requests (no browser, no Playwright).
-Picks a random make each run and pages through sold lots 2008-2015.
+Copart Historical Sales Harvester
+===================================
+Combines two free public data sources to build a historical comp database
+with real final auction prices:
+
+  SOURCE 1 — Rebrowser GitHub (rebrowser/copart-dataset)
+    Free daily parquet snapshots of Copart lots: year, make, model,
+    damage, mileage, location, title type, repair cost.
+    Updated daily. No login needed. ~1,000 rows per day file.
+
+  SOURCE 2 — AutoBidCar public API (autobidcar.com)
+    Free API: given a VIN → returns the car's detail page URL.
+    The detail page shows the final hammer price Copart sold the car for.
+    Rate limit: 100 requests/minute (no key needed).
+
+Pipeline:
+  1. Download last N days of parquet files from Rebrowser
+  2. Filter for California lots (or all US — configurable)
+  3. For each lot with a VIN, call AutoBidCar API → get detail page URL
+  4. Scrape detail page → extract final sold price
+  5. Combine everything → write cars.csv in your repo format
 
 Install:
-    pip install requests pandas
+    pip install requests pandas pyarrow beautifulsoup4
 
 Run:
-    python scraper_copart.py
+    python harvest_history.py
+
+Put this in .github/workflows/ to run weekly and grow your comps database.
 """
 
-import os, re, time, random, json
+import os, re, time, random, io
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 import requests
 import pandas as pd
+from bs4 import BeautifulSoup
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────
-YEAR_MIN = 2008
-YEAR_MAX = 2015
-MIN_PRICE = 500
-REQUIRE_PRICE = True
+DAYS_TO_FETCH    = 30          # fetch last N days of Rebrowser data
+STATE_FILTER     = "CA"        # filter lots to this state ("" = all US)
+MIN_YEAR         = 2015        # skip older vehicles
+OUTPUT_CSV       = "cars.csv"  # appends to existing file
+MASTER_CSV       = "master.csv"
 
-MASTER_CSV  = "master.csv"
-WEBSITE_CSV = "cars.csv"
-RESUME_FROM_MASTER = True
+# AutoBidCar rate limit is 100/min — stay safely under
+API_DELAY        = 0.8         # seconds between AutoBidCar API calls
+SCRAPE_DELAY     = 1.2         # seconds between page fetches
+MAX_VIN_LOOKUPS  = 500         # max VIN lookups per run (to stay within rate limits)
 
-ROWS_PER_PAGE  = 100     # Copart supports up to 100
-MAX_PAGES      = 9999
-REQUEST_DELAY  = 1.2     # seconds between requests
+# Rebrowser GitHub raw base URL for parquet files
+REBROWSER_BASE = (
+    "https://raw.githubusercontent.com/rebrowser/copart-dataset"
+    "/main/auction-listings/data/"
+)
 
-EXCLUDED_MAKES = {"LAND ROVER"}
-
-US_STATES = {
-    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
-    "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
-    "VA","WA","WV","WI","WY","DC","PR","VI","GU",
-}
-
-# Copart make names (as they appear in the API's makerDescription field)
-ALL_MAKES = [
-    "ACURA","ALFA ROMEO","AUDI","BENTLEY","BMW","BUICK","CADILLAC",
-    "CHEVROLET","CHRYSLER","DODGE","FERRARI","FIAT","FORD","GMC",
-    "HONDA","HUMMER","HYUNDAI","INFINITI","JAGUAR","JEEP","KIA",
-    "LEXUS","LINCOLN","MAZDA","MERCEDES-BENZ","MERCURY",
-    "MINI","MITSUBISHI","NISSAN","OLDSMOBILE","PONTIAC","PORSCHE",
-    "RAM","SAAB","SATURN","SCION","SMART","SUBARU","SUZUKI",
-    "TESLA","TOYOTA","VOLKSWAGEN","VOLVO",
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
 ]
 
 # ─────────────────────────────────────────────────────────────
-# COPART API
+# STEP 1 — DOWNLOAD REBROWSER PARQUET FILES
 # ─────────────────────────────────────────────────────────────
-SEARCH_URL = "https://www.copart.com/public/lots/search-results"
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Content-Type": "application/json",
-    "Origin": "https://www.copart.com",
-    "Referer": "https://www.copart.com/vehicleFinderSearch",
-}
+def download_rebrowser_lots(days: int, state_filter: str, min_year: int) -> pd.DataFrame:
+    """
+    Download the last N days of Copart parquet snapshots from the
+    Rebrowser GitHub repo. Returns a filtered DataFrame.
+    """
+    session = requests.Session()
+    session.headers["User-Agent"] = random.choice(USER_AGENTS)
 
-def copart_payload(make: str, page: int) -> dict:
-    """Build the POST body for Copart's search endpoint."""
-    return {
-        "query": ["*"],
-        "filter": {
-            "MAKE": [make],
-            "YEAR": [str(y) for y in range(YEAR_MIN, YEAR_MAX + 1)],
-            "COUNTRY_CODE": ["US"],
-            # Sold/completed lots only
-            "SALE_STATUS": ["SALE_UPCOMING", "ON_SALE", "SALE_FUTURE",
-                            "BIDDING_CLOSED", "SALE_TODAY"],
-        },
-        "sort": None,
-        "page": page,
-        "size": ROWS_PER_PAGE,
-        "watchListOnly": False,
-        "freeFormSearch": False,
-    }
+    all_frames = []
+    today = datetime.now(timezone.utc)
 
-def copart_payload_v2(make: str, page: int) -> dict:
-    """Alternative payload format used by some Copart API versions."""
-    return {
-        "searchCriteria": {
-            "query": [make],
-            "filter": {
-                "YEAR": {
-                    "from": str(YEAR_MIN),
-                    "to": str(YEAR_MAX),
-                },
-                "COUNTRY_CODE": ["US"],
-            },
-            "sort": {"auction_date_type": "asc"},
-            "page": page,
-            "size": ROWS_PER_PAGE,
-        }
-    }
+    print(f"\n{'='*60}")
+    print(f"  STEP 1: Downloading Rebrowser Copart data ({days} days)")
+    print(f"{'='*60}")
 
+    for i in range(days):
+        date = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+        url  = REBROWSER_BASE + date + ".parquet"
 
-def fetch_page(session: requests.Session, make: str, page: int) -> dict | None:
-    """POST to Copart search API and return parsed JSON, or None on failure."""
-    for attempt in range(3):
         try:
-            resp = session.post(
-                SEARCH_URL,
-                json=copart_payload(make, page),
-                timeout=20,
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            elif resp.status_code == 403:
-                print(f"  [WARN] 403 on page {page} — Copart may require a session cookie")
-                return None
+            r = session.get(url, timeout=20)
+            if r.status_code == 404:
+                continue  # file doesn't exist for this date
+            if r.status_code != 200:
+                print(f"  [{date}] HTTP {r.status_code} — skipping")
+                continue
+
+            df = pd.read_parquet(io.BytesIO(r.content))
+
+            # Apply filters immediately to save memory
+            if state_filter:
+                df = df[df.get("locationState", pd.Series(dtype=str)) == state_filter]
+            if min_year:
+                df = df[pd.to_numeric(df.get("year", pd.Series(dtype=float)), errors="coerce") >= min_year]
+
+            rows = len(df)
+            print(f"  [{date}] {rows} rows after filter", end="")
+            if rows > 0:
+                all_frames.append(df)
+                print(f" ✓")
             else:
-                print(f"  [WARN] HTTP {resp.status_code} on page {page}, attempt {attempt+1}")
+                print()
+
         except Exception as e:
-            print(f"  [WARN] Request error page {page}: {e}")
-        time.sleep(REQUEST_DELAY * (attempt + 1))
+            print(f"  [{date}] Error: {e}")
+
+        time.sleep(0.3)
+
+    if not all_frames:
+        print("  No data downloaded.")
+        return pd.DataFrame()
+
+    combined = pd.concat(all_frames, ignore_index=True)
+    print(f"\n  Total rows downloaded: {len(combined)}")
+    return combined
+
+
+# ─────────────────────────────────────────────────────────────
+# STEP 2 — LOAD EXISTING VINs (skip already-priced ones)
+# ─────────────────────────────────────────────────────────────
+
+def load_existing_vins() -> set:
+    """Load VINs already in master.csv to avoid re-fetching."""
+    existing = set()
+    for fname in [MASTER_CSV, OUTPUT_CSV]:
+        if os.path.exists(fname):
+            try:
+                df = pd.read_csv(fname, dtype=str, usecols=lambda c: c in ["vin"])
+                existing.update(df["vin"].dropna().str.strip().str.upper().tolist())
+            except Exception:
+                pass
+    existing.discard("")
+    print(f"\n  Existing VINs in database: {len(existing):,}")
+    return existing
+
+
+# ─────────────────────────────────────────────────────────────
+# STEP 3 — AUTOBIDCAR VIN LOOKUP + PRICE SCRAPE
+# ─────────────────────────────────────────────────────────────
+
+def get_autobidcar_url(vin: str, session: requests.Session) -> str | None:
+    """
+    Call AutoBidCar's free check API to get the car's detail page URL.
+    Returns URL string or None if not found.
+    """
+    try:
+        r = session.get(
+            f"https://autobidcar.com/api/check/{vin}",
+            timeout=15,
+        )
+        if r.status_code == 200:
+            data = r.json()
+            return data.get("full_url")
+        elif r.status_code == 404:
+            return None  # not in database
+        else:
+            print(f"    AutoBidCar API {r.status_code} for {vin}")
+            return None
+    except Exception as e:
+        print(f"    AutoBidCar error for {vin}: {e}")
+        return None
+
+
+def scrape_final_price(car_url: str, session: requests.Session) -> int | None:
+    """
+    Scrape the AutoBidCar car detail page and extract the final sold price.
+    AutoBidCar shows the Copart/IAAI final hammer price.
+    """
+    try:
+        r = session.get(car_url, timeout=20)
+        if r.status_code != 200:
+            return None
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        # Method 1: Look for __NEXT_DATA__ JSON (Next.js)
+        next_data = soup.find("script", {"id": "__NEXT_DATA__"})
+        if next_data:
+            import json
+            try:
+                data = json.loads(next_data.string)
+                page_props = data.get("props", {}).get("pageProps", {})
+
+                # Common field names AutoBidCar uses
+                for field in ["finalBid", "final_bid", "soldPrice", "sold_price",
+                               "lastBid", "last_bid", "highBid", "high_bid", "price"]:
+                    val = page_props.get(field) or page_props.get("car", {}).get(field)
+                    if val and str(val).replace(".", "").isdigit():
+                        price = int(float(str(val).replace(",", "")))
+                        if price > 50:  # sanity check
+                            return price
+
+                # Try nested car object
+                car = page_props.get("car", {})
+                for field in ["finalBid", "soldPrice", "highBid", "price", "bid"]:
+                    val = car.get(field)
+                    if val and str(val).replace(".", "").isdigit():
+                        price = int(float(str(val).replace(",", "")))
+                        if price > 50:
+                            return price
+            except Exception:
+                pass
+
+        # Method 2: Search HTML for price patterns near "final", "sold", "bid" keywords
+        text = soup.get_text(" ", strip=True)
+
+        # Pattern: "Final Bid: $4,250" or "Sold for $4,250" or "Winning Bid $4,250"
+        patterns = [
+            r'(?:final\s*bid|sold\s*(?:for|price)|winning\s*bid|hammer\s*price)[^\d]{0,20}(\d[\d,]+)',
+            r'(\d[\d,]+)\s*(?:USD|usd|\$)',
+            r'\$\s*(\d[\d,]+)',
+        ]
+        for pattern in patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for m in matches:
+                price = int(m.replace(",", ""))
+                if 200 <= price <= 200000:  # realistic salvage range
+                    return price
+
+        # Method 3: Look for specific HTML elements with price class
+        for el in soup.find_all(class_=re.compile(r'price|bid|sold', re.I)):
+            t = el.get_text(strip=True)
+            m = re.search(r'(\d[\d,]+)', t)
+            if m:
+                price = int(m.group(1).replace(",", ""))
+                if 200 <= price <= 200000:
+                    return price
+
+    except Exception as e:
+        print(f"    Scrape error {car_url}: {e}")
+
     return None
 
 
-def get_session() -> requests.Session:
-    """Create a requests session, seeding it with a real browser-like cookie."""
-    s = requests.Session()
-    s.headers.update(HEADERS)
-    # Hit the homepage first to get cookies/CSRF token just like a browser would
+def enrich_with_prices(df: pd.DataFrame, existing_vins: set) -> pd.DataFrame:
+    """
+    For each lot with a VIN, look up final price via AutoBidCar.
+    Returns enriched DataFrame with 'final_price' column.
+    """
+    print(f"\n{'='*60}")
+    print(f"  STEP 3: AutoBidCar VIN price lookup")
+    print(f"{'='*60}")
+
+    session = requests.Session()
+    session.headers["User-Agent"] = random.choice(USER_AGENTS)
+    session.headers["Accept"] = "text/html,application/json,*/*"
+
+    # Seed session
     try:
-        s.get("https://www.copart.com/", timeout=15)
+        session.get("https://autobidcar.com/", timeout=10)
         time.sleep(1.0)
     except Exception:
         pass
-    return s
+
+    df = df.copy()
+    df["final_price"] = None
+
+    # Only look up VINs we don't already have
+    vin_col = None
+    for c in ["vin", "VIN", "vehicleId"]:
+        if c in df.columns:
+            vin_col = c
+            break
+
+    if not vin_col:
+        print("  No VIN column found — skipping price lookup")
+        return df
+
+    # Get unique VINs that are new and valid
+    mask = (
+        df[vin_col].notna() &
+        (df[vin_col] != "[PREMIUM]") &
+        (df[vin_col].str.len() == 17) &
+        (~df[vin_col].str.upper().isin(existing_vins))
+    )
+    candidates = df[mask][vin_col].unique()[:MAX_VIN_LOOKUPS]
+
+    print(f"  VINs to look up: {len(candidates):,} (capped at {MAX_VIN_LOOKUPS})")
+
+    price_map = {}  # vin → final_price
+    found = 0
+    checked = 0
+
+    for vin in candidates:
+        checked += 1
+        if checked % 50 == 0:
+            pct = checked / len(candidates) * 100
+            print(f"  Progress: {checked}/{len(candidates)} ({pct:.0f}%) — {found} prices found")
+
+        # Step A: get car URL
+        car_url = get_autobidcar_url(vin, session)
+        time.sleep(API_DELAY + random.uniform(0, 0.3))
+
+        if not car_url:
+            continue
+
+        # Step B: scrape final price from car page
+        price = scrape_final_price(car_url, session)
+        time.sleep(SCRAPE_DELAY + random.uniform(0, 0.4))
+
+        if price:
+            price_map[vin.upper()] = price
+            found += 1
+
+    print(f"\n  Final prices found: {found} / {checked} VINs checked")
+
+    # Map prices back to DataFrame
+    df["final_price"] = df[vin_col].str.upper().map(price_map)
+
+    return df
 
 
 # ─────────────────────────────────────────────────────────────
-# DATA EXTRACTION
+# STEP 4 — NORMALIZE + WRITE cars.csv
 # ─────────────────────────────────────────────────────────────
-def extract_lots(data: dict) -> list[dict]:
-    """Pull lot records out of Copart API response."""
-    lots = []
-    try:
-        # Response structure: data.results.content[] or data.data.results.content[]
-        content = (
-            data.get("data", {}).get("results", {}).get("content")
-            or data.get("results", {}).get("content")
-            or data.get("content")
-            or []
-        )
-        for item in content:
-            lots.append(item)
-    except Exception as e:
-        print(f"  [WARN] extract_lots: {e}")
-    return lots
+
+def normalize_to_cars_csv(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Map Rebrowser column names → your cars.csv schema:
+    year, make, model, trim, type, damage, price, odometer, lot, date, location, state, url
+    """
+    def col(df, *names):
+        for n in names:
+            if n in df.columns:
+                return df[n]
+        return pd.Series("", index=df.index)
+
+    out = pd.DataFrame()
+
+    out["year"]     = pd.to_numeric(col(df, "year"), errors="coerce").fillna(0).astype(int)
+    out["make"]     = col(df, "make").str.strip().str.title()
+    out["model"]    = col(df, "modelGroup", "modelDetail", "model").str.strip().str.title()
+    out["trim"]     = col(df, "trim").str.strip()
+    out["type"]     = col(df, "saleTitleType").str.strip()
+    out["damage"]   = col(df, "damageDescription").str.strip().str.title()
+    out["odometer"] = pd.to_numeric(col(df, "mileage"), errors="coerce").fillna(0).astype(int)
+    out["lot"]      = col(df, "lotId").str.strip()
+    out["vin"]      = col(df, "vin").str.strip().str.upper()
+    out["location"] = (col(df, "yardName").str.strip()
+                       .where(col(df, "yardName") != "",
+                              col(df, "locationCity").str.strip() + ", " + col(df, "locationState").str.strip()))
+    out["state"]    = col(df, "locationState").str.strip().str.upper()
+    out["repair_cost"] = pd.to_numeric(col(df, "repairCost"), errors="coerce").fillna(0).astype(int)
+    out["url"]      = col(df, "listingUrl").str.strip()
+
+    # Use final_price (real sold price) if available, else 0
+    if "final_price" in df.columns:
+        out["price"] = pd.to_numeric(df["final_price"], errors="coerce").fillna(0).astype(int)
+    else:
+        out["price"] = 0
+
+    # Normalize date
+    raw_date = col(df, "saleDate")
+    out["date"] = raw_date.apply(lambda v: normalize_date(str(v)) if pd.notna(v) and v != "" else "")
+
+    # Only keep rows with enough info
+    out = out[
+        (out["year"] >= MIN_YEAR) &
+        out["make"].notna() & (out["make"] != "") &
+        out["model"].notna() & (out["model"] != "")
+    ]
+
+    return out
 
 
-def total_pages(data: dict) -> int:
-    try:
-        total = (
-            data.get("data", {}).get("results", {}).get("totalPages")
-            or data.get("results", {}).get("totalPages")
-            or data.get("totalPages")
-            or 1
-        )
-        return int(total)
-    except Exception:
-        return 1
-
-
-def lot_to_raw(lot: dict) -> dict:
-    """Map Copart lot fields to our internal raw dict."""
-    # Copart field names vary slightly by API version — check multiple keys
-    def g(*keys):
-        for k in keys:
-            v = lot.get(k)
-            if v is not None and str(v).strip() not in ("", "None"):
-                return str(v).strip()
+def normalize_date(raw: str) -> str:
+    import re
+    if not raw or raw in ("NaT", "None", "nan", ""):
         return ""
-
-    year = g("year", "YEAR", "modelYear")
-    make = g("make", "MAKE", "makerDescription", "make_desc")
-    model = g("model", "MODEL", "modelDescription", "model_desc")
-    vin = g("vin", "VIN", "vehicleId")
-    lot_num = g("lotNumberStr", "lotNumber", "LOT_NUMBER", "lot_number", "ln")
-    damage = g("primaryDamage", "PRIMARY_DAMAGE", "damageDescription", "damage_desc")
-    price = g("currentBid", "CURRENT_BID", "salePrice", "sale_price", "highBid", "high_bid")
-    odometer = g("odometer", "ODOMETER", "odometerReading", "odom")
-    location = g("location", "LOCATION", "yardName", "yard_name", "auctionLocationName")
-    state_code = g("stateCode", "STATE_CODE", "stateName", "state")
-    date = g("saleDate", "SALE_DATE", "auctionDate", "auction_date", "soldDate")
-    trim = g("trim", "TRIM", "seriesDesc", "series")
-    source = "Copart"
-
-    # Normalise date to YYYY-MM-DD
-    if date and re.search(r"\d", date):
-        m = re.search(r"(\d{4}-\d{2}-\d{2})", date)
-        if m:
-            date = m.group(1)
-        else:
-            m = re.search(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", date)
-            if m:
-                date = f"{m.group(3)}-{m.group(1).zfill(2)}-{m.group(2).zfill(2)}"
-
-    # State from location string if not given directly
-    if not state_code and location:
-        sm = re.search(r"\b([A-Z]{2})$", location.strip().upper())
-        if sm and sm.group(1) in US_STATES:
-            state_code = sm.group(1)
-
-    return {
-        "year": year, "make": make, "model": model, "trim": trim,
-        "vin": vin, "lot": lot_num, "damage": damage,
-        "price": price, "odometer": odometer,
-        "location": location, "state": state_code,
-        "date": date, "source": source,
-        "url": f"https://www.copart.com/lot/{lot_num}" if lot_num else "",
-    }
+    # Already ISO
+    m = re.search(r"(\d{4}-\d{2}-\d{2})", raw)
+    if m:
+        return m.group(1)
+    return ""
 
 
-# ─────────────────────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────────────────────
-def nw(t) -> str:
-    return re.sub(r"\s+", " ", str(t)).strip()
+def write_csvs(new_df: pd.DataFrame):
+    """Append new records to master.csv and rebuild cars.csv."""
+    print(f"\n{'='*60}")
+    print(f"  STEP 4: Writing output files")
+    print(f"{'='*60}")
 
-def year_ok(y) -> bool:
-    try:
-        return YEAR_MIN <= int(str(y).strip()) <= YEAR_MAX
-    except Exception:
-        return False
+    cols_master = ["vin","year","make","model","trim","type","damage",
+                   "price","odometer","lot","date","location","state",
+                   "repair_cost","url"]
+    cols_site   = ["year","make","model","trim","type","damage",
+                   "price","odometer","lot","date","location","state","url"]
 
-def clean_price(t) -> int:
-    s = str(t).replace("$", "").replace(",", "").strip()
-    m = re.search(r"(\d+(?:\.\d+)?)", s)
-    return int(float(m.group(1))) if m else 0
+    # Load existing master
+    if os.path.exists(MASTER_CSV):
+        master = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
+    else:
+        master = pd.DataFrame(columns=cols_master)
 
-def clean_odo(t: str) -> str:
-    s = str(t).replace(",", "").strip()
-    m = re.search(r"([\d.]+)", s)
-    if not m:
-        return ""
-    unit = "km" if "km" in s.lower() else "mi"
-    return f"{int(float(m.group(1)))} {unit}"
+    # Ensure all columns exist in new_df
+    for c in cols_master:
+        if c not in new_df.columns:
+            new_df[c] = ""
 
-def infer_type(text: str) -> str:
-    t = text.upper()
-    if any(x in t for x in ["PICKUP","F-150","F150","SILVERADO","RAM 1","TUNDRA","RANGER","TACOMA","FRONTIER","COLORADO","F-250","F-350"]):
-        return "Truck"
-    if any(x in t for x in ["SUV","EXPLORER","ESCAPE","ROGUE","EQUINOX","TAHOE","SUBURBAN","RAV4","CR-V","CX-5","SORENTO","SPORTAGE","PILOT","HIGHLANDER","PATHFINDER","TRAVERSE","EXPEDITION","4RUNNER","SANTA FE","TUCSON","OUTLANDER","DURANGO"]):
-        return "SUV"
-    if any(x in t for x in ["COUPE","MUSTANG","CHALLENGER","CAMARO","BRZ","CORVETTE"]):
-        return "Coupe"
-    if any(x in t for x in ["VAN","TRANSIT","ODYSSEY","SIENNA","PACIFICA","CARAVAN","ECONOLINE","EXPRESS","SAVANA","PROMASTER"]):
-        return "Van"
-    return "Sedan"
+    new_df = new_df[cols_master].copy()
+    new_df["price"] = pd.to_numeric(new_df["price"], errors="coerce").fillna(0).astype(int)
 
-def load_existing_keys() -> set:
-    if not RESUME_FROM_MASTER or not os.path.exists(MASTER_CSV):
-        return set()
-    try:
-        df = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
-        for c in ("vin", "lot"):
-            if c not in df.columns:
-                df[c] = ""
-        keys = set((df["vin"].str.strip() + "|" + df["lot"].str.strip()).tolist())
-        keys.discard("|")
-        print(f"[resume] {len(keys)} existing records loaded")
-        return keys
-    except Exception as e:
-        print(f"[WARN] load keys: {e}")
-        return set()
+    # Concatenate and deduplicate by lot + vin
+    combined = pd.concat([master, new_df], ignore_index=True)
+    combined = combined.drop_duplicates(subset=["lot"], keep="first")
 
-def build_record(raw: dict, existing_keys: set, seen_keys: set, stats: dict):
-    year = str(raw.get("year", "")).strip()
-    if not year_ok(year):
-        stats["year_out_of_range"] += 1
-        return None
+    # Stats
+    with_price = (pd.to_numeric(combined["price"], errors="coerce").fillna(0) > 0).sum()
+    print(f"  Master records   : {len(combined):,}")
+    print(f"  With final price : {with_price:,}")
+    print(f"  Without price    : {len(combined) - with_price:,}")
 
-    price = clean_price(raw.get("price", ""))
-    if REQUIRE_PRICE and price < MIN_PRICE:
-        stats["price_below_min"] += 1
-        return None
+    combined.to_csv(MASTER_CSV, index=False)
+    print(f"  Written: {MASTER_CSV}")
 
-    make  = str(raw.get("make", "")).strip().title()
-    model = str(raw.get("model", "")).strip().title()
-    if not make or not model:
-        stats["incomplete"] += 1
-        return None
-
-    if make.upper() in EXCLUDED_MAKES:
-        stats["excluded_make"] += 1
-        return None
-
-    state = str(raw.get("state", "")).strip().upper()
-    if state and state not in US_STATES:
-        stats["non_us"] = stats.get("non_us", 0) + 1
-        return None
-
-    vin = str(raw.get("vin", "")).strip().upper()
-    lot = str(raw.get("lot", "")).strip()
-    if not vin and not lot:
-        stats["incomplete"] += 1
-        return None
-
-    key = f"{vin}|{lot}"
-    if key in seen_keys:
-        stats["duplicate"] += 1
-        return None
-    if key in existing_keys:
-        stats["existing"] += 1
-        return None
-
-    location = str(raw.get("location", "")).strip().title()
-
-    seen_keys.add(key)
-    existing_keys.add(key)
-    stats["kept"] += 1
-
-    return {
-        "vin":      vin,
-        "year":     year,
-        "make":     make,
-        "model":    model,
-        "trim":     str(raw.get("trim", "")).strip(),
-        "type":     infer_type(f"{make} {model} {raw.get('trim','')}"),
-        "damage":   str(raw.get("damage", "")).strip().title(),
-        "price":    price,
-        "odometer": clean_odo(raw.get("odometer", "")),
-        "lot":      lot,
-        "date":     str(raw.get("date",  "")).strip(),
-        "location": location,
-        "state":    state,
-        "source":   str(raw.get("source", "Copart")).strip(),
-        "url":      str(raw.get("url",   "")).strip(),
-    }
-
-
-# ─────────────────────────────────────────────────────────────
-# CSV OUTPUT
-# ─────────────────────────────────────────────────────────────
-def write_csvs(data: list) -> int:
-    cols_m = ["vin","year","make","model","trim","type","damage",
-              "price","odometer","lot","date","location","state","source","url"]
-    cols_w = ["year","make","model","trim","type","damage",
-              "price","odometer","lot","date","location","state","url"]
-
-    master = (pd.read_csv(MASTER_CSV, dtype=str).fillna("")
-              if os.path.exists(MASTER_CSV) else pd.DataFrame(columns=cols_m))
-
-    if data:
-        ndf = pd.DataFrame(data)
-        for c in cols_m:
-            if c not in ndf.columns:
-                ndf[c] = ""
-        ndf = ndf[cols_m]
-        ndf["price"] = pd.to_numeric(ndf["price"], errors="coerce").fillna(0).astype(int)
-        master = pd.concat([master, ndf], ignore_index=True)
-
-    if not master.empty:
-        master["price"] = pd.to_numeric(master["price"], errors="coerce").fillna(0).astype(int)
-        master["_yr"]   = pd.to_numeric(master["year"],  errors="coerce")
-        master = master[master["price"] >= MIN_PRICE]
-        master = master[master["_yr"].between(YEAR_MIN, YEAR_MAX, inclusive="both")]
-        master = master[~master["make"].str.upper().isin(EXCLUDED_MAKES)]
-        master = master.drop_duplicates(subset=["vin","lot"], keep="first")
-        master = master.drop(columns=["_yr"])
-
-    master.to_csv(MASTER_CSV, index=False)
-    site = master.copy()
-    for c in cols_w:
+    # Site CSV (no VINs, only records with prices)
+    site = combined[pd.to_numeric(combined["price"], errors="coerce").fillna(0) > 0].copy()
+    for c in cols_site:
         if c not in site.columns:
             site[c] = ""
-    site.reindex(columns=cols_w, fill_value="").to_csv(WEBSITE_CSV, index=False)
-    return len(master)
+    site[cols_site].to_csv(OUTPUT_CSV, index=False)
+    print(f"  Written: {OUTPUT_CSV} ({len(site):,} priced records)")
 
 
 # ─────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────
+
 def main():
     t0 = time.time()
-    existing_keys = load_existing_keys()
-    seen_keys: set = set()
-    stats = {k: 0 for k in [
-        "price_below_min","year_out_of_range","excluded_make",
-        "duplicate","existing","incomplete","non_us","kept"
-    ]}
+    print("=" * 60)
+    print("  Copart Historical Sales Harvester")
+    print(f"  Date     : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  State    : {STATE_FILTER or 'All US'}")
+    print(f"  Days     : last {DAYS_TO_FETCH} days of Rebrowser data")
+    print(f"  Max VINs : {MAX_VIN_LOOKUPS} price lookups per run")
+    print("=" * 60)
 
-    # Pick a random make
-    make = random.choice([m for m in ALL_MAKES if m not in EXCLUDED_MAKES])
+    # 1. Download Rebrowser lot data
+    lots_df = download_rebrowser_lots(DAYS_TO_FETCH, STATE_FILTER, MIN_YEAR)
+    if lots_df.empty:
+        print("No lots downloaded. Exiting.")
+        return
 
-    print("=" * 55)
-    print(f"  Copart API scraper")
-    print(f"  Selected make : {make}")
-    print(f"  Year range    : {YEAR_MIN}–{YEAR_MAX}")
-    print(f"  Min price     : ${MIN_PRICE}")
-    print(f"  Existing recs : {len(existing_keys)}")
-    print("=" * 55)
+    print(f"\n  Lots after filter: {len(lots_df):,}")
+    print(f"  Columns: {list(lots_df.columns[:10])}")
 
-    session = get_session()
-    results = []
-    total_pg = None
+    # 2. Load existing VINs
+    existing_vins = load_existing_vins()
 
-    for page in range(0, MAX_PAGES):
-        print(f"\n  Page {page+1}{f'/{total_pg}' if total_pg else ''}...")
-        data = fetch_page(session, make, page)
+    # 3. Look up final prices via AutoBidCar
+    lots_df = enrich_with_prices(lots_df, existing_vins)
 
-        if data is None:
-            print("  API returned no data — stopping")
-            break
+    # 4. Normalize to cars.csv schema
+    print(f"\n  Normalizing columns...")
+    norm_df = normalize_to_cars_csv(lots_df)
+    print(f"  Normalized records: {len(norm_df):,}")
 
-        # Debug: show raw response structure on first page
-        if page == 0:
-            keys_seen = list(data.keys())[:10]
-            print(f"  Response keys: {keys_seen}")
+    # 5. Write output
+    write_csvs(norm_df)
 
-        lots = extract_lots(data)
-        if not lots:
-            print("  No lots in response — done")
-            break
-
-        if total_pg is None:
-            total_pg = total_pages(data)
-            print(f"  Total pages: {total_pg}")
-
-        page_kept = 0
-        for lot in lots:
-            raw = lot_to_raw(lot)
-            rec = build_record(raw, existing_keys, seen_keys, stats)
-            if rec:
-                results.append(rec)
-                page_kept += 1
-
-        print(f"  Lots: {len(lots)} received, {page_kept} kept (total {len(results)})")
-
-        if page + 1 >= total_pg:
-            print("  Reached last page")
-            break
-
-        time.sleep(REQUEST_DELAY + random.uniform(0, 0.5))
-
-    total = write_csvs(results)
-
-    print("\n" + "=" * 55)
-    print(f"  Make scraped :  {make}")
-    print(f"  New rows     :  {len(results)}")
-    print(f"  Master total :  {total}")
-    print(f"  Skip stats   :  {stats}")
-    print(f"  Elapsed      :  {int(time.time()-t0)}s")
-    print("=" * 55)
-    print("\nRun again to scrape a different random make.")
+    elapsed = int(time.time() - t0)
+    print(f"\n  Total time: {elapsed}s ({elapsed//60}m {elapsed%60}s)")
+    print("=" * 60)
+    print("\nDone. Commit cars.csv and master.csv to GitHub.")
 
 
 if __name__ == "__main__":
