@@ -1,20 +1,27 @@
 """
-Rebrowser → Stat.vin Final Price Harvester  (SPEED OPTIMIZED)
-=============================================================
+Rebrowser → AutoBidCar Final Price Harvester  (SPEED OPTIMIZED)
+================================================================
 Target: 3,000-5,000 VIN lookups in under 15 minutes.
 
-Key speed fixes vs previous version:
-  - Concurrency: 100 simultaneous requests (was 25)
-  - Timeout: 8s per request (was 18s)
-  - Retries: 1 (was 3) — fail fast, move on
-  - URL strategy: 1 best URL per VIN (was up to 4 sequential)
-  - No per-request sleep delays (was 0.15-0.55s each)
-  - Pre-fill uses vectorized pandas ops (was row-by-row apply)
-  - BeautifulSoup parsing: lxml parser (was html.parser, 3-5x faster)
-  - Progress logged every 250 completions so you can watch it run
+Sources:
+  1. Rebrowser GitHub  → free Copart + IAAI lot parquets (30 days)
+  2. autobidcar.com    → real final hammer prices
+                         URL: autobidcar.com/car/{make}-{model}-{year}-{VIN}
+                         Price is in <title> and meta tags — no HTML parsing needed.
+                         Confirmed working: returns "Sold for: $12,100" etc.
+
+Why AutoBidCar instead of stat.vin:
+  - stat.vin returned 0 prices across 4,000 lookups (blocked/no data)
+  - AutoBidCar confirmed prices visible in Google snippets and page titles
+  - Price extraction is just a regex on <title> — extremely fast
+
+Speed:
+  - 100 concurrent requests, 8s timeout, 1 retry
+  - Price in <title> tag means we only need first ~500 bytes of response
+  - ~3,000-5,000 lookups in 10-15 minutes
 
 Install:
-    pip install aiohttp pandas pyarrow beautifulsoup4 lxml
+    pip install aiohttp pandas pyarrow
 
 Env vars:
     SCRAPER_API_KEY          ScraperAPI key (recommended for GH Actions)
@@ -33,12 +40,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
 import pandas as pd
-
-try:
-    from bs4 import BeautifulSoup
-    BS4 = True
-except ImportError:
-    BS4 = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
@@ -102,13 +103,9 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
 ]
 
-# Price patterns to search for in HTML text
-PRICE_RE = re.compile(
-    r"(?:Final\s*Bid|Sale\s*Price|Sold\s*[Ff]or|Winning\s*Bid|Last\s*Bid|Purchase\s*Price)"
-    r"\s*[:\-]?\s*\$?\s*([\d,]+)",
-    re.IGNORECASE,
-)
-DOLLAR_RE = re.compile(r"\$\s*([\d,]{3,7})")  # fallback: any $X,XXX
+# AutoBidCar puts price in title/meta: "Sold for: $12,100"
+SOLD_RE   = re.compile(r"Sold\s+for:\s*\$\s*([\d,]+)", re.IGNORECASE)
+DOLLAR_RE = re.compile(r"\$\s*([\d,]{3,7})")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
@@ -186,24 +183,36 @@ def save_state(state: Dict[str, Any]) -> None:
     Path(STATE_FILE).write_text(json.dumps(state, indent=2))
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PRICE EXTRACTOR  (regex-first, no DOM parsing unless needed)
+# PRICE EXTRACTOR  — autobidcar puts "Sold for: $X,XXX" in title + meta
+# Only need first 3KB — price is always in the HTML head
 # ─────────────────────────────────────────────────────────────────────────────
 
 def extract_price(html: str) -> int:
     """
-    Fast price extraction — tries regex directly on raw HTML first,
-    only falls back to BS4 text extraction if needed.
+    Extract final sold price from autobidcar.com page.
+    Price is in the <title> and <meta description>:
+      "Sold for: $12,100"  or  "Sold for: $5100"
+    Skip if page says "Sold for: $null" (unsold lot).
     """
-    # Fast path: regex on raw HTML (no parsing overhead)
-    for m in PRICE_RE.finditer(html):
+    head = html[:4000]
+
+    # Quick rejection — unsold or no price
+    if "Sold for: $null" in head or "price was N/A" in head:
+        return 0
+
+    # Primary: exact "Sold for: $X,XXX" pattern (always in title/meta)
+    for m in SOLD_RE.finditer(head):
         try:
             p = int(m.group(1).replace(",", ""))
             if MIN_PRICE <= p <= 500_000:
                 return p
         except: pass
 
-    # Check __NEXT_DATA__ JSON blob (common in Next.js apps like stat.vin)
-    nd = re.search(r'"(?:finalBid|soldPrice|highBid|salePrice|price)"\s*:\s*"?([\d.]+)"?', html)
+    # Secondary: JSON data blob
+    nd = re.search(
+        r'"(?:finalBid|soldPrice|highBid|salePrice|sold_for|price)"\s*:\s*"?([\d.]+)"?',
+        html[:8000]
+    )
     if nd:
         try:
             p = int(float(nd.group(1)))
@@ -211,65 +220,27 @@ def extract_price(html: str) -> int:
                 return p
         except: pass
 
-    # Slower fallback: strip HTML tags then scan for dollar amounts
-    if BS4:
-        try:
-            text = BeautifulSoup(html, "lxml").get_text("\n")
-        except:
-            text = re.sub(r"<[^>]+>", " ", html)
-    else:
-        text = re.sub(r"<[^>]+>", " ", html)
-
-    for m in PRICE_RE.finditer(text):
-        try:
-            p = int(m.group(1).replace(",", ""))
-            if MIN_PRICE <= p <= 500_000:
-                return p
-        except: pass
-
-    # Last resort: any $X,XXX amount
-    for m in DOLLAR_RE.finditer(text):
-        try:
-            p = int(m.group(1).replace(",", ""))
-            if MIN_PRICE <= p <= 500_000:
-                return p
-        except: pass
-
     return 0
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STAT.VIN URL BUILDER
+# AUTOBIDCAR URL BUILDER
+# Confirmed format from search results:
+#   autobidcar.com/car/{make}-{model}-{year}-{VIN}
+# e.g. /car/toyota-highlander-l-2023-5TDKDRBH0PS043829
 # ─────────────────────────────────────────────────────────────────────────────
 
-def best_statvin_url(vin: str, make: str, model: str, lot: str, auction: str) -> str:
-    """
-    Return the single BEST URL to try for this vehicle.
-    Priority: full make/model/vin path → lot-based fallback
+def best_lookup_url(vin: str, make: str, model: str, year: Any,
+                    lot: str = "", auction: str = "") -> str:
+    """Build the best autobidcar.com URL for this vehicle."""
+    vin = (vin or "").strip().upper()
+    if len(vin) != 17:
+        return ""
+    make_s  = slugify(make  or "unknown")
+    model_s = slugify(model or "unknown")
+    year_s  = str(clean_year(year)) if year else "0"
+    return f"https://autobidcar.com/car/{make_s}-{model_s}-{year_s}-{vin}"
 
-    URL format confirmed from screenshot:
-    https://stat.vin/vin-decoding/{make}/{model}/{vin}
-    """
-    vin  = (vin  or "").strip().upper()
-    make = slugify(make  or "")
-    model= slugify(model or "")
-    lot  = (lot  or "").strip()
-    auction = (auction or "").strip().upper()
 
-    if len(vin) == 17:
-        if make and model:
-            return f"https://stat.vin/vin-decoding/{make}/{model}/{vin}"
-        if make:
-            return f"https://stat.vin/vin-decoding/{make}/{vin}"
-        return f"https://stat.vin/vin-decoding/{vin}"
-
-    # No valid VIN — fall back to lot
-    if lot and len(lot) >= 5:
-        if auction == "COPART":
-            return f"https://stat.vin/en/copart/{lot}"
-        if auction == "IAAI":
-            return f"https://stat.vin/en/iaai/{lot}"
-
-    return ""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ASYNC HTTP
@@ -457,12 +428,11 @@ async def enrich_prices(df: pd.DataFrame) -> pd.DataFrame:
     # Build (idx, url) pairs — one URL per VIN, computed upfront
     tasks_meta = []
     for idx, row in rows.iterrows():
-        url = best_statvin_url(
+        url = best_lookup_url(
             vin=str(row.get("vin","")),
             make=str(row.get("make","")),
             model=str(row.get("model","")),
-            lot=str(row.get("lot","")),
-            auction=str(row.get("auction","")),
+            year=row.get("year", 0),
         )
         if url:
             tasks_meta.append((idx, url))
@@ -610,7 +580,7 @@ def write_outputs(combined: pd.DataFrame) -> None:
 async def run() -> None:
     t0 = time.time()
     print("=" * 68, flush=True)
-    print("  Rebrowser → Stat.vin  |  SPEED OPTIMIZED")
+    print("  Rebrowser → AutoBidCar  |  SPEED OPTIMIZED")
     print(f"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"  Concurrency : {STATVIN_CONCURRENCY}   Timeout : {STATVIN_TIMEOUT}s   Batch : {STATVIN_LOOKUPS_PER_RUN:,}")
     print(f"  Proxy       : {'ScraperAPI ✓' if SCRAPER_API_KEY else 'none — direct requests'}")
