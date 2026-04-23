@@ -19,39 +19,27 @@ from bs4 import BeautifulSoup
 Rebrowser -> Stat.vin Final Price Harvester
 ==========================================
 
-This version:
-- downloads Rebrowser Copart + IAAI parquet snapshots
-- normalizes and dedupes them
-- resolves final sale prices from Stat.vin using direct pages only
-- avoids Stat.vin /vehicle-search because it is commonly blocked
+Pipeline:
+1. Download recent Rebrowser Copart and IAAI parquet snapshots.
+2. Normalize and combine them.
+3. Try to resolve final prices from direct Stat.vin pages only.
+4. Always write snapshot CSVs for the current run.
+5. Write master.csv and cars.csv when possible.
 
-Lookup strategy:
-1) VIN page:  https://stat.vin/cars/<VIN>
-2) Copart lot: https://stat.vin/en/copart/<LOT>
-3) IAAI lot:   https://stat.vin/en/iaai/<LOT>
-
-Install:
-    pip install aiohttp pandas pyarrow beautifulsoup4 lxml fastparquet
-
-Run:
-    python harvest_history_stat_vin.py
-
-Optional env vars:
-    REBROWSER_DAYS=30
-    REBROWSER_CONCURRENCY=10
-    STATVIN_CONCURRENCY=4
-    STATVIN_LOOKUPS_PER_RUN=2000
-    STATVIN_TIMEOUT=20
-    SCRAPER_PROXY=http://user:pass@host:port
+Notes:
+- This version avoids Stat.vin search endpoints because they are commonly blocked.
+- It uses direct pages only:
+    https://stat.vin/cars/<VIN>
+    https://stat.vin/en/copart/<LOT>
+    https://stat.vin/en/iaai/<LOT>
+- It is written to be GitHub Actions safe from a syntax perspective:
+  no multiline f-strings, no fragile string formatting.
 """
-
-# ------------------------------------------------------------------
-# CONFIG
-# ------------------------------------------------------------------
 
 OUTPUT_CSV = "cars.csv"
 MASTER_CSV = "master.csv"
-CHECKPOINT_DIR = "checkpoints"
+INCOMING_CSV = "incoming_latest.csv"
+UNRESOLVED_CSV = "statvin_unresolved.csv"
 DEBUG_DIR = "debug"
 LOOKUP_BATCH_STATE_FILE = os.environ.get("LOOKUP_BATCH_STATE_FILE", "statvin_lookup_state.json")
 
@@ -59,8 +47,8 @@ MIN_YEAR = 2012
 MIN_PRICE = 200
 REBROWSER_DAYS = int(os.environ.get("REBROWSER_DAYS", "30"))
 REBROWSER_CONCURRENCY = int(os.environ.get("REBROWSER_CONCURRENCY", "10"))
-STATVIN_CONCURRENCY = int(os.environ.get("STATVIN_CONCURRENCY", "4"))
-STATVIN_LOOKUPS_PER_RUN = int(os.environ.get("STATVIN_LOOKUPS_PER_RUN", "2000"))
+STATVIN_CONCURRENCY = int(os.environ.get("STATVIN_CONCURRENCY", "2"))
+STATVIN_LOOKUPS_PER_RUN = int(os.environ.get("STATVIN_LOOKUPS_PER_RUN", "500"))
 STATVIN_TIMEOUT = int(os.environ.get("STATVIN_TIMEOUT", "20"))
 PARQUET_TIMEOUT = int(os.environ.get("PARQUET_TIMEOUT", "20"))
 RETRIES = int(os.environ.get("RETRIES", "3"))
@@ -84,7 +72,7 @@ USER_AGENTS = [
 STANDARD_COLS = [
     "year", "make", "model", "trim", "type", "damage",
     "price", "odometer", "lot", "vin", "date",
-    "location", "state", "source", "auction", "url"
+    "location", "state", "source", "auction", "url",
 ]
 
 REBROWSER_SOURCES = {
@@ -128,28 +116,9 @@ REBROWSER_SOURCES = {
     },
 }
 
-# ------------------------------------------------------------------
-# HELPERS
-# ------------------------------------------------------------------
 
 def log(msg: str) -> None:
-    print(f"  {msg}")
-
-
-def rh() -> Dict[str, str]:
-    return {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-    }
+    print("  " + msg)
 
 
 def ensure_dir(path: str | Path) -> None:
@@ -170,14 +139,25 @@ def load_json(path: str | Path) -> Dict[str, Any]:
         return {}
 
 
-def save_debug_text(name: str, content: str) -> None:
-    ensure_dir(DEBUG_DIR)
-    Path(DEBUG_DIR, name).write_text(content, encoding="utf-8", errors="ignore")
-
-
 def save_debug_html(name: str, html: str) -> None:
     ensure_dir(DEBUG_DIR)
-    Path(DEBUG_DIR, f"{name}.html").write_text(html[:500000], encoding="utf-8", errors="ignore")
+    Path(DEBUG_DIR, name + ".html").write_text(html[:500000], encoding="utf-8", errors="ignore")
+
+
+def rh() -> Dict[str, str]:
+    return {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+    }
 
 
 def clean_price(val: Any) -> int:
@@ -204,7 +184,7 @@ def clean_odo(val: Any) -> str:
     if not m:
         return ""
     unit = "km" if "km" in s.lower() else "mi"
-    return f"{int(float(m.group(1)))} {unit}"
+    return str(int(float(m.group(1)))) + " " + unit
 
 
 def cap(s: Any) -> str:
@@ -224,7 +204,7 @@ def norm_date(val: Any) -> str:
 
     m = re.search(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", s)
     if m:
-        return f"{m.group(3)}-{m.group(1).zfill(2)}-{m.group(2).zfill(2)}"
+        return m.group(3) + "-" + m.group(1).zfill(2) + "-" + m.group(2).zfill(2)
 
     for fmt in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%a %d %b %Y"):
         try:
@@ -295,8 +275,9 @@ def rotated_slice(items: List[int], state_file: str, batch_size: int) -> List[in
     if not items:
         return []
     state = load_json(state_file)
-    idx = int(state.get("next_index", 0)) if str(state.get("next_index", "")).isdigit() else 0
-    idx %= len(items)
+    raw_idx = state.get("next_index", 0)
+    idx = int(raw_idx) if str(raw_idx).isdigit() else 0
+    idx = idx % len(items)
     out = items[idx:idx + batch_size]
     if len(out) < batch_size:
         out += items[: max(0, batch_size - len(out))]
@@ -304,10 +285,6 @@ def rotated_slice(items: List[int], state_file: str, batch_size: int) -> List[in
     save_json(state_file, {"next_index": next_idx, "updated_at": datetime.now(timezone.utc).isoformat()})
     return out
 
-
-# ------------------------------------------------------------------
-# HTTP
-# ------------------------------------------------------------------
 
 async def fetch_text(
     session: aiohttp.ClientSession,
@@ -340,18 +317,18 @@ async def fetch_text(
                         "checking your browser",
                     ]
                     if any(sig in low for sig in blocked_signals):
-                        print(f"[BLOCKED] {url}")
+                        print("[BLOCKED] " + url)
                         return None
                     return text
                 if resp.status in (403, 429):
-                    print(f"[HTTP {resp.status}] {url}")
+                    print("[HTTP " + str(resp.status) + "] " + url)
                     await asyncio.sleep(1.2 * (attempt + 1))
                     continue
-                print(f"[HTTP {resp.status}] {url}")
+                print("[HTTP " + str(resp.status) + "] " + url)
                 return None
         except Exception as e:
             if attempt == retries - 1:
-                print(f"[ERROR] {url} -> {e}")
+                print("[ERROR] " + url + " -> " + str(e))
                 return None
             await asyncio.sleep(0.8 * (attempt + 1))
     return None
@@ -386,12 +363,8 @@ async def fetch_bytes(
     return None
 
 
-# ------------------------------------------------------------------
-# REBROWSER
-# ------------------------------------------------------------------
-
 async def fetch_rebrowser_async(name: str, cfg: Dict[str, Any]) -> pd.DataFrame:
-    print(f"Fetching {name} ({REBROWSER_DAYS} days)...")
+    print("Fetching " + name + " (" + str(REBROWSER_DAYS) + " days)...")
 
     today = datetime.now(timezone.utc)
     date_strs = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(REBROWSER_DAYS)]
@@ -443,13 +416,9 @@ async def fetch_rebrowser_async(name: str, cfg: Dict[str, Any]) -> pd.DataFrame:
 
     out = out[(out["year"] >= MIN_YEAR) & out["make"].ne("") & out["model"].ne("")]
     out = ensure_standard_cols(out)
-    print(f"{name}: {len(out):,} rows")
+    print(name + ": " + format(len(out), ",") + " rows")
     return out
 
-
-# ------------------------------------------------------------------
-# STAT.VIN
-# ------------------------------------------------------------------
 
 class StatVinClient:
     def __init__(self, session: aiohttp.ClientSession, sem: asyncio.Semaphore) -> None:
@@ -462,29 +431,24 @@ class StatVinClient:
         auction = (auction or "").strip().upper()
 
         urls: List[str] = []
-
         if vin and len(vin) == 17:
-            urls.append(f"https://stat.vin/cars/{vin}")
-
+            urls.append("https://stat.vin/cars/" + vin)
         if lot:
             if auction == "COPART":
-                urls.append(f"https://stat.vin/en/copart/{lot}")
+                urls.append("https://stat.vin/en/copart/" + lot)
             elif auction == "IAAI":
-                urls.append(f"https://stat.vin/en/iaai/{lot}")
+                urls.append("https://stat.vin/en/iaai/" + lot)
 
-        for i, url in enumerate(urls, start=1):
+        for idx, url in enumerate(urls):
             async with self.sem:
                 html = await fetch_text(self.session, url, timeout=STATVIN_TIMEOUT, retries=RETRIES)
             if not html:
                 continue
-
-            if SAVE_STATVIN_DEBUG and i == 1:
+            if SAVE_STATVIN_DEBUG and idx == 0:
                 safe_key = vin or lot or "unknown"
-                save_debug_html(f"statvin_{safe_key}", html)
-
-            if not self._page_matches(html, vin=vin, lot=lot, auction=auction):
+                save_debug_html("statvin_" + safe_key, html)
+            if not self._page_matches(html, vin, lot, auction):
                 continue
-
             price = self._extract_price_from_html(html)
             if price > 0:
                 return price, url
@@ -494,7 +458,6 @@ class StatVinClient:
     def _page_matches(self, html: str, vin: str, lot: str, auction: str) -> bool:
         text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
         upper = re.sub(r"\s+", " ", text).upper()
-
         if vin and vin in upper:
             return True
         if lot and lot in upper:
@@ -504,9 +467,7 @@ class StatVinClient:
         return False
 
     def _extract_price_from_html(self, html: str) -> int:
-        soup = BeautifulSoup(html, "html.parser")
-        text = soup.get_text("\n", strip=True)
-
+        text = BeautifulSoup(html, "html.parser").get_text("\n", strip=True)
         patterns = [
             r"Final\s*Bid\s*:?\s*\$?\s*([\d,]+)",
             r"Sale\s*Price\s*:?\s*\$?\s*([\d,]+)",
@@ -514,17 +475,16 @@ class StatVinClient:
             r"Winning\s*Bid\s*:?\s*\$?\s*([\d,]+)",
             r"Amount\s*:\s*\$?\s*([\d,]+)",
         ]
-
         for pat in patterns:
             m = re.search(pat, text, flags=re.IGNORECASE)
-            if m:
-                try:
-                    value = int(m.group(1).replace(",", ""))
-                    if value >= MIN_PRICE:
-                        return value
-                except Exception:
-                    pass
-
+            if not m:
+                continue
+            try:
+                value = int(m.group(1).replace(",", ""))
+                if value >= MIN_PRICE:
+                    return value
+            except Exception:
+                pass
         return 0
 
 
@@ -545,8 +505,8 @@ async def enrich_from_statvin(df: pd.DataFrame) -> pd.DataFrame:
     run_indexes = rotated_slice(target_indexes, LOOKUP_BATCH_STATE_FILE, min(STATVIN_LOOKUPS_PER_RUN, len(target_indexes)))
     run_targets = out.loc[run_indexes].copy()
 
-    log(f"Stat.vin lookup candidates available: {len(target_indexes):,}")
-    log(f"Stat.vin lookup batch this run: {len(run_targets):,}")
+    log("Stat.vin lookup candidates available: " + format(len(target_indexes), ","))
+    log("Stat.vin lookup batch this run: " + format(len(run_targets), ","))
 
     connector = aiohttp.TCPConnector(limit=max(STATVIN_CONCURRENCY * 2, 20), ttl_dns_cache=300)
     sem = asyncio.Semaphore(STATVIN_CONCURRENCY)
@@ -565,9 +525,10 @@ async def enrich_from_statvin(df: pd.DataFrame) -> pd.DataFrame:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
     hit_count = 0
-    blocked_or_empty = 0
+    unresolved_count = 0
     for res in results:
         if isinstance(res, Exception):
+            unresolved_count += 1
             continue
         idx, price, matched_url = res
         if price > 0:
@@ -575,26 +536,22 @@ async def enrich_from_statvin(df: pd.DataFrame) -> pd.DataFrame:
             out.at[idx, "url"] = matched_url
             hit_count += 1
         else:
-            blocked_or_empty += 1
+            unresolved_count += 1
 
-    log(f"Stat.vin prices recovered this run: {hit_count:,}")
-    log(f"Stat.vin unresolved this run: {blocked_or_empty:,}")
+    log("Stat.vin prices recovered this run: " + format(hit_count, ","))
+    log("Stat.vin unresolved this run: " + format(unresolved_count, ","))
     return out
 
-
-# ------------------------------------------------------------------
-# MERGE / WRITE
-# ------------------------------------------------------------------
 
 def load_existing() -> pd.DataFrame:
     if os.path.exists(MASTER_CSV):
         try:
             df = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
             df = ensure_standard_cols(df)
-            log(f"Existing master: {len(df):,} rows")
+            log("Existing master: " + format(len(df), ",") + " rows")
             return df
         except Exception as e:
-            log(f"Could not read master: {e}")
+            log("Could not read master: " + str(e))
     return pd.DataFrame(columns=STANDARD_COLS)
 
 
@@ -635,11 +592,20 @@ def merge_preview(existing: pd.DataFrame, frames: List[pd.DataFrame]) -> Tuple[p
 
     new_data = normalize_dataframe(new_data)
     before_count = len(existing)
-
     combined = pd.concat([existing, new_data], ignore_index=True)
     combined = dedupe_combined(combined)
     actual_new = len(combined) - before_count
     return combined, actual_new
+
+
+def write_snapshot_csvs(incoming: pd.DataFrame) -> None:
+    incoming = ensure_standard_cols(incoming)
+    incoming.to_csv(INCOMING_CSV, index=False)
+    log("Written: " + INCOMING_CSV + " (" + format(len(incoming), ",") + " rows)")
+
+    unresolved = incoming[to_int_price_series(incoming["price"]) == 0].copy()
+    unresolved.to_csv(UNRESOLVED_CSV, index=False)
+    log("Written: " + UNRESOLVED_CSV + " (" + format(len(unresolved), ",") + " unresolved rows)")
 
 
 def write_outputs(combined: pd.DataFrame, incoming: pd.DataFrame) -> None:
@@ -647,104 +613,93 @@ def write_outputs(combined: pd.DataFrame, incoming: pd.DataFrame) -> None:
     incoming = ensure_standard_cols(incoming)
 
     combined.to_csv(MASTER_CSV, index=False)
-    log(f"Written: {MASTER_CSV} ({len(combined):,} rows)")
+    log("Written: " + MASTER_CSV + " (" + format(len(combined), ",") + " rows)")
 
     priced = combined[to_int_price_series(combined["price"]) > 0].copy()
     site_cols = [
         "year", "make", "model", "trim", "type", "damage",
         "price", "odometer", "lot", "date", "location", "state",
-        "auction", "source", "url"
+        "auction", "source", "url",
     ]
     for c in site_cols:
         if c not in priced.columns:
             priced[c] = ""
     priced[site_cols].to_csv(OUTPUT_CSV, index=False)
-    log(f"Written: {OUTPUT_CSV} ({len(priced):,} priced rows)")
+    log("Written: " + OUTPUT_CSV + " (" + format(len(priced), ",") + " priced rows)")
 
-    incoming.to_csv("incoming_latest.csv", index=False)
-    log(f"Written: incoming_latest.csv ({len(incoming):,} rows)")
+    write_snapshot_csvs(incoming)
 
-    unresolved = incoming[to_int_price_series(incoming["price"]) == 0].copy()
-    unresolved.to_csv("statvin_unresolved.csv", index=False)
-    log(f"Written: statvin_unresolved.csv ({len(unresolved):,} unresolved rows)")
-
-
-# ------------------------------------------------------------------
-# MAIN
-# ------------------------------------------------------------------
 
 def main() -> None:
     t0 = time.time()
 
     print("=" * 68)
     print("  Rebrowser -> Stat.vin Final Price Harvester")
-    print(f"  Date              : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
-    print(f"  Rebrowser days    : {REBROWSER_DAYS}")
-    print(f"  Stat.vin batch    : {STATVIN_LOOKUPS_PER_RUN}")
-    print(f"  Stat.vin concur   : {STATVIN_CONCURRENCY}")
-    print(f"  Proxy             : {'enabled' if SCRAPER_PROXY else 'disabled'}")
+    print("  Date              : " + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
+    print("  Rebrowser days    : " + str(REBROWSER_DAYS))
+    print("  Stat.vin batch    : " + str(STATVIN_LOOKUPS_PER_RUN))
+    print("  Stat.vin concur   : " + str(STATVIN_CONCURRENCY))
+    print("  Proxy             : " + ("enabled" if SCRAPER_PROXY else "disabled"))
     print("=" * 68)
 
     existing = load_existing()
 
-    print("\n[1/3] Rebrowser refresh — Copart")
+    print("")
+    print("[1/3] Rebrowser refresh - Copart")
     rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
 
-    print("\n[2/3] Rebrowser refresh — IAAI")
+    print("")
+    print("[2/3] Rebrowser refresh - IAAI")
     rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
 
     frames = [df for df in (rb_copart, rb_iaai) if not df.empty]
     incoming = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=STANDARD_COLS)
     incoming = ensure_standard_cols(incoming)
 
-    print("\n[3/3] Stat.vin final price enrichment")
+    print("")
+    print("[3/3] Stat.vin final price enrichment")
     incoming = asyncio.run(enrich_from_statvin(incoming))
 
     combined, actual_new = merge_preview(existing, [incoming])
 
-    print("\n" + "=" * 68)
-    print(f"Actual new rows added this run: {actual_new:,}")
+    print("")
+    print("=" * 68)
+    print("Actual new rows added this run: " + format(actual_new, ","))
 
     total = len(combined)
-    with_price = (to_int_price_series(combined["price"]) > 0).sum()
-    print(f"Master total: {total:,}")
-    print(f"Rows with price: {with_price:,}")
-    print(f"Rows without price: {total - with_price:,}")
+    with_price = int((to_int_price_series(combined["price"]) > 0).sum())
+    print("Master total: " + format(total, ","))
+    print("Rows with price: " + format(with_price, ","))
+    print("Rows without price: " + format(total - with_price, ","))
 
     if not incoming.empty:
         for src, grp in incoming.groupby("source"):
-            priced = (to_int_price_series(grp["price"]) > 0).sum()
-            print(f"Incoming {src}: {len(grp):,} rows, {priced:,} priced")
+            priced = int((to_int_price_series(grp["price"]) > 0).sum())
+            print("Incoming " + str(src) + ": " + format(len(grp), ",") + " rows, " + format(priced, ",") + " priced")
 
-        if with_price < MIN_PRICED_ROWS_TO_WRITE:
-        print(f"Too few priced rows found ({with_price} < {MIN_PRICED_ROWS_TO_WRITE}); writing debug CSVs anyway.")
-        incoming.to_csv("incoming_latest.csv", index=False)
-        incoming[incoming["price"].astype(str).isin(["", "0"])].to_csv("statvin_unresolved.csv", index=False)
-        log(f"Written: incoming_latest.csv ({len(incoming):,} rows)")
-        log(f"Written: statvin_unresolved.csv ({len(incoming[incoming['price'].astype(str).isin(['', '0'])]):,} unresolved rows)")
+    write_snapshot_csvs(incoming)
+
+    if with_price < MIN_PRICED_ROWS_TO_WRITE:
+        print("Too few priced rows found (" + str(with_price) + " < " + str(MIN_PRICED_ROWS_TO_WRITE) + "); not updating master.csv or cars.csv.")
         elapsed = int(time.time() - t0)
-        print(f"
-Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+        print("")
+        print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
         print("=" * 68)
         return
 
     if actual_new == 0:
-        print("No new rows found in master merge. Writing CSV snapshots anyway.")
-        incoming.to_csv("incoming_latest.csv", index=False)
-        incoming[incoming["price"].astype(str).isin(["", "0"])].to_csv("statvin_unresolved.csv", index=False)
-        log(f"Written: incoming_latest.csv ({len(incoming):,} rows)")
-        log(f"Written: statvin_unresolved.csv ({len(incoming[incoming['price'].astype(str).isin(['', '0'])]):,} unresolved rows)")
+        print("No new rows found in master merge. Snapshot CSVs were still written.")
         elapsed = int(time.time() - t0)
-        print(f"
-Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+        print("")
+        print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
         print("=" * 68)
         return
 
     write_outputs(combined, incoming)
 
     elapsed = int(time.time() - t0)
-    print(f"
-Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+    print("")
+    print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
     print("=" * 68)
 
 
