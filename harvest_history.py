@@ -7,9 +7,18 @@ Optimized version with:
 - LOT-first price lookup
 - VIN fallback lookup
 - Caches for lot/VIN URLs and prices
-- Higher safe caps
-- Skip only lots that already HAVE a price
+- Minimum model year = 2000
+- Skip only lots/VINs that already HAVE a price
 - Concurrent detail-page scraping
+- Better lot URL resolution
+
+INSTALL
+-------
+pip install requests pandas pyarrow beautifulsoup4
+
+RUN
+---
+python harvest_history.py
 """
 
 import io
@@ -20,6 +29,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote_plus
 
 import pandas as pd
 import requests
@@ -32,8 +42,8 @@ from urllib3.util.retry import Retry
 # CONFIG
 # ─────────────────────────────────────────────
 DAYS_TO_FETCH    = 30
-STATE_FILTER     = "CA"
-MIN_YEAR         = 2015
+STATE_FILTER     = "CA"        # "" = all US
+MIN_YEAR         = 2000
 MIN_PRICE        = 500
 
 OUTPUT_CSV       = "cars.csv"
@@ -412,33 +422,66 @@ def get_autobidcar_lot_search_url(lot: str) -> str:
     return f"https://autobidcar.com/en/search-result?search={lot}"
 
 
+def _extract_candidate_links_from_html(html: str, base_hint: str) -> list[str]:
+    soup = BeautifulSoup(html, "html.parser")
+    out = []
+
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        if not href:
+            continue
+
+        if href.startswith("/"):
+            if "carsbidshistory.com" in base_hint:
+                href = "https://carsbidshistory.com" + href
+            elif "autobidcar.com" in base_hint:
+                href = "https://autobidcar.com" + href
+
+        if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
+            out.append(href)
+        elif "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
+            out.append(href)
+
+    return list(dict.fromkeys(out))
+
+
 def _find_candidate_detail_url_from_search_page(search_url: str, session: requests.Session) -> str | None:
     try:
         r = session.get(search_url, timeout=SCRAPE_TIMEOUT)
         if r.status_code != 200:
             return None
 
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        for a in soup.find_all("a", href=True):
-            href = a["href"].strip()
-            if not href:
-                continue
-
-            if href.startswith("/"):
-                if "carsbidshistory.com" in search_url:
-                    href = "https://carsbidshistory.com" + href
-                elif "autobidcar.com" in search_url:
-                    href = "https://autobidcar.com" + href
-
-            if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
-                return href
-
-            if "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
-                return href
-
+        links = _extract_candidate_links_from_html(r.text, search_url)
+        if links:
+            return links[0]
     except Exception:
         return None
+
+    return None
+
+
+def _find_candidate_detail_url_via_search_engine(lot: str, session: requests.Session) -> str | None:
+    queries = [
+        f'site:carsbidshistory.com "{lot}"',
+        f'site:autobidcar.com "{lot}"',
+    ]
+
+    for q in queries:
+        url = f"https://html.duckduckgo.com/html/?q={quote_plus(q)}"
+        try:
+            r = session.get(url, timeout=SCRAPE_TIMEOUT)
+            if r.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(r.text, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"].strip()
+                if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
+                    return href
+                if "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
+                    return href
+        except Exception:
+            continue
 
     return None
 
@@ -456,14 +499,15 @@ def scrape_price_by_lot(lot: str, session: requests.Session, lot_url_cache: dict
     page_url = lot_url_cache.get(lot, "")
 
     if not page_url:
-        search_url = get_carsbidshistory_lot_search_url(lot)
-        page_url = _find_candidate_detail_url_from_search_page(search_url, session)
+        page_url = _find_candidate_detail_url_from_search_page(get_carsbidshistory_lot_search_url(lot), session)
 
-        if not page_url:
-            search_url = get_autobidcar_lot_search_url(lot)
-            page_url = _find_candidate_detail_url_from_search_page(search_url, session)
+    if not page_url:
+        page_url = _find_candidate_detail_url_from_search_page(get_autobidcar_lot_search_url(lot), session)
 
-        lot_url_cache[lot] = page_url or ""
+    if not page_url:
+        page_url = _find_candidate_detail_url_via_search_engine(lot, session)
+
+    lot_url_cache[lot] = page_url or ""
 
     if not page_url:
         lot_price_cache[lot] = ""
