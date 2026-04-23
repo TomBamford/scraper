@@ -425,14 +425,20 @@ class StatVinClient:
         self.session = session
         self.sem = sem
 
-    async def lookup_price(self, vin: str, lot: str, auction: str) -> Tuple[int, str]:
+    def _make_slug_from_vin_page_hint(self, vin: str) -> str:
+        return ""
+
+    async def lookup_price(self, vin: str, lot: str, auction: str, make_slug: str = "") -> Tuple[int, str]:
         vin = (vin or "").strip().upper()
         lot = str(lot or "").strip()
         auction = (auction or "").strip().upper()
+        make_slug = (make_slug or "").strip().lower()
 
         urls: List[str] = []
         if vin and len(vin) == 17:
-            urls.append("https://stat.vin/cars/" + vin)
+            if make_slug:
+                urls.append("https://stat.vin/vin-decoding/" + make_slug + "/" + vin)
+            urls.append("https://stat.vin/vin-decoding/" + vin)
         if lot:
             if auction == "COPART":
                 urls.append("https://stat.vin/en/copart/" + lot)
@@ -518,7 +524,10 @@ async def enrich_from_statvin(df: pd.DataFrame) -> pd.DataFrame:
             vin = str(row.get("vin", "")).strip().upper()
             lot = str(row.get("lot", "")).strip()
             auction = str(row.get("auction", "")).strip().upper()
-            price, matched_url = await client.lookup_price(vin=vin, lot=lot, auction=auction)
+            make = str(row.get("make", "")).strip().lower().replace(" ", "-")
+            if make == "mercedes-benz":
+                make = "mercedes-benz"
+            price, matched_url = await client.lookup_price(vin=vin, lot=lot, auction=auction, make_slug=make)
             return idx, price, matched_url
 
         tasks = [one(idx, row) for idx, row in run_targets.iterrows()]
