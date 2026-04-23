@@ -72,11 +72,16 @@ jobs:
 
       - name: Commit updated files
         if: success()
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add cars.csv master.csv rotation_state.json checkpoints/ debug/
+          [ -f cars.csv ] && git add cars.csv
+          [ -f master.csv ] && git add master.csv
+          [ -f rotation_state.json ] && git add rotation_state.json
+          [ -d checkpoints ] && git add checkpoints
+          [ -d debug ] && git add debug
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
