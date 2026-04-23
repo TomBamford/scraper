@@ -1,0 +1,9 @@
+aiohttp
+aiodns
+requests
+pandas
+pyarrow
+beautifulsoup4
+kaggle
+lxml
+fastparquet
