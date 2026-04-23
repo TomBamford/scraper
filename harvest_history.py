@@ -1,34 +1,26 @@
 """
 Copart & IAAI Final Price Harvester
 ===================================
-High-throughput, target-driven scraper designed to add roughly
-2,000-5,000 NEW rows to the CSV on each run.
+Debug-focused, target-driven scraper designed to help resolve why:
 
-Features:
-- Target-driven collection (actual deduped additions)
-- Async concurrent AutoBidCar catalog scraping
-- Async concurrent AutoBidCar detail scraping
-- Async concurrent Rebrowser parquet downloads
-- Periodic checkpoint CSV writes
-- Rotating make order between runs
+1. AutoBidCar is returning 0 rows
+2. Rebrowser rows have no prices unless AutoBidCar enriches them
+
+What this version adds:
+- Debug HTML dumps for AutoBidCar catalog pages
+- Block-page detection
+- Broader AutoBidCar parser
+- Safer write guard: refuses to overwrite outputs if priced rows are too low
+- Checkpoints
+- Rotating make order
 - Optional proxy support
-- Optional Kaggle Manheim backfill
-- Safe merge + dedupe before final write
+- Optional Kaggle support
 
 Install:
-    pip install aiohttp aiodns requests pandas pyarrow beautifulsoup4
+    pip install aiohttp aiodns requests pandas pyarrow beautifulsoup4 kaggle lxml fastparquet
 
-Optional:
-    pip install kaggle
-
-Env vars:
-    KAGGLE_USERNAME=...
-    KAGGLE_KEY=...
-    HTTP_PROXY=http://user:pass@host:port
-    HTTPS_PROXY=http://user:pass@host:port
-    SCRAPER_PROXY=http://user:pass@host:port   # optional override
-    ROTATION_STATE_FILE=rotation_state.json    # optional
-    ENABLE_KAGGLE=true                         # optional
+Run:
+    python harvest_history.py
 """
 
 from __future__ import annotations
@@ -47,7 +39,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import aiohttp
 import pandas as pd
-import requests
 from bs4 import BeautifulSoup
 
 
@@ -59,6 +50,7 @@ OUTPUT_CSV = "cars.csv"
 MASTER_CSV = "master.csv"
 
 CHECKPOINT_DIR = "checkpoints"
+DEBUG_DIR = "debug"
 CHECKPOINT_EVERY_NEW_ROWS = 500
 ROTATION_STATE_FILE = os.environ.get("ROTATION_STATE_FILE", "rotation_state.json")
 
@@ -86,6 +78,8 @@ CATALOG_TIMEOUT = 20
 DETAIL_TIMEOUT = 20
 PARQUET_TIMEOUT = 20
 RETRIES = 3
+
+MIN_PRICED_ROWS_TO_WRITE = 100
 
 ENABLE_KAGGLE = os.environ.get("ENABLE_KAGGLE", "").strip().lower() in {"1", "true", "yes", "on"}
 
@@ -325,9 +319,9 @@ def rotated_makes(makes: List[str], state_file: str) -> List[str]:
     return rotated
 
 
-def chunked(seq: List[Any], n: int) -> Iterable[List[Any]]:
-    for i in range(0, len(seq), n):
-        yield seq[i:i + n]
+def save_debug_html(name: str, html: str) -> None:
+    ensure_dir(DEBUG_DIR)
+    Path(DEBUG_DIR, f"{name}.html").write_text(html[:500000], encoding="utf-8", errors="ignore")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -381,7 +375,7 @@ class CheckpointManager:
 
 
 # ─────────────────────────────────────────────────────────────
-# ASYNC HTTP
+# HTTP
 # ─────────────────────────────────────────────────────────────
 
 async def fetch_text(
@@ -398,18 +392,37 @@ async def fetch_text(
                 proxy=SCRAPER_PROXY or None,
                 timeout=aiohttp.ClientTimeout(total=timeout),
             ) as resp:
+                text = await resp.text()
+
                 if resp.status == 200:
-                    return await resp.text()
+                    low = text.lower()
+                    blocked_signals = [
+                        "captcha",
+                        "access denied",
+                        "forbidden",
+                        "cloudflare",
+                        "attention required",
+                        "/cdn-cgi/",
+                        "verify you are human",
+                        "checking your browser",
+                    ]
+                    if any(sig in low for sig in blocked_signals):
+                        print(f"[BLOCKED] {url}")
+                        return None
+                    return text
 
                 if resp.status in (403, 429):
-                    await asyncio.sleep(1.2 * (attempt + 1))
+                    print(f"[HTTP {resp.status}] {url}")
+                    await asyncio.sleep(1.5 * (attempt + 1))
                     continue
 
+                print(f"[HTTP {resp.status}] {url}")
                 return None
-        except Exception:
+        except Exception as e:
             if attempt == retries - 1:
+                print(f"[ERROR] {url} -> {e}")
                 return None
-            await asyncio.sleep(0.7 * (attempt + 1))
+            await asyncio.sleep(0.8 * (attempt + 1))
     return None
 
 
@@ -451,39 +464,66 @@ def parse_catalog_page(html: str, make: str) -> List[Dict[str, Any]]:
     cars: List[Dict[str, Any]] = []
     seen_urls: set[str] = set()
 
-    for card in soup.find_all("a", href=re.compile(r"^/car/")):
-        try:
-            href = card.get("href", "")
-            if not href or href in seen_urls:
-                continue
-            seen_urls.add(href)
+    links = soup.find_all("a", href=True)
 
-            url = "https://autobidcar.com" + href
-            vin_match = re.search(r"-([A-HJ-NPR-Z0-9]{17})$", href, re.IGNORECASE)
+    for a in links:
+        try:
+            href = str(a.get("href", "")).strip()
+            if not href:
+                continue
+
+            if href.startswith("https://autobidcar.com/car/"):
+                url = href
+            elif href.startswith("/car/"):
+                url = "https://autobidcar.com" + href
+            else:
+                continue
+
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+
+            text = a.get_text(" ", strip=True)
+            nearby_text = text
+
+            parent = a.parent
+            if parent:
+                nearby_text = parent.get_text(" ", strip=True)
+
+            blob = " ".join(filter(None, [text, nearby_text]))
+
+            vin_match = re.search(r"([A-HJ-NPR-Z0-9]{17})", url, re.IGNORECASE)
             vin = vin_match.group(1).upper() if vin_match else ""
 
-            text = card.get_text(" ", strip=True)
-
-            year_m = re.search(r"\b(20\d{2}|19\d{2})\b", text)
+            year_m = re.search(r"\b(20\d{2}|19\d{2})\b", blob)
             year = int(year_m.group(1)) if year_m else 0
             if year < MIN_YEAR:
                 continue
 
-            h4 = card.find("h4")
-            title = h4.get_text(strip=True) if h4 else ""
+            title = ""
+            h = a.find(["h2", "h3", "h4", "h5"])
+            if h:
+                title = h.get_text(" ", strip=True)
+            elif text:
+                title = text[:120]
 
-            lot_m = re.search(r"Lot\s*#?\s*(\d+)", text, re.IGNORECASE)
+            lot_m = re.search(r"Lot\s*#?\s*(\d+)", blob, re.IGNORECASE)
             lot = lot_m.group(1) if lot_m else ""
 
-            price_m = re.search(r"Sold\s+For\s+\$\s*([\d,]+)", text, re.IGNORECASE)
+            price = 0
+            price_m = re.search(r"Sold\s*For\s*\$?\s*([\d,]+)", blob, re.IGNORECASE)
             if not price_m:
-                price_m = re.search(r"\$\s*([\d,]+)", text)
-            price = int(price_m.group(1).replace(",", "")) if price_m else 0
+                price_m = re.search(r"\$\s*([\d,]{3,})", blob)
+            if price_m:
+                try:
+                    price = int(price_m.group(1).replace(",", ""))
+                except Exception:
+                    price = 0
             if price < MIN_PRICE:
                 price = 0
 
+            upper = blob.upper()
             auction = ""
-            upper = text.upper()
             if "COPART" in upper:
                 auction = "COPART"
             elif "IAAI" in upper:
@@ -517,8 +557,19 @@ async def fetch_catalog_page(
     async with sem:
         html = await fetch_text(session, url, timeout=CATALOG_TIMEOUT, retries=RETRIES)
         if not html:
+            print(f"[AutoBidCar] empty response: {url}")
             return []
-        return parse_catalog_page(html, make)
+
+        if page_num == 1 and make in {"toyota", "honda", "ford"}:
+            save_debug_html(f"{make}_page1", html)
+
+        cars = parse_catalog_page(html, make)
+
+        if not cars:
+            print(f"[AutoBidCar] 0 cars parsed: {url}")
+            print(f"[AutoBidCar] first 300 chars: {html[:300]!r}")
+
+        return cars
 
 
 async def scrape_car_detail_async(
@@ -939,7 +990,7 @@ def fetch_kaggle_manheim() -> pd.DataFrame:
 
 
 # ─────────────────────────────────────────────────────────────
-# DEDUPE / MERGE / WRITE
+# MERGE / DEDUPE / WRITE
 # ─────────────────────────────────────────────────────────────
 
 def load_existing() -> Tuple[pd.DataFrame, set[str], set[str]]:
@@ -1086,6 +1137,7 @@ def main() -> None:
         log(f"AutoBidCar collected: {len(abc_df):,} rows, {abc_priced:,} priced")
     else:
         log("AutoBidCar collected no rows")
+        log(f"Inspect {DEBUG_DIR}/toyota_page1.html, {DEBUG_DIR}/honda_page1.html, and {DEBUG_DIR}/ford_page1.html")
 
     combined_preview, actual_new_preview = merge_preview(existing, all_frames)
     print(f"After AutoBidCar merge preview: +{actual_new_preview:,} actual new rows")
@@ -1132,18 +1184,6 @@ def main() -> None:
     print("\n" + "=" * 68)
     print(f"Actual new rows added this run: {actual_new:,}")
 
-    if actual_new == 0:
-        print("No new rows found. Nothing written.")
-        elapsed = int(time.time() - t0)
-        print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
-        print("=" * 68)
-        return
-
-    if actual_new < TARGET_NEW_MIN:
-        print(f"Warning: target minimum not reached. Added {actual_new:,}, target min is {TARGET_NEW_MIN:,}.")
-    elif actual_new > TARGET_NEW_MAX:
-        print(f"Warning: final deduped additions exceed target max ({actual_new:,} > {TARGET_NEW_MAX:,}).")
-
     total = len(combined)
     with_price = (to_int_price_series(combined["price"]) > 0).sum()
     print(f"Master total: {total:,}")
@@ -1157,13 +1197,34 @@ def main() -> None:
             priced = (to_int_price_series(grp["price"]) > 0).sum()
             print(f"Incoming {src}: {len(grp):,} rows, {priced:,} priced")
 
+    if with_price < MIN_PRICED_ROWS_TO_WRITE:
+        print(f"Too few priced rows found ({with_price} < {MIN_PRICED_ROWS_TO_WRITE}); refusing to overwrite outputs.")
+        print(f"Use debug files in {DEBUG_DIR}/ to inspect the AutoBidCar response.")
+        checkpoints.maybe_checkpoint(force=True)
+        elapsed = int(time.time() - t0)
+        print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+        print("=" * 68)
+        return
+
+    if actual_new == 0:
+        print("No new rows found. Nothing written.")
+        elapsed = int(time.time() - t0)
+        print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+        print("=" * 68)
+        return
+
+    if actual_new < TARGET_NEW_MIN:
+        print(f"Warning: target minimum not reached. Added {actual_new:,}, target min is {TARGET_NEW_MIN:,}.")
+    elif actual_new > TARGET_NEW_MAX:
+        print(f"Warning: final deduped additions exceed target max ({actual_new:,} > {TARGET_NEW_MAX:,}).")
+
     write_outputs(combined)
     checkpoints.maybe_checkpoint(force=True)
 
     elapsed = int(time.time() - t0)
     print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 68)
-    print("\nCommit cars.csv, master.csv, checkpoints/, and rotation_state.json as needed.")
+    print(f"\nIf AutoBidCar still returns 0, inspect files in: {DEBUG_DIR}/")
 
 
 if __name__ == "__main__":
