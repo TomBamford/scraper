@@ -1,2 +1,2 @@
-year,make,model,trim,type,damage,price,odometer,lot,date,location,state,url,matched_url
-2013,Volkswagen,Jetta Se Vin: 3Vwdp7Aj4Dm358666,,Coupe,Front End,850,9270 mi,,14.12.2016,,,,
+year,make,model,trim,type,damage,price,odometer,lot,date,location,state,auction,source,url
+2013,Volkswagen,Jetta Se Vin: 3Vwdp7Aj4Dm358666,,Coupe,Front End,850,9270 mi,,,,,,Copart,

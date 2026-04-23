@@ -1,644 +1,4 @@
 year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,source,auction,url
-2013,Volkswagen,Jetta Se Vin: 3Vwdp7Aj4Dm358666,,Coupe,Front End,850,9270 mi,,3VWDP7AJ4DM358666,,,,Copart,,
-2020,Mercedes-Benz,Glc-Class,300,Sc,Front End,0,9195 mi,97510485,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Mercedes-Benz,C-Class,300,Sc,Rear End,0,71305 mi,79949555,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2025,Honda,Civic,Sport,Sc,Rear End,0,15825 mi,79456945,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2017,Audi,Q7,Prestige,Sc,Burn - Engine,0,87219 mi,79239735,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2023,Ford,Mustang,Select,Sc,Front End,0,93285 mi,78670385,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2019,Volkswagen,Jetta,S,Sc,Front End,0,130299 mi,78364385,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2023,Hyundai,Tucson,Sel,Sc,Rear End,0,25972 mi,78107065,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2015,Volkswagen,Jetta,Base,Sc,Undercarriage,0,141607 mi,76987485,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2016,Kia,Soul,+,Dy,Mechanical,0,149678 mi,75704305,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2023,Nissan,Rogue,Sl,Sc,Front End,0,104036 mi,75414265,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2020,Hyundai,Elantra,Sel,Sc,Front End,0,103988 mi,75311105,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2024,Honda,Crv,Sport-L,Sc,Front End,0,23417 mi,74382845,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2018,Hyundai,Elantra,Value Edition,Sc,Rear End,0,157857 mi,48251786,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2015,Kia,Optima,Lx,Sc,Rear End,0,173927 mi,48170966,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2023,Cadillac,Xt5,Premium Luxury,Sc,Front End,0,43779 mi,47773946,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2025,Toyota,Camry,Se,Sc,Front End,0,80116 mi,41838456,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2017,Honda,Accord,Sport Special Edition,Sc,Front End,0,132436 mi,78852885,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2023,Honda,Civic,Sport,Sc,Front End,0,41189 mi,77837465,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2022,Hyundai,Santa Cruz,Se,Cd,Rear End,0,31541 mi,78185825,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2021,Tesla,Model 3,,Ac,Front End,0,42022 mi,49272756,[PREMIUM],2026-04-24,Ca - Redding,CA,,,[PREMIUM]
-2017,Toyota,Tundra,Trd Pro,Sc,Front End,0,0 mi,46046846,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2020,Mercedes-Benz,Gle-Class,350 4Matic,Sc,Front End,0,101444 mi,41985706,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2023,Gmc,Sierra,K1500 Elevation,Sc,Front End,0,20316 mi,41754986,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2025,Mercedes-Benz,Cla-Class,250,Sc,Undercarriage,0,1944 mi,66960285,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2015,Nissan,Sentra,S,Sc,Front End,0,94162 mi,64475145,[PREMIUM],,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2018,Tesla,Model S,,Sc,Front End,0,70827 mi,86253355,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2023,Kia,Ev6 Gt-Lin,Gt-Line,Sc,Side,0,57448 mi,79781425,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Mercedes-Benz,E-Class,300,Sc,Rear End,0,74833 mi,77942995,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2019,Audi,Q5,Premium Plus,Sc,Front End,0,136134 mi,77244495,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2019,Honda,Civic,Sport,Sc,All Over,0,0 mi,74484835,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2020,Hyundai,Elantra Va,Value Edition,Sc,Rear End,0,134177 mi,48705546,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2016,Nissan,Altima,2.5 Sv,Dv,Minor Dent/Scratches,0,174695 mi,48498616,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2019,Nissan,Rogue,S,Sc,Front End,0,65173 mi,48512446,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2019,Ford,All Models,,Sc,Front End,0,35700 mi,47909066,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2018,Kia,Sorento,Lx,Dv,Mechanical,0,129224 mi,47595326,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2026,Toyota,Corolla,Se,Sc,Rollover,0,739 mi,79833585,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2021,Toyota,Rav4,Xle,Sc,Front End,0,131448 mi,46527636,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2022,Chevrolet,Equinox,Ls,Sc,Front End,0,73856 mi,46199776,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2016,Lexus,Gs350,Base,Sc,Front End,0,192037 mi,45447836,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2022,Toyota,Corolla Cr,Le,Sc,Front End,0,14502 mi,42000746,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2018,Mini,Cooper,Clubman,Sc,Front End,0,85281 mi,41582696,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2020,Subaru,Wrx,Premium,Sc,Rear End,0,37040 mi,97982505,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2025,Mazda,Cx30,Premium,Sc,Front End,0,17184 mi,48173946,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2018,Buick,Encore,Preferred,Dv,Minor Dent/Scratches,0,69564 mi,47770496,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2016,Ford,Edge,Sel,Sh,Front End,0,143299 mi,47025486,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2016,Toyota,Tacoma,Trd Sport,Sc,Front End,0,44394 mi,46500396,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2018,Nissan,Sentra,Sv,Sc,Front End,0,100770 mi,79946555,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2022,Subaru,Crosstrek,Limited,Sc,Rollover,0,126441 mi,79641655,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Cadillac,Xt5,Luxury,Sc,Front End,0,68344 mi,48174306,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2016,Hyundai,Sonata,Limited,Sc,Side,0,119281 mi,46052086,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2020,Hyundai,Veloster,Turbo R-Spec,Sc,Side,0,138182 mi,45801346,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2017,Honda,Civic,Lx,Sc,Front End,0,112782 mi,46360676,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2023,Lexus,Es300,Base,Sc,Front End,0,45162 mi,95020715,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2019,Subaru,Wrx,Sti Limited,Sc,Front End,0,0 mi,72282195,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2018,Polaris,Rzrxp41000,,Sc,Rear End,0,1379 mi,72874875,[PREMIUM],2026-04-23,Crashedtoys Powersport Auction,CA,,,[PREMIUM]
-2023,Kia,Forte,Lxs,Sc,Rear End,0,42017 mi,45457396,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2020,Toyota,Highlander,Hybrid Limited,Sc,Side,0,254717 mi,95519675,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2025,Tesla,Model Y,,Sc,Rear End,0,3569 mi,84231255,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2024,Bmw,All Other,Edrive 35,Sc,Rear End,0,22983 mi,78649075,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2017,Toyota,Corolla,Le,Sc,Rear End,0,73079 mi,77733415,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2018,Chevrolet,Tahoe,K1500 Lt,Sc,Front End,0,54476 mi,46359366,[PREMIUM],2026-04-16,Ca - Napa,CA,,,[PREMIUM]
-2024,Lexus,Rc350,F Sport,Sc,Rear End,0,9365 mi,78867705,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2025,Honda,Passport,Trail Sport,Sc,Rear End,0,22384 mi,78225435,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2019,Subaru,Crosstrek,Premium,Sc,Side,0,32019 mi,77812055,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2019,Hyundai,Ioniq,Blue,Sc,Rear End,0,194198 mi,76216655,[PREMIUM],2026-04-22,Ca - Long Beach,CA,,,[PREMIUM]
-2019,Kia,Optima,Lx,Sc,Vandalism,0,0 mi,74837325,[PREMIUM],2026-04-08,Ca - Long Beach,CA,,,[PREMIUM]
-2017,Jaguar,Xe,,Sc,Front End,0,102998 mi,47028756,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2016,Chrysler,200,Limited,Sc,Front End,0,141445 mi,46235186,[PREMIUM],2026-04-08,Ca - Long Beach,CA,,,[PREMIUM]
-2024,Toyota,Tundra,Crewmax Limited,Sc,Vandalism,0,38581 mi,74137395,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2016,Lexus,Es300,,Ct,Minor Dent/Scratches,0,100919 mi,72364205,[PREMIUM],,Ca - Sun Valley,CA,,,[PREMIUM]
-2023,Honda,Civic,Si,Sc,Front End,0,75176 mi,47786406,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2016,Kia,Optima,Lx,Sc,Normal Wear,0,132328 mi,47240686,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2015,Honda,Fit,Lx,Sc,Front End,0,112644 mi,46496576,[PREMIUM],,Ca - Sun Valley,CA,,,[PREMIUM]
-2024,Subaru,Outback,Premium,Sc,Front End,0,16935 mi,45948096,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2016,Porsche,Cayenne,Se Hybrid,Sc,Front End,0,126641 mi,45791556,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2022,Tesla,Model Y,,Sc,Front End,0,0 mi,45722896,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2022,Toyota,Corolla,Le,Sc,Front End,0,76148 mi,41797456,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2019,Ford,Fusion,Titanium,Sc,Front End,0,38158 mi,41611996,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2022,Subaru,Ascent,Touring,Sc,Rear End,0,73689 mi,79557455,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2022,Toyota,Mirai,Xle,Sc,Front End,0,12570 mi,79899155,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2016,Hyundai,Sonata,Se,Sc,Front End,0,138217 mi,47054116,[PREMIUM],2026-04-16,Ca - Antelope,CA,,,[PREMIUM]
-2021,Nissan,Rogue,S,Sc,Front End,0,80353 mi,47118066,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2018,Ford,Fusion,Se Hybrid,Sc,Front End,0,117746 mi,46185416,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2018,Subaru,Outback,2.5I Premium,Sc,Side,0,54509 mi,41988396,[PREMIUM],2026-04-16,Ca - Antelope,CA,,,[PREMIUM]
-2019,Hyundai,Tucson,Se,Sc,Front End,0,101143 mi,79833815,[PREMIUM],2026-04-07,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2015,Bmw,M3,,Sc,Minor Dent/Scratches,0,79789 mi,79309885,[PREMIUM],2026-04-21,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2019,Cadillac,Cts,Luxury,Sc,Front End,0,94932 mi,77239885,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2015,Toyota,Camry,Xse,Sc,Front End,0,128157 mi,75867225,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2025,Chev,Colorado,,Sc,Rear End,0,8113 mi,75673995,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2020,Nissan,Versa,S,Sc,Front End,0,124051 mi,74128975,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2019,Chevrolet,Equinox,Premier,Sc,Side,0,118073 mi,47743256,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2018,Toyota,Tacoma,Trd Off-Road,Sc,Front End,0,154474 mi,46945846,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2018,Hyundai,Santa Fe,2.4L,Sc,Front End,0,64464 mi,46503846,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2023,Can-Am,Sidebyside,Unknown,Sc,Front End,0,2032 mi,42075466,[PREMIUM],2026-04-23,Crashedtoys Powersport Auction,CA,,,[PREMIUM]
-2025,Ford,Bronco,Heritage,Sc,All Over,0,10876 mi,41862946,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2021,Subaru,Wrx,,Sc,Front End,0,47856 mi,41816486,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2026,Toyota,Corolla,Le,Sc,Front End,0,1712 mi,73267865,[PREMIUM],2026-04-08,Ca - Martinez,CA,,,[PREMIUM]
-2016,Cadillac,Ct6,Premium,Sc,Side,0,196452 mi,47114456,[PREMIUM],2026-04-08,Ca - Martinez,CA,,,[PREMIUM]
-2021,Lexus,Rx350,Base,Sc,Side,0,176070 mi,46909426,[PREMIUM],2026-04-22,Ca - Martinez,CA,,,[PREMIUM]
-2019,Honda,Accord,Touring,Sc,Vandalism,0,64244 mi,45654446,[PREMIUM],2026-04-08,Ca - Martinez,CA,,,[PREMIUM]
-2017,Lexus,Ls500,Base,Sc,Rear End,0,53380 mi,41848416,[PREMIUM],2026-04-15,Ca - Martinez,CA,,,[PREMIUM]
-2022,Hyundai,Santa Fe,Sel,Sc,Front End,0,42849 mi,79115635,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2023,Kia,Sportage,Ex,Sc,Front End,0,59026 mi,78317065,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2020,Dodge,Caravan,Sxt,Sc,Front End,0,0 mi,47119936,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2020,Toyota,Camry Sola,Xle,Sc,Front End,0,107929 mi,46955766,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2019,Kia,Sportage,Ex,Sc,Front End,0,76402 mi,46163136,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2017,Mitsubishi,Outlander,Se,Sc,Rear End,0,115294 mi,46061216,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2022,Bmw Motorrad,5 Series,,Sc,Front End,0,0 mi,45881086,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2023,Tesla,Model Y,,Sc,Side,0,49410 mi,45633486,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2018,Jeep,Compass,Limited,Sc,Rear End,0,137121 mi,45476646,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2025,Honda,Civic,Sport,Sc,Side,0,21861 mi,42007236,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2019,Honda,Civic,Lx,Sc,Front End,0,88710 mi,41789036,[PREMIUM],2026-04-17,Ca - San Diego,CA,,,[PREMIUM]
-2019,Gmc,Sierra,K1500 Denali,Sc,Undercarriage,0,84187 mi,98196495,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2021,Mazda,Cx-5,Touring,Sc,Front End,0,66918 mi,97052245,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2024,Audi,Q3,Premium Plus S Line 45,Sc,Front End,0,19342 mi,95907995,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Toyota,Camry,Se,Sc,Front End,0,0 mi,95708865,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2019,Honda,Civic,Sport,Sc,Front End,0,147830 mi,79579725,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2017,Dodge,Caravan,Sxt,Dv,Minor Dent/Scratches,0,160118 mi,79435845,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2017,Toyota,Corolla,L,Sc,Side,0,0 mi,72986195,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2016,Hyundai,Sonata,Se,Sc,Vandalism,0,86903 mi,47651566,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2023,Indian Motorcycle Co.,Motorcycle,Bobber Sixty Abs,Sc,Front End,0,0 mi,47424986,[PREMIUM],2026-04-09,Crashedtoys Powersport Auction,CA,,,[PREMIUM]
-2020,Honda,Accord,Hybrid,Sc,Front End,0,181349 mi,46710986,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2026,Toyota,Camry,Xse,Sc,Rear End,0,3349 mi,45942456,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2023,Chevrolet,Silverado,K1500 Rst,Sc,Front End,0,56256 mi,79845425,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2023,Honda,Civic,Sport,Sc,Front End,0,17765 mi,79554015,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2015,Nissan,Leaf,S,Sc,Mechanical,0,128409 mi,78501465,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2023,Ford,Explorer,Limited,Sc,Front End,0,51381 mi,78537805,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2015,Ram,3500,Laramie,Sc,Stripped,0,0 mi,76176225,[PREMIUM],2026-04-15,Medium Duty Specialty Sale,CA,,,[PREMIUM]
-2016,Dodge,Journey,Sxt,Sc,Front End,0,114784 mi,73256975,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2023,Ram,1500,Laramie,Sc,Front End,0,63357 mi,47765116,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2019,Chevrolet,Colorado,Lt,Sc,Front End,0,127756 mi,97847445,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2025,Toyota,Camry,Xse,Sc,Mechanical,0,15143 mi,96848185,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2020,Honda,Accord,Sport,Sc,Rear End,0,127731 mi,79520265,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2016,Ford,Focus,Se,Sc,Front End,0,126291 mi,79575585,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2020,Niss,Rogue,Sl,Sc,Front End,0,119213 mi,78805265,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2025,Honda,Civic,Sport,Sc,Front End,0,28332 mi,78191445,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2021,Nissan,Leaf,Sv,Sc,Rear End,0,30410 mi,77246525,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Mercedes-Benz,S-Class,500 4Matic,Sc,Undercarriage,0,30928 mi,77433155,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2022,Honda,Civic,Sport,Sc,Undercarriage,0,47702 mi,76446995,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Honda,Civic,Ex,Sc,Undercarriage,0,121638 mi,74884105,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2020,Chevrolet,Colorado,Z71,Sc,Front End,0,135072 mi,74929535,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2015,Nissan,Altima,2.5,Sc,All Over,0,58764 mi,56766875,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2017,Honda,Accord,Lx,Sc,Front End,0,186745 mi,48147736,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2016,Mazda,Cx-3,Grand Touring,Sc,Front End,0,186509 mi,46701936,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2015,Buick,Enclave,,Sc,Front End,0,82605 mi,46566256,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2021,Nissan,Rogue,Sv,Sc,Side,0,95342 mi,46852746,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2021,Bmw,X5,Xdrive45E,Sc,Front End,0,0 mi,46166016,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2023,Chevrolet,Colorado,Z71,Sc,Front End,0,21984 mi,79570675,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2020,Nissan,Sentra,Sr,Sc,Front End,0,61408 mi,79058225,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2018,Subaru,Outback,2.5I Limited,Sc,Rear End,0,131945 mi,78738935,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2023,Nissan,Sentra,Sr,Ct,Minor Dent/Scratches,0,43425 mi,77398225,[PREMIUM],2026-04-14,Wholesale Auction,CA,,,[PREMIUM]
-2018,Toyota,Camry,Xse,Nr,Front End,0,31566 mi,74796985,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2016,Chevrolet,Cruze,Lt,Sc,Burn - Interior,0,0 mi,47778546,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2020,Ram,1500,Rebel,Sc,Rollover,0,111268 mi,45876116,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2023,Volvo,Xc60,Ultimate,Sc,Front End,0,34408 mi,45568696,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2017,Mercedes-Benz,E-Class,300 4Matic,Sc,Front End,0,0 mi,41941716,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2019,Subaru,Ascent,Limited,Sc,Rear End,0,82060 mi,41606886,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2023,Kia,Forte,Lxs,Sc,Side,0,40827 mi,41658346,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2015,Infiniti,Q50,Base,Sc,Rear End,0,116427 mi,89740565,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2026,Toyota,Tundra,Trd Pro Hv,Sc,Front End,0,1990 mi,79476055,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Toyota,Camry,Se,Sc,Side,0,245189 mi,79261145,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2025,Ram,2500,Tradesman,Sc,Front End,0,9688 mi,78040755,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Toyota,Tacoma,Trd Sport,Sc,Front End,0,104772 mi,74434355,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2018,Toyota,Tacoma,Sr5 V6,Sc,Front End,0,66318 mi,47970946,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2015,Chrysler,300,,Sc,Rear End,0,84826 mi,46703066,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Subaru,Forester,2.5I Premium,Sc,Front End,0,145642 mi,98983835,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2019,Chevrolet,Tahoe,K1500 Lt,St,Missing/Altered Vin,0,75885 mi,95718705,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2019,Toyota,Tacoma,Double Cab,Sc,Front End,0,56757 mi,78252475,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2016,Kia,Optima,Sx Turbo,Sc,Minor Dent/Scratches,0,125734 mi,47766696,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2016,Toyota,Tacoma,Trd Sport,Sc,Front End,0,42569 mi,47540686,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2018,Honda,Hr-V,Exl,Sc,Front End,0,100823 mi,47787116,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2019,Toyota,Corolla,Se,Sc,Rear End,0,84072 mi,79296185,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2018,Honda,Accord,Touring,Sc,Front End,0,92359 mi,79175405,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2021,Kia,Forte,Gt Line,Sc,Front End,0,33491 mi,75494605,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2020,Chevrolet,Colorado,Lt,Sc,Rollover,0,113677 mi,74990825,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2022,Tesla,Model Y,,Sc,Front End,0,70112 mi,75013095,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2023,Honda,Hr-V,Exl,Sc,Side,0,19353 mi,74614725,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2025,Acura,Integra,,Sc,All Over,0,6416 mi,65051315,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2019,Chevrolet,Camaro,Lt,Nr,Side,0,28228 mi,66675375,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2017,Bmw,X5,Sdrive35I,Sc,Front End,0,98501 mi,67262265,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2022,Nissan,Altima,Sr,Sc,Rear End,0,36432 mi,95197885,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2017,Jaguar,Xe,,Sc,Front End,0,96287 mi,78835395,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2025,Chevrolet,All Models,K2500 Heavy Duty Lt,Sc,Front End,0,13688 mi,74710855,[PREMIUM],2026-04-22,Medium Duty Specialty Sale,CA,,,[PREMIUM]
-2025,Chevrolet,Suburban,C1500 Rst,Sc,Front End,0,0 mi,95959975,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2021,Chrysler,Pacifica,Touring L,Sc,Front End,0,98459 mi,79486825,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2023,Chrysler,Pacifica,Hybrid Limited,Sc,Side,0,0 mi,74704075,[PREMIUM],,Ca - Adelanto,CA,,,[PREMIUM]
-2025,Tesla,Model 3,,Sc,Side,0,11446 mi,73315435,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2023,Honda,Accord,Ex,Sc,Side,0,63274 mi,77440555,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2019,Honda,Accord,Touring,Sc,Front End,0,73075 mi,76786375,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2025,Tesla,Model 3,,Sc,Side,0,11814 mi,73490465,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2018,Dodge,Caravan,Gt,Sc,Front End,0,123928 mi,46959626,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2015,Infiniti,Q50,Premium,Sc,Front End,0,125971 mi,79481115,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2022,Tesla,Model Y,,Sc,Rear End,0,63222 mi,79483975,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2022,Chevrolet,Malibu,Lt,Sc,Undercarriage,0,64574 mi,79063195,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2023,Tesla,Model 3,,Sc,Rear End,0,74361 mi,75892565,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2021,Tesla,Model 3,,Sc,Front End,0,112626 mi,75872465,[PREMIUM],2026-04-03,Ca - Long Beach,CA,,,[PREMIUM]
-2019,Infiniti,Q50,Luxe,Sc,Vandalism,0,0 mi,75076985,[PREMIUM],,Ca - Long Beach,CA,,,[PREMIUM]
-2025,Nissan,Versa,S,Dv,All Over,0,23092 mi,47809116,[PREMIUM],2026-04-14,*Ncs - Pacific Region,CA,,,[PREMIUM]
-2017,Porsche,Boxster,,Dv,All Over,0,51918 mi,47807006,[PREMIUM],2026-04-07,*Ncs - Pacific Region,CA,,,[PREMIUM]
-2015,Jaguar,F-Type,S,Dv,All Over,0,75576 mi,46903276,[PREMIUM],2026-04-14,*Ncs - Pacific Region,CA,,,[PREMIUM]
-2016,Ford,Mustang,Gt,Dv,All Over,0,41700 mi,46722366,[PREMIUM],2026-04-14,*Ncs - Pacific Region,CA,,,[PREMIUM]
-2018,Ford,Fusion,S Hybrid,Sc,Rear End,0,18448 mi,79844615,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2022,Tesla,Model Y,,Sc,Front End,0,121212 mi,79655725,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2019,Hyundai,Sonata,Se,Sc,Front End,0,63350 mi,78271855,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2025,Tesla,Model 3,,Sc,Front End,0,2010 mi,77684815,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2019,Tesla,Model 3,,Sc,Side,0,132714 mi,77181695,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2025,Toyota,Camry,Xse,Sc,Side,0,13964 mi,74497365,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2024,Tesla,Model Y,,Sc,Front End,0,33096 mi,72861365,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2023,Kia,Forte,Lx,Sc,Front End,0,32200 mi,72805845,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2018,Toyota,Avalon,,Sc,Front End,0,180065 mi,41909166,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2018,Jeep,Wrangler,Sport,Sc,Front End,0,58516 mi,99600525,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2017,Acura,Mdx,,Sc,Front End,0,44684 mi,93923765,[PREMIUM],2026-04-07,Ca - Antelope,CA,,,[PREMIUM]
-2017,Toyota,Prius,,Sc,Minor Dent/Scratches,0,58435 mi,78529155,[PREMIUM],2026-04-07,Ca - Antelope,CA,,,[PREMIUM]
-2022,Nissan,Leaf,S,Sc,Front End,0,29644 mi,77714185,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2015,Honda,Civic,Lx,Sc,Front End,0,113008 mi,75986715,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2016,Toyota,Corolla,L,Sc,Front End,0,143659 mi,74842025,[PREMIUM],2026-04-07,Ca - Antelope,CA,,,[PREMIUM]
-2020,Kia,Optima,Lx,Sc,Rear End,0,69071 mi,74090355,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2017,Kia,Sorento,Lx V6,Sc,Front End,0,99574 mi,47766356,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2025,Subaru,Crosstrek,Wilderness,Sc,Front End,0,31305 mi,46566696,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2016,Kia,Optima,Lx Turbo,Sc,Front End,0,88736 mi,41799786,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2016,Tesla,Model S,,Sc,Front End,0,0 mi,43400820,[PREMIUM],2026-04-10,Ca - Van Nuys,CA,,,[PREMIUM]
-2015,Toyota,4Runner,Sr5,Sc,Front End,0,134629 mi,99376925,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2024,Honda,Civic,Lx,Sc,Side,0,55565 mi,96383545,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Honda,Civic,Sport,Sc,Front End,0,73467 mi,90708815,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2020,Land Rover,Discovery Sport,S,Sc,Front End,0,80510 mi,79647475,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2019,Nissan,Frontier,S,Sc,Front End,0,150390 mi,79272095,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2019,Honda,Civic,Lx,Sc,Side,0,87414 mi,77828495,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2024,Bmw Motorrad,4 Series,,Sc,Rear End,0,11362 mi,76738525,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2019,Gmc,Acadia,Sle,St,Vandalism,0,60228 mi,76445575,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2020,Hyundai,Accent,Se,Sc,Undercarriage,0,0 mi,47100036,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2019,Kia,Sorento,Lx V6,Nr,Vandalism,0,0 mi,41653316,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2017,Jeep,Grand Cher,Sport,Ct,Rear End,0,130826 mi,75060415,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2015,Chevrolet,All Models,K2500 Heavy Duty Ltz,Sc,Front End,0,434391 mi,94801395,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2021,Subaru,Crosstrek,,Ct,Front End,0,77860 mi,77425795,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2022,Mitsubishi,Mirage,G4 Es,Sc,Front End,0,81112 mi,75697125,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2026,Toyota,Corolla,Le,Sc,Front End,0,4589 mi,76674235,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2023,Niss,Frontier,Sv,Sc,Rear End,0,26979 mi,72699955,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2021,Ford,F150,Supercrew,Sc,Front End,0,87708 mi,46210746,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2017,Honda,Civic,,Sc,Front End,0,113970 mi,46762916,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2016,Toyota,Tacoma,Trd Off-Road,Sc,Rear End,0,93012 mi,41840656,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2016,Hyundai,Sonata,Se,Nr,Vandalism,0,124630 mi,72805915,[PREMIUM],2026-04-01,Ca - Long Beach,CA,,,[PREMIUM]
-2015,Honda,Accord,Sport,Sc,Side,0,138755 mi,47136636,[PREMIUM],2026-04-01,Ca - Long Beach,CA,,,[PREMIUM]
-2016,Chev,Express,,Dv,Minor Dent/Scratches,0,175595 mi,47345726,[PREMIUM],2026-04-06,Medium Duty Clean Title Sale,CA,,,[PREMIUM]
-2015,Toyota,Prius,Two,Sc,Front End,0,132763 mi,45548796,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2019,Jayco,Slide In,,S2,Top/Roof,0,0 mi,47800666,[PREMIUM],2026-04-13,Ca - San Bernardino,CA,,,[PREMIUM]
-2018,Jeep,Cherokee,Laredo,Dv,Minor Dent/Scratches,0,113473 mi,47400386,[PREMIUM],2026-04-09,Ca - San Bernardino,CA,,,[PREMIUM]
-2017,Kia,Forte,Lx,Dv,Minor Dent/Scratches,0,121358 mi,46373776,[PREMIUM],2026-04-02,Ca - San Bernardino,CA,,,[PREMIUM]
-2016,Chevrolet,Malibu,Lt,Dv,Front End,0,127864 mi,46229866,[PREMIUM],2026-04-13,Ca - San Bernardino,CA,,,[PREMIUM]
-2021,Volvo,Vn,Vnl,Dv,All Over,0,1007183 mi,46039256,[PREMIUM],2026-03-31,Heavy-Trailer-Rv Clean Sale,CA,,,[PREMIUM]
-2015,Kia,Optima Hyb,Base,Dv,Minor Dent/Scratches,0,154491 mi,46776436,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2016,Nissan,Versa,S Plus,Dv,Rear End,0,102793 mi,46542646,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2015,Toyota,Corolla,S,Sc,Rear End,0,140680 mi,45888976,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2022,Dodge,Challenger,Gt,Sc,Front End,0,3767 mi,76128105,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2017,Nissan,Sentra,S,Sc,Side,0,66486 mi,78525565,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2017,Subaru,Crosstrek,Premium,Sc,Rear End,0,63309 mi,46939246,[PREMIUM],2026-04-03,Ca - Long Beach,CA,,,[PREMIUM]
-2020,Jeep,Gladiator,,Sc,Front End,0,55112 mi,47043986,[PREMIUM],,Ca - Sun Valley,CA,,,[PREMIUM]
-2015,Honda,Fit,Ex,Sc,Front End,0,170317 mi,75185605,[PREMIUM],2026-04-01,Ca - Sun Valley,CA,,,[PREMIUM]
-2015,Mini,Cooper,S Countryman,Sc,Front End,0,57192 mi,47706456,[PREMIUM],2026-04-01,Ca - Sun Valley,CA,,,[PREMIUM]
-2017,Acura,Mdx,Sport Hybrid Advance,Sc,Front End,0,97436 mi,73549855,[PREMIUM],,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2023,Hyundai,Santa Fe,Se,Sc,Rear End,0,29809 mi,73875575,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2023,Tesla,Model Y,,Sc,Rollover,0,48901 mi,78465665,[PREMIUM],,Ca - San Diego,CA,,,[PREMIUM]
-2024,Toyota,Rav4 Hybrid,Xle,Sc,Front End,0,28225 mi,78422595,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2023,Volvo,Xc40,Ultimate,Sc,Front End,0,15017 mi,78399125,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2022,Mercedes-Benz,Gt-Class,43,Sc,Front End,0,48149 mi,73517945,[PREMIUM],,Ca - San Diego,CA,,,[PREMIUM]
-2018,Kia,Sportage,Ex,Sc,Front End,0,121464 mi,47930886,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2021,Toyota,Corolla,Le,Sc,Rear End,0,128662 mi,47772586,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2023,Bmw,X1,Xdrive28I,Sc,Front End,0,29926 mi,47836796,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2019,Ford,F450 Supe,Super Duty,Dv,Front End,0,175990 mi,47608416,[PREMIUM],2026-04-13,Medium Duty Clean Title Sale,CA,,,[PREMIUM]
-2026,Tesla,Model Y,,Sc,Front End,0,22758 mi,47433996,[PREMIUM],,Ca - San Diego,CA,,,[PREMIUM]
-2019,Toyota,Yaris,Le,Ac,Front End,0,112532 mi,47278936,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2015,Chevrolet,Tahoe,C1500 Ltz,Sc,Front End,0,127250 mi,47451146,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2026,Toyota,Corolla,Se,Ct,Front End,0,8857 mi,46917926,[PREMIUM],2026-04-06,Rental Vehicle Sale,CA,,,[PREMIUM]
-2017,Hyundai,Accent,Se,Dv,Front End,0,165841 mi,46770816,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2025,Ford,Escape,St Line,Ct,Front End,0,17269 mi,47199056,[PREMIUM],2026-04-01,Rental Vehicle Sale,CA,,,[PREMIUM]
-2024,Toyota,Sienna,Xle 7-Passenger,Sc,Rear End,0,48119 mi,46936646,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2018,Hyundai,Elantra,Sel,Dv,Front End,0,167012 mi,46066796,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2015,Chevrolet,Silverado,K1500 Lt,Sc,Rear End,0,117193 mi,46521196,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2015,Bmw,3 Series,Xi,Sc,Front End,0,0 mi,46332626,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2024,Toyota,Tundra,Platinum,Sc,Rear End,0,91190 mi,46499286,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2020,Hyundai,Elantra,Sel,Sc,Front End,0,87038 mi,41803746,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2015,Toyota,Camry,Se,Sc,Front End,0,166796 mi,45866226,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2018,Honda,Civic,Exl,Sc,Front End,0,28798 mi,45951886,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2017,Hyundai,Ioniq,Blue,Dv,Minor Dent/Scratches,0,122562 mi,41673386,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2020,Toyota,Corolla,Le,Sc,Rear End,0,56988 mi,46045976,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2017,Hyundai,Sonata,Base,Dv,Minor Dent/Scratches,0,178098 mi,45705386,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2018,Toyota,Sienna,Xle 8-Passenger,Sc,Front End,0,151722 mi,45790636,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2016,Chevrolet,Colorado,Lt,Sc,Front End,0,158448 mi,45820576,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2016,Hyundai,Elantra,Se,Dv,Front End,0,112483 mi,41621666,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2017,Chevrolet,Spark,Ls,Sc,Front End,0,125820 mi,59234875,[PREMIUM],2026-04-02,Ca - San Bernardino,CA,,,[PREMIUM]
-2020,Toyota,Prius,,Sc,Rear End,0,130695 mi,93124355,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2023,Tesla,Model 3,,Sc,Side,0,61779 mi,90354475,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2020,Mercedes-Benz,Cla-Class,250,Sc,Front End,0,60489 mi,82544065,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2019,Bmw,X3,Xdrive30I,Nr,Water/Flood,0,0 mi,78728115,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2019,Ford,F450 Supe,Super Duty,Sc,Water/Flood,0,71382 mi,78508305,[PREMIUM],2026-04-15,Medium Duty Specialty Sale,CA,,,[PREMIUM]
-2021,Toyota,Corolla,Le,Sc,Front End,0,71332 mi,78185975,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2015,Hyundai,Elantra,Limited,Sc,Vandalism,0,89811 mi,46211966,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2016,Mazda,Cx-5,Touring,Sc,Front End,0,65956 mi,41665976,[PREMIUM],2026-04-06,Ca - Napa,CA,,,[PREMIUM]
-2015,Lincoln,Mkz,,Nr,Side,0,85398 mi,79408405,[PREMIUM],2026-04-03,Ca - Long Beach,CA,,,[PREMIUM]
-2016,Jeep,Patriot,Latitude,Sc,Front End,0,101565 mi,96256845,[PREMIUM],2026-04-16,Ca - Antelope,CA,,,[PREMIUM]
-2017,Jaguar,Xe,Premium,Sc,Side,0,0 mi,77787715,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2020,Lexus,Nx,Base,Sc,Front End,0,102644 mi,47304416,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2015,Volkswagen,Jetta,Tdi,Sc,Front End,0,176194 mi,46918446,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2017,Toyota,Corolla,Le,Sc,Rear End,0,96660 mi,45989826,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2017,Nissan,Altima,2.5 S,Sc,Side,0,122159 mi,41663256,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2023,Tesla,Model Y,,Sc,Front End,0,0 mi,99282495,[PREMIUM],,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2025,Subaru,Crosstrek,Premium,Sc,Front End,0,1462 mi,79820465,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2017,Maserati,All Other,Sport,Sc,Side,0,23902 mi,79646775,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2015,Volkswagen,Beetle,1.8T,Sc,Front End,0,158253 mi,78763795,[PREMIUM],,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2025,Audi,Q6 E-Tron,Sportback Premium,Sc,Front End,0,8829 mi,76980555,[PREMIUM],,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2020,Nissan,Sentra,Sv,Sc,Front End,0,101332 mi,76043385,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2020,Honda,Civic,Lx,Sc,Side,0,0 mi,75688625,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2017,Porsche,Macan,,Sc,Rear End,0,95272 mi,72609005,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2015,Honda,Civic,Exl,Sc,Rear End,0,119145 mi,47985436,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2017,Ford,Escape,Se,Sc,Front End,0,104350 mi,47528976,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2021,Toyota,Tacoma,Double Cab,Sc,Front End,0,64619 mi,84591525,[PREMIUM],2026-04-01,Ca - Sun Valley,CA,,,[PREMIUM]
-2023,Tesla,Model X,,Sc,Side,0,59901 mi,98282825,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2021,Lexus,Is,F Sport,Sc,Rear End,0,58535 mi,79837695,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2022,Kia,Ev6 Light,Light,Sc,Front End,0,89061 mi,78660125,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2023,Honda,Civic,Lx,Sc,Front End,0,112808 mi,78535205,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2021,Chrysler,Pacifica,Touring L,Sc,Front End,0,46615 mi,78205865,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2015,Ford,Focus,Se,Dv,Minor Dent/Scratches,0,123106 mi,72699385,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2020,Lexus,Nx,Base,Sc,Front End,0,95894 mi,47627616,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2015,Chevrolet,Malibu,Ls,Sc,Front End,0,67025 mi,42021226,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2018,Mitsubishi,Outlander,Es,Sc,Front End,0,139248 mi,79832205,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2019,Nissan,Sentra,S,Sc,Side,0,106549 mi,79559195,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2022,Dodge,Challenger,R,Sc,Front End,0,59989 mi,79403725,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2017,Infiniti,Qx30,Luxury,Da,Minor Dent/Scratches,0,82495 mi,47904216,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2021,Ram,1500,Big Horn,Sc,Rear End,0,73988 mi,47411406,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2021,Hyundai,Tucson,Ultimate,Sc,Front End,0,0 mi,46930556,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2017,Volvo,S60,Platinum,Sc,Front End,0,146483 mi,47008386,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2016,Ford,Cmax,Premium Sel,Sc,Rear End,0,148067 mi,45975156,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2022,Toyota,Rav4 Hybrid,Xse,Sc,Side,0,31615 mi,41654446,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2018,Toyota,Camry,Se,Sc,Front End,0,61811 mi,78131165,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2016,Jeep,Grand Cher,Limited,Sc,Rear End,0,112684 mi,77730265,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2018,Tesla,Model 3,,Sc,Rear End,0,79575 mi,77628525,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2017,Lexus,Rx350,350 Base,Sc,Front End,0,74856 mi,76472775,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2025,Toyota,Camry,Xse,Sc,Rear End,0,77741 mi,76411605,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2015,Mazda,6,Touring,Sc,Rollover,0,138661 mi,75515555,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2024,Honda,Hr-V,Sport,Sc,Rear End,0,21386 mi,72584425,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2025,Ford,Maverick,Xl,Sc,Rear End,0,808 mi,64743195,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2019,Toyota,Prius,Le,Sc,Front End,0,134611 mi,47127796,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2015,Mazda,3,Touring,Sc,Front End,0,141984 mi,46221906,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2022,Chrysler,300,Touring,Sc,Rear End,0,33365 mi,41787136,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2019,Subaru,Legacy,2.5I Premium,Sc,Water/Flood,0,67621 mi,98654955,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2022,Toyota,Camry,Se,Sc,Front End,0,41145 mi,79949815,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2015,Mazda,Cx-5,Gt,Dv,Minor Dent/Scratches,0,61683 mi,47617286,[PREMIUM],2026-03-27,Ca - Redding,CA,,,[PREMIUM]
-2018,Toyota,Corolla,Le,Sc,Front End,0,0 mi,46178036,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2019,Mini,Cooper,,Nr,Rollover,0,0 mi,33733139,[PREMIUM],2026-03-30,Ca - Adelanto,CA,,,[PREMIUM]
-2022,Honda,Hr-V,Ex,Sc,Front End,0,50477 mi,92070795,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2025,Toyota,Grand High,Le,Sc,Rear End,0,943 mi,90069235,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2025,Toyota,Corolla,Se,Sc,Rear End,0,7675 mi,79757075,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2017,Honda,Civic,Lx,Sc,Rear End,0,103763 mi,78560575,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2025,Kia,K4 Gt-Line,Gt-Line Turbo,Sc,Front End,0,794 mi,78275155,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2024,Hyundai,Ioniq,Limited,Sc,Rear End,0,22275 mi,77869175,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2021,Tesla,Model Y,,Sc,Front End,0,109005 mi,76821405,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2017,Honda,Civic,Touring,Sc,Side,0,94659 mi,47016376,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2025,Honda,Accord,Hybrid Sport,Sc,Top/Roof,0,567 mi,97854345,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2022,Nissan,Altima,Sr,Sc,Front End,0,39174 mi,96550545,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2019,Ford,F-150,Supercrew,Sc,Rear End,0,137665 mi,94521925,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2016,Toyota,Camry,Le,Sc,Front End,0,111322 mi,94177485,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2016,Nissan,Sentra,S,Sc,Front End,0,148471 mi,92071745,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2020,Nissan,Versa,S,Sc,Rear End,0,177708 mi,79129655,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2024,Lexus,Es 350,Base,Sc,Front End,0,36757 mi,79036945,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2015,Audi,A3,Premium Plus,Sc,Front End,0,31166 mi,79001125,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2019,Honda,Insight,Ex,Sc,Front End,0,118808 mi,78668195,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2024,Hyundai,Venue,Sel,Sc,Undercarriage,0,36118 mi,78142285,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2024,Hyundai,Elantra,Limited,Sc,Front End,0,26253 mi,77630495,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2025,Kia,Carnival L,Lx,Sc,Undercarriage,0,68363 mi,77353715,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2018,Mazda,Cx-9,Touring,Sc,Rear End,0,107397 mi,75310075,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2023,Kia,Forte,Gt Line,Sc,Rear End,0,75056 mi,74865175,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2019,Audi,A3,Premium,Sc,Front End,0,92919 mi,73117345,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2017,Hyundai,Tucson,Sport,Dv,Mechanical,0,92779 mi,46429656,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2015,Nissan,Frontier,Sv V6,Sc,Side,0,150240 mi,46206316,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2016,Ford,All Models,,Sc,Front End,0,125865 mi,45526606,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2015,Nissan,Altima,2.5 S,Sc,Front End,0,186143 mi,79693995,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2017,Honda,Hr-V,Lx,Sc,Rear End,0,115974 mi,77507575,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2020,Ford,Transit,T-250,Ct,Minor Dent/Scratches,0,122994 mi,77087355,[PREMIUM],2026-03-30,Medium Duty Clean Title Sale,CA,,,[PREMIUM]
-2022,Freigliner,All Other,,Sc,Rollover,0,0 mi,47130106,[PREMIUM],2026-04-09,Heavy Truck Specialty Sale,CA,,,[PREMIUM]
-2018,Hyundai,Sonata,Sel,Sc,Front End,0,104200 mi,46062786,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2016,Kia,Soul Base,Base,Dv,Minor Dent/Scratches,0,113091 mi,45481466,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2007,Toyota,Camry,Le,Sc,Rear End,0,208123 mi,79551025,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2005,Honda,Element,Lx,Sc,Side,0,103002 mi,79428675,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2014,Ford,Fiesta,St,Sc,Front End,0,118519 mi,77772705,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2008,Toyota,Tundra,Sr5,Sc,Front End,0,346721 mi,49005536,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2008,Kia,Spectra,Lx,Sc,Rear End,0,189863 mi,48289376,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2007,Dodge,Caliber,Sxt,Sc,Front End,0,0 mi,47983626,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2014,Chevrolet,Camaro,Ls,Sc,Front End,0,110394 mi,47429876,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2004,Hyundai,Sonata,Base,Sc,Front End,0,160548 mi,46731076,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2008,Saturn,Outlook,Xe,Sc,All Over,0,0 mi,46311666,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2014,Jeep,Grand Cher,Summit,Sc,Front End,0,90164 mi,46090206,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2013,Acura,Rdx,Technology,Sc,Rear End,0,192437 mi,45860056,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2011,Kia,Rio,Lx,Sc,Front End,0,129460 mi,79313655,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2007,Mercedes-Benz,S-Class,550,Sc,Vandalism,0,0 mi,78868365,[PREMIUM],2026-04-24,Ca - Redding,CA,,,[PREMIUM]
-2010,Honda,Civic,Lx,Sc,Front End,0,155453 mi,77620815,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2000,Toyota,Camry,Le V6,Sc,Front End,0,185073 mi,48730706,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2013,Hyundai,Accent,Gs,Dv,Mechanical,0,123657 mi,49331746,[PREMIUM],2026-04-24,Ca - Redding,CA,,,[PREMIUM]
-2007,Toyota,Prius,Base,Dv,Front End,0,269978 mi,49309556,[PREMIUM],2026-04-24,Ca - Redding,CA,,,[PREMIUM]
-2014,Chevrolet,Cruze,Lt,Sc,Undercarriage,0,265081 mi,48480716,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2006,Toyota,Camry Sola,Sle V6,Sc,Front End,0,114331 mi,48521226,[PREMIUM],2026-04-24,Ca - Redding,CA,,,[PREMIUM]
-2012,Kia,Optima,Lx,Sc,Front End,0,120315 mi,47554456,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2009,Kia,Sedona,Lx,Sc,Side,0,141382 mi,46929586,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2005,Toyota,Prius,Base,Sc,Side,0,249660 mi,99582115,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2011,Toyota,Camry,Se,Sc,Side,0,154768 mi,78349305,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2006,Ford,All Models,E350 Super Duty Wagon,Dv,Mechanical,0,197674 mi,76664785,[PREMIUM],2026-04-13,Medium Duty Clean Title Sale,CA,,,[PREMIUM]
-2012,Mazda,3,I,Sc,Rear End,0,94667 mi,48942316,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2013,Mercedes-Benz,Slk-Class,250,Sc,Rear End,0,61824 mi,48781296,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2008,Toyota,Highlander,Base,Da,Mechanical,0,0 mi,48333416,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2014,Chevrolet,Cruze,Lt,Sc,Rollover,0,198553 mi,48318336,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2011,Toyota,Camry,Se,Sc,Front End,0,188866 mi,47572136,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2012,Ford,Expedition,El Xlt,Ct,Minor Dent/Scratches,0,220057 mi,46237376,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2011,Ford,Ranger,Super Cab,Sc,Rollover,0,165660 mi,46204806,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2006,Toyota,All Models,Le 7 Passenger,Dv,Front End,0,138956 mi,41988696,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2009,Chevrolet,All Models,C1500,Sc,Front End,0,0 mi,92046155,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2012,Toyota,Prius,,Sc,Vandalism,0,36282 mi,92663295,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2004,Toyota,4Runner,Limited,Sc,Side,0,242329 mi,79653595,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2005,Infiniti,G35,Base,Sc,Rear End,0,0 mi,65213415,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2003,Buick,Century,Custom,Sc,Front End,0,103656 mi,48441146,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2013,Cadillac,Cts,Luxury Collection,Sc,Rear End,0,127585 mi,48499776,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2011,Toyota,Camry,Le,Sc,Rear End,0,160194 mi,46748396,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2001,Subaru,Legacy,Gt,Sc,Mechanical,0,188789 mi,46290636,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2013,Gmc,Terrain,Slt,Sc,Front End,0,0 mi,46194176,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2008,Chevrolet,Colorado,Ls,Sc,Vandalism,0,0 mi,47927836,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2014,Bmw,X5,Xdrive50I,Sc,Rear End,0,108411 mi,79544445,[PREMIUM],2026-04-27,Ca - Adelanto,CA,,,[PREMIUM]
-2005,Nissan,Titan,Xe,Sc,Side,0,74743 mi,77361455,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2001,Lincoln,Towncar,Signature,Sc,Front End,0,0 mi,47568176,[PREMIUM],2026-04-13,Ca - Adelanto,CA,,,[PREMIUM]
-2014,Honda,Crv,Lx,Sc,Front End,0,0 mi,97858955,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2000,Toyota,Tacoma,V6,Sc,Vandalism,0,0 mi,47245146,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2014,Bmw,3 Series,I,Sc,Front End,0,87486 mi,46611346,[PREMIUM],2026-04-16,Ca - Napa,CA,,,[PREMIUM]
-2010,Hyundai,Tucson,Limited,Sc,Mechanical,0,120818 mi,99058905,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2014,Chevrolet,Cruze,Ltz,Sc,Front End,0,99859 mi,79362235,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2006,Toyota,Camry,Le,Sc,Front End,0,0 mi,75209755,[PREMIUM],2026-04-08,Ca - Long Beach,CA,,,[PREMIUM]
-2011,Lexus,Is,Base,Sc,Front End,0,147816 mi,47317236,[PREMIUM],2026-04-10,Ca - Long Beach,CA,,,[PREMIUM]
-2011,Honda,All Models,Exl,Sc,Front End,0,159803 mi,77225155,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2012,Honda,Civic,Lx,Sc,Rear End,0,106804 mi,41761116,[PREMIUM],2026-04-13,Ca - Sun Valley,CA,,,[PREMIUM]
-2014,Ram,1500,St,Sc,Front End,0,180989 mi,77346795,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2014,Toyota,Corolla,Le Plus,Sc,Rear End,0,201487 mi,48646206,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2005,Toyota,Tundra,Sr5,Sc,Front End,0,334968 mi,47964286,[PREMIUM],2026-04-16,Ca - Antelope,CA,,,[PREMIUM]
-2011,Mercedes Benz,M-Class,350 Bluetec,Sc,Front End,0,107178 mi,47994716,[PREMIUM],2026-04-16,Ca - Antelope,CA,,,[PREMIUM]
-2014,Toyota,Prius,Two,Sc,Front End,0,0 mi,47777796,[PREMIUM],2026-04-09,Ca - Antelope,CA,,,[PREMIUM]
-2007,Mercedes-Benz,S-Class,550,Sc,Front End,0,129120 mi,47553216,[PREMIUM],2026-04-07,Ca - Antelope,CA,,,[PREMIUM]
-2006,Hyundai,Sonata,Gls V6,Sc,Front End,0,128476 mi,46974816,[PREMIUM],2026-04-23,Ca - Antelope,CA,,,[PREMIUM]
-2014,Mazda,3,Touring,Sc,Side,0,64369 mi,45630156,[PREMIUM],2026-04-23,Ca - Antelope,CA,,,[PREMIUM]
-2013,Toyota,Camry,Se,Sc,Front End,0,160217 mi,79366555,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2011,Toyota,Rav4,Base,Sc,Side,0,106549 mi,77233505,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2012,Ford,All Models,E250 Van,Sc,Front End,0,100019 mi,75254885,[PREMIUM],2026-04-15,Medium Duty Specialty Sale,CA,,,[PREMIUM]
-2013,Dodge,Charger,R/T,Sc,Front End,0,82597 mi,68885055,[PREMIUM],2026-04-21,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2009,Toyota,Highlander,Limited,Sc,All Over,0,179141 mi,48454436,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2000,Toyota,Camry,Le,Sc,Side,0,287176 mi,47389656,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2013,Volkswagen,Jetta,Se,Sc,Side,0,50036 mi,47291236,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2010,Hyundai,Elantra,Gls,Sc,Vandalism,0,0 mi,46882406,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2007,Mercedes-Benz,S-Class,550,Sc,Side,0,191784 mi,46481726,[PREMIUM],2026-04-21,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2000,Suzuki,Sv650,,Sc,All Over,0,0 mi,46169276,[PREMIUM],2026-04-16,Crashedtoys Powersport Auction,CA,,,[PREMIUM]
-2011,Honda,Civic,Lx,Sc,Front End,0,115290 mi,46069476,[PREMIUM],2026-04-16,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2014,Kia,Soul,Base,Sc,Side,0,191566 mi,42064836,[PREMIUM],2026-04-09,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2013,Ford,Fusion,Titanium,Sc,Vandalism,0,0 mi,48626256,[PREMIUM],2026-04-08,Ca - Martinez,CA,,,[PREMIUM]
-2011,Toyota,Prius,Three,Sc,Rear End,0,189376 mi,48198966,[PREMIUM],2026-04-08,Ca - Martinez,CA,,,[PREMIUM]
-2013,Ram,Tradesman,,Dv,Rear End,0,218008 mi,47321076,[PREMIUM],2026-04-15,Ca - Martinez,CA,,,[PREMIUM]
-2005,Cadillac,Escalade,Luxury,Nr,Vandalism,0,0 mi,45798866,[PREMIUM],2026-04-20,Ca - Martinez,CA,,,[PREMIUM]
-2010,Toyota,Prius,Iv,Sc,Side,0,131913 mi,48012066,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2007,Toyota,Corolla,S,Sc,Front End,0,173578 mi,46068616,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2012,Volkswagen,Jetta,Se,Sc,Side,0,130324 mi,82104295,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2008,Nissan,Sentra,2.0,Sc,Vandalism,0,131503 mi,86118325,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2011,Chevrolet,Colorado,Lt,Sc,Front End,0,0 mi,99358595,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2014,Toyota,Camry,Se,Sc,Rear End,0,166441 mi,97589945,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2007,Kia,Rondo,,Sc,Side,0,175092 mi,79766865,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2014,Hyundai,Elantra,,Sc,Side,0,211827 mi,68187225,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2009,Toyota,Corolla,Le,Sc,Side,0,216600 mi,47966706,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2005,Ford,Escape,Xlt,Sc,Front End,0,0 mi,47091686,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2001,Chevrolet,S10,S10,Sc,Rear End,0,209332 mi,46940636,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2011,Mercedes-Benz,Glk-Class,350 4Matic,Sc,Rear End,0,101095 mi,46043936,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2007,Toyota,Fj Cruiser,Base,Sc,Front End,0,307055 mi,41805066,[PREMIUM],2026-04-22,Ca - Mentone,CA,,,[PREMIUM]
-2013,Ford,F-150,Supercrew,Nr,Burn,0,0 mi,99736235,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2013,Kia,Optima,Lx,Sc,Front End,0,129667 mi,79880105,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2008,Toyota,Highlander,Base,Sc,Side,0,174520 mi,79127435,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2008,Ford,Escape,Hev,Sc,Rear End,0,154543 mi,73872035,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2001,Ford,F350,Srw Super Duty,Sc,Rollover,0,265661 mi,73707725,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2014,Volvo,Xc60,T6,Sc,Front End,0,123408 mi,48450596,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2012,Honda,Cr-Z,Ex,Dv,Mechanical,0,172952 mi,48024216,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2005,Mercedes-Benz,M-Class,500,Sc,Front End,0,228890 mi,47830366,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2008,Toyota,Prius Base,Base,Sc,Front End,0,230704 mi,46128346,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2006,Ford,F150,Supercrew,Sc,Rear End,0,213555 mi,41624426,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2014,Hyundai,Elantra,Se,Sc,Rear End,0,97781 mi,70939565,[PREMIUM],2026-04-07,Ca - San Diego,CA,,,[PREMIUM]
-2010,Honda,Accord,Exl,Sc,Front End,0,164011 mi,79456565,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2012,Nissan,Versa,1.8 S,Sc,Front End,0,65174 mi,47883626,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2013,Jeep,Cherokee,Overland,Sc,Front End,0,195133 mi,47127146,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2014,Chevrolet,Cruze,Lt,Sc,Front End,0,100003 mi,45673006,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2013,Subaru,Outback,2.5I Limited,Sc,Rear End,0,254596 mi,93407365,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2007,Honda,Civic,Lx,Sc,Side,0,221552 mi,79015685,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2012,Ford,Fusion Sel,Sel,Sc,Front End,0,156589 mi,77992405,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2003,Chevrolet,Trailblaze,Ext,Sc,Front End,0,55899 mi,77442885,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2005,Jeep,Grand Cher,Laredo,Sc,Front End,0,173399 mi,76361875,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2012,Toyota,Prius,Four,Sc,Front End,0,167941 mi,73450505,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2010,Toyota,Camry,Le,Sc,Front End,0,112469 mi,47763146,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2002,Mercedes-Benz,Clk-Class,430,Sc,Rollover,0,0 mi,47287456,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2004,Toyota,Matrix,Xr,Sc,Front End,0,201725 mi,47404036,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2007,Toyota,Camry,Se V6,Sc,Front End,0,118086 mi,46228196,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2005,Toyota,Prius,Base,Sc,Side,0,198885 mi,47110126,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2008,Nissan,Altima,3.5 Se,Sc,Front End,0,189697 mi,46389256,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2014,Ford,Expedition,Limited,Sc,Undercarriage,0,146314 mi,86317285,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2007,Toyota,Camry,Xle V6,Sc,Front End,0,201321 mi,75408745,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2005,Toyota,All Models,Xle,Sc,Front End,0,0 mi,71627965,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2008,Chev,Colorado,,Sc,Front End,0,0 mi,47932976,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2012,Toyota,Prius,Three,Sc,Front End,0,180048 mi,48155976,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2010,Honda,Fit,Sport,Sc,Front End,0,61248 mi,47323516,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2014,Honda,Accord,Exl,Sc,Front End,0,166721 mi,46545546,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2005,Scion,Tc,Base,Sc,Rear End,0,180736 mi,46395856,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2005,Gmc,Yukon,,Sc,Front End,0,228326 mi,41785296,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2006,Honda,Civic,Ex,Nr,Water/Flood,0,119659 mi,99383245,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2014,Toyota,Scion,,Sc,Front End,0,174897 mi,76595565,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2009,Mini,Cooper,S,Da,Water/Flood,0,0 mi,76368595,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2008,Toyota,Camry,Se V6,Sc,Front End,0,247967 mi,48061766,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2009,Toyota,Avalon,Xl,Sc,Rear End,0,246991 mi,47990296,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2008,Ford,Expedition,Xlt,Dv,Mechanical,0,216940 mi,47829526,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2014,Nissan,Frontier,S,Da,Mechanical,0,237932 mi,48528836,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2012,Jeep,Liberty Sp,Sport,Dv,Mechanical,0,150323 mi,47611046,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2013,Toyota,Rav4,Limited,Sc,Front End,0,163321 mi,41994616,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2005,Toyota,Tacoma,Double Cab Prerunner,Nr,Rollover,0,0 mi,77156545,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2010,Honda,Civic,Ex,Sc,Front End,0,279946 mi,76955695,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2008,Honda,Civic,Lx,Dv,Front End,0,124081 mi,47646646,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2010,Honda,Insight,Lx,Ct,Side,0,142192 mi,78879635,[PREMIUM],2026-04-07,Wholesale Auction,CA,,,[PREMIUM]
-2012,Toyota,Prius,Three,Sc,Front End,0,167433 mi,48168846,[PREMIUM],2026-04-06,Ca - Napa,CA,,,[PREMIUM]
-2007,Toyota,Corolla,S,Sc,Front End,0,107952 mi,47651976,[PREMIUM],2026-04-06,Ca - Napa,CA,,,[PREMIUM]
-2003,Chevrolet,Silverado,C1500,Sc,Front End,0,180727 mi,47557466,[PREMIUM],2026-04-16,Ca - Napa,CA,,,[PREMIUM]
-2013,Toyota,Highlander,Se,Sc,Front End,0,123002 mi,46578276,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2011,Bmw,X3,Xdrive35I,Sc,Rear End,0,138068 mi,45992016,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2011,Mercedes-Benz,M-Class,350,Sc,Front End,0,122879 mi,79308585,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2011,Chevrolet,Tahoe,Special,Da,Normal Wear,0,0 mi,48104196,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2008,Lexus,Is,Base,Dv,Normal Wear,0,154155 mi,47476546,[PREMIUM],2026-04-03,Ca - Long Beach,CA,,,[PREMIUM]
-2006,Toyota,Tundra Bas,Base,Dv,Front End,0,0 mi,48135596,[PREMIUM],2026-04-15,Ca - Sun Valley,CA,,,[PREMIUM]
-2013,Toyota,Sienna,Le 8-Passenger,Sc,Front End,0,226769 mi,79126705,[PREMIUM],2026-03-31,Ca - Antelope,CA,,,[PREMIUM]
-2010,Toyota,Highlander,Se,Sc,Rear End,0,143100 mi,46772946,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2005,Chevrolet,Tahoe,C1500,Sc,Front End,0,0 mi,41799156,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2003,Toyota,Corolla,S,Sc,Rear End,0,153423 mi,41841366,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2013,Honda,Accord,Lx,Sc,Front End,0,159865 mi,92421675,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2012,Honda,Accord,Se,Dv,Minor Dent/Scratches,0,193220 mi,79940565,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2007,Bmw,3 Series,I Sulev,Sc,Front End,0,202018 mi,76468565,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2006,Mercedes-Benz,Sl-Class,500,Sc,Undercarriage,0,94138 mi,47137386,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2013,Chevrolet,Malibu,Ls,Sc,Vandalism,0,268906 mi,78877635,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2012,Dodge,Ram 1500,St,Sc,Front End,0,140651 mi,75016185,[PREMIUM],2026-04-17,Ca - Redding,CA,,,[PREMIUM]
-2009,Chevrolet,Impala,Ls,Sc,Front End,0,166045 mi,73330715,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2010,Chevrolet,Silverado,K2500 Heavy Duty Lt,Sc,Front End,0,207243 mi,46243176,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2013,Chrysler,300,S,Sc,Front End,0,185909 mi,47195186,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2000,Dodge,Ram 1500,,Dv,Mechanical,0,266694 mi,45668886,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2010,Chevrolet,Equinox,Lt,Sc,Front End,0,193838 mi,46036406,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2013,Volkswagen,Passat,Sel,Ct,Side,0,145019 mi,45447776,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2007,Toyota,Prius Base,Base,Sc,Front End,0,170586 mi,47066596,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2009,Volkswagen,Rabbit,,Sc,Front End,0,149084 mi,41611556,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2014,Jeep,Patriot,Sport,Dv,Rear End,0,240983 mi,47653546,[PREMIUM],2026-04-02,Ca - San Bernardino,CA,,,[PREMIUM]
-2000,Toyota,Tundra,Sr5,Dv,Front End,0,242362 mi,47746526,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2001,Honda,Accord,Ex,Dv,Front End,0,274015 mi,47993176,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2011,Kia,Soul,+,Dv,Mechanical,0,126469 mi,47637526,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2004,Toyota,Sienna,Xle Limited 7 Passenger,Dv,Minor Dent/Scratches,0,218935 mi,47556746,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2013,Kia,Soul,+,Sc,Front End,0,196977 mi,41672576,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2008,Ford,Focus,Se,Sc,Rear End,0,153612 mi,41986956,[PREMIUM],2026-04-03,Ca - Long Beach,CA,,,[PREMIUM]
-2013,Hyundai,Sonata,Gls,Dv,Front End,0,152708 mi,78471085,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2014,Bmw,X1,Sdrive28I,Dq,Side,0,151646 mi,47470206,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2013,Mercedes-Benz,Cls-Class,550,Sc,Front End,0,121200 mi,47327246,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2013,Toyota,Corolla,Base,Dy,Front End,0,138012 mi,47423826,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2013,Mazda,Cx-5,Touring,Dv,Vandalism,0,0 mi,47317706,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2010,Nissan,Murano,S,Dq,Side,0,125903 mi,47306086,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2011,Toyota,Prius Thre,Three,Dv,Front End,0,187800 mi,47423396,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2008,Toyota,Avalon,Touring,Lq,Minor Dent/Scratches,0,276792 mi,47073636,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2010,Toyota,Prius,Iii,Sc,Side,0,464886 mi,46834786,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2010,Toyota,Rav4,Base,Sc,Front End,0,198997 mi,47268276,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2007,Ford,F150,,Sc,Side,0,224953 mi,46955956,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2005,Hyundai,Tucson,Gl,Sc,Front End,0,169821 mi,47204706,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2013,Nissan,Altima,2.5,Sc,Front End,0,149261 mi,46061896,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2004,Gmc,Sierra,K1500,Dv,Rear End,0,0 mi,46437016,[PREMIUM],2026-04-03,Ca - San Diego,CA,,,[PREMIUM]
-2006,Toyota,Camry Sola,Se V6,Sc,Side,0,135669 mi,46335036,[PREMIUM],2026-04-14,Ca - San Diego,CA,,,[PREMIUM]
-2001,Chevrolet,Silverado,K1500,Sc,Front End,0,157127 mi,46130376,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2008,Toyota,Rav4,Base,St,Rear End,0,135897 mi,46567106,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2009,Mitsubishi,Evo,Evolution Gsr,Sc,Burn - Engine,0,0 mi,46378176,[PREMIUM],,Ca - San Diego,CA,,,[PREMIUM]
-2013,Honda,Accord,Exl,Sc,Front End,0,128140 mi,41663606,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2005,Toyota,Sequoia,Limited,Sc,Front End,0,191331 mi,41666746,[PREMIUM],2026-03-31,Ca - San Diego,CA,,,[PREMIUM]
-2010,Toyota,Prius,Iv,Dv,Rear End,0,190970 mi,41625206,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2010,Chevrolet,Equinox,Ltz,St,Front End,0,123115 mi,41621626,[PREMIUM],2026-04-10,Ca - San Diego,CA,,,[PREMIUM]
-2014,Jayco,Trailer,,Ct,Vandalism,0,0 mi,78515115,[PREMIUM],,Heavy-Trailer-Rv Clean Sale,CA,,,[PREMIUM]
-2008,Chevrolet,Impala,Ls,Sc,Front End,0,229195 mi,46538996,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2007,Ford,Edge,Se,Sc,Rear End,0,240542 mi,98528585,[PREMIUM],2026-04-09,Ca - Napa,CA,,,[PREMIUM]
-2012,Honda,Civic,Lx,Sc,Rear End,0,0 mi,74397535,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2013,Jeep,Wrangler,Sport,Sc,Front End,0,131164 mi,47418156,[PREMIUM],,Ca - Napa,CA,,,[PREMIUM]
-2013,Scion,Tc,Base,Sc,Front End,0,247754 mi,47295446,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2009,Honda,Accord,Lxp,Sc,Front End,0,202133 mi,46246376,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2014,Mercedes-Benz,C-Class,250,Sc,Front End,0,153139 mi,45867726,[PREMIUM],2026-04-06,Ca - Napa,CA,,,[PREMIUM]
-2014,Toyota,Prius,Two,Sc,Front End,0,407714 mi,45808156,[PREMIUM],2026-04-02,Ca - Napa,CA,,,[PREMIUM]
-2006,Toyota,Highlander,Base,Sc,Front End,0,119846 mi,46948296,[PREMIUM],2026-04-15,Ca - Long Beach,CA,,,[PREMIUM]
-2014,Ram,1500,Slt,Ps,Front End,0,152989 mi,76001745,[PREMIUM],,Ca - Antelope,CA,,,[PREMIUM]
-2000,Toyota,Avalon,Xls,Sh,Front End,0,193829 mi,47318416,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2009,Toyota,Camry,Se,Sc,Side,0,0 mi,47436496,[PREMIUM],2026-04-13,*Ncs - Pacific Region,CA,,,[PREMIUM]
-2010,Honda,All Models,Exl,Sc,Rear End,0,183625 mi,46898296,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2010,Toyota,Prius,Iii,Sc,Front End,0,246039 mi,46239716,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2010,Subaru,Outback 2,2.5I Limited,Sc,Front End,0,163876 mi,46147216,[PREMIUM],2026-04-14,Ca - Antelope,CA,,,[PREMIUM]
-2013,Toyota,Corolla,S,Sc,Front End,0,126263 mi,46057846,[PREMIUM],2026-04-02,Ca - Antelope,CA,,,[PREMIUM]
-2010,Honda,Crv,Lx,Sc,Minor Dent/Scratches,0,181848 mi,46052846,[PREMIUM],2026-03-31,Ca - Antelope,CA,,,[PREMIUM]
-2008,Toyota,Avalon,Xl,Sc,Front End,0,79114 mi,78935475,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2009,Honda,Civic,Lx,Sc,Front End,0,126069 mi,47789346,[PREMIUM],2026-04-02,Ca - Rancho Cucamonga,CA,,,[PREMIUM]
-2008,Lexus,Ls 460,L,Sc,Front End,0,127255 mi,78923085,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2011,Volvo,Xc60,3.2,Sc,Side,0,80670 mi,78210315,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2000,Toyota,Camry,Le,Sc,Rear End,0,249158 mi,77239935,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2004,Nissan,Armada,Se,Sc,Side,0,127849 mi,76373485,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2014,Jeep,Cherokee,Trailhawk,Dv,Front End,0,129932 mi,47581056,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2007,Honda,Odyssey,Lx,Sc,Front End,0,176227 mi,47567986,[PREMIUM],2026-04-15,Ca - Mentone,CA,,,[PREMIUM]
-2012,Honda,Civic,Natural Gas,Sc,Side,0,183396 mi,47393336,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2012,Volkswagen,Tiguan,S,Dv,Minor Dent/Scratches,0,145680 mi,45865566,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2013,Volvo,C70,T5,Sc,Rear End,0,126870 mi,79310635,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2014,Ford,Escape,Titanium,Sc,Front End,0,143748 mi,77423345,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2013,Ford,Fiesta,Se,Sc,Side,0,119115 mi,76287095,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2004,Subaru,Forester,2.5Xs,Dv,Minor Dent/Scratches,0,339438 mi,47972106,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2002,Ford,Windstar,Lx,Sc,Front End,0,94950 mi,47261206,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2005,Ford,F150,Supercrew,Ct,Minor Dent/Scratches,0,168930 mi,47072226,[PREMIUM],2026-04-14,Wholesale Auction,CA,,,[PREMIUM]
-2008,Toyota,Rav4,Limited,Sc,Rollover,0,176276 mi,46314376,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2009,Hyundai,Accent,Gls,Sc,Front End,0,183503 mi,46564756,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2013,Honda,Accord,,Sc,All Over,0,135022 mi,70010505,[PREMIUM],2026-03-30,Ca - Napa,CA,,,[PREMIUM]
-2004,Lexus,Rx330,330,Da,Mechanical,0,152052 mi,94579035,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2010,Club,Car,,Bs,Vandalism,0,0 mi,79225205,[PREMIUM],2026-04-02,Crashedtoys Powersport Auction,CA,,,[PREMIUM]
-2012,Nissan,Altima,2.5,Sc,Rear End,0,200114 mi,47426146,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2012,Honda,Civic,Lx,Sc,Side,0,93740 mi,47105056,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2012,Nissan,Altima,2.5 S,Sc,Front End,0,110289 mi,46903306,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2010,Toyota,Prius,Ii,Sc,Side,0,257646 mi,46819156,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2013,Hyundai,Sonata,Gls,Sc,Front End,0,117063 mi,78469375,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2012,Gmc,Terrain,Slt,Sc,Mechanical,0,139940 mi,74886335,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2006,Toyota,Tacoma,Prerunner V6,Ac,Rear End,0,133407 mi,47302136,[PREMIUM],2026-03-27,Ca - Redding,CA,,,[PREMIUM]
-2007,Volkswagen,Gti,,Sc,Front End,0,0 mi,47230636,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2006,Acura,Tsx,,Sc,Mechanical,0,111705 mi,47021946,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2002,Honda,Civic,Lx,Dv,Mechanical,0,295688 mi,47302066,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2004,Subaru,Forester,2.5X,Dv,Mechanical,0,215401 mi,47300836,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2014,Chevrolet,Impala,Ltz,Sc,Front End,0,69269 mi,46844106,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2000,Honda,Accord,Ex,Sc,Front End,0,203824 mi,46694846,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2014,Toyota,Camry,Le,Sc,Front End,0,182823 mi,46230076,[PREMIUM],2026-04-03,Ca - Redding,CA,,,[PREMIUM]
-2014,Lexus,Is,Base,Dv,Mechanical,0,117143 mi,46060946,[PREMIUM],2026-04-10,Ca - Redding,CA,,,[PREMIUM]
-2003,Ford,Expedition,Xlt,Sc,Front End,0,196946 mi,45679566,[PREMIUM],,Ca - Redding,CA,,,[PREMIUM]
-2004,Honda,Civic,Dx Vp,Dv,Rear End,0,167687 mi,78328215,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2009,Toyota,Corolla,Base,Sc,All Over,0,0 mi,68346975,[PREMIUM],,Ca - Mentone,CA,,,[PREMIUM]
-2002,Honda,Odyssey,Lx,Dv,Minor Dent/Scratches,0,227678 mi,47323616,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2005,Land Rover,Rangerover,Hse,Dv,Mechanical,0,124361 mi,47314416,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2014,Audi,Q5,Premium Plus,Dv,Mechanical,0,142830 mi,47470306,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2010,Honda,Civic,Lx,Dv,Rear End,0,177445 mi,47285916,[PREMIUM],2026-04-08,Ca - Mentone,CA,,,[PREMIUM]
-2004,Toyota,Camry,Le,Sc,Front End,0,215897 mi,46771356,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
-2000,Lexus,Es250,Base,Sc,Side,0,277664 mi,47028556,[PREMIUM],2026-04-01,Ca - Mentone,CA,,,[PREMIUM]
 2017,Ram,1500,Rebel,Sc,Biohazard/Chemical,0,0 mi,66383095,,2026-04-14,Ks - Kansas City,KS,Rebrowser-Copart,COPART,
 2021,Skid,Renegade A,,Ip,Burn - Engine,0,0 mi,44505625,,2026-04-14,Qc - Montreal,QC,Rebrowser-Copart,COPART,
 2023,Toyota,Camry Sola,Le,St,All Over,0,50636 mi,69564695,,2026-04-09,Wholesale Auction,GA,Rebrowser-Copart,COPART,
@@ -1009,6 +369,26 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2017,Subaru,Forester,2.5I Premium,Sc,Front End,0,98410 mi,47220836,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2016,Audi,A3,Premium Plus,Sc,Rear End,0,81793 mi,46901776,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2018,Volkswagen,Jetta,Sport,Sc,Front End,0,92558 mi,47025076,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2020,Mercedes-Benz,Glc-Class,300,Sc,Front End,0,9195 mi,97510485,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Mercedes-Benz,C-Class,300,Sc,Rear End,0,71305 mi,79949555,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Honda,Civic,Sport,Sc,Rear End,0,15825 mi,79456945,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Audi,Q7,Prestige,Sc,Burn - Engine,0,87219 mi,79239735,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Ford,Mustang,Select,Sc,Front End,0,93285 mi,78670385,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Volkswagen,Jetta,S,Sc,Front End,0,130299 mi,78364385,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Hyundai,Tucson,Sel,Sc,Rear End,0,25972 mi,78107065,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Ford,Fiesta,St,Sc,Front End,0,118519 mi,77772705,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Volkswagen,Jetta,Base,Sc,Undercarriage,0,141607 mi,76987485,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Kia,Soul,+,Dy,Mechanical,0,149678 mi,75704305,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Nissan,Rogue,Sl,Sc,Front End,0,104036 mi,75414265,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Hyundai,Elantra,Sel,Sc,Front End,0,103988 mi,75311105,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Honda,Crv,Sport-L,Sc,Front End,0,23417 mi,74382845,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Hyundai,Elantra,Value Edition,Sc,Rear End,0,157857 mi,48251786,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Kia,Optima,Lx,Sc,Rear End,0,173927 mi,48170966,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Cadillac,Xt5,Premium Luxury,Sc,Front End,0,43779 mi,47773946,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Camaro,Ls,Sc,Front End,0,110394 mi,47429876,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Jeep,Grand Cher,Summit,Sc,Front End,0,90164 mi,46090206,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Acura,Rdx,Technology,Sc,Rear End,0,192437 mi,45860056,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Camry,Se,Sc,Front End,0,80116 mi,41838456,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2018,Audi,Q3,Premium Plus,Rb,Front End,0,108066 mi,98196455,,2026-04-20,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2022,Honda,Accord,Sport,Cd,Front End,0,33260 mi,91800495,,2026-04-27,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2020,Ford,Fusion,Se,Cd,Front End,0,72220 mi,86261085,,2026-04-20,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -1345,6 +725,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Gmc,Sierra,K1500,Sm,Side,0,140027 mi,45751886,,2026-04-20,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2014,Subaru,Impreza,,Sm,Side,0,45280 mi,45540416,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2012,Kia,Sportage,Lx,Sc,Front End,0,177037 mi,45822016,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2017,Honda,Accord,Sport Special Edition,Sc,Front End,0,132436 mi,78852885,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Honda,Civic,Sport,Sc,Front End,0,41189 mi,77837465,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2022,Hyundai,Santa Cruz,Se,Cd,Rear End,0,31541 mi,78185825,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Hyundai,Accent,Gs,Dv,Mechanical,0,123657 mi,49331746,,2026-04-24,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2021,Tesla,Model 3,,Ac,Front End,0,42022 mi,49272756,,2026-04-24,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Cruze,Lt,Sc,Undercarriage,0,265081 mi,48480716,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Kia,Optima,Lx,Sc,Front End,0,120315 mi,47554456,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Toyota,Tundra,Trd Pro,Sc,Front End,0,0 mi,46046846,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2020,Mercedes-Benz,Gle-Class,350 4Matic,Sc,Front End,0,101444 mi,41985706,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Gmc,Sierra,K1500 Elevation,Sc,Front End,0,20316 mi,41754986,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2016,Volvo,S60,Premier,S1,Rear End,0,95797 mi,99930455,,2026-04-09,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2021,Acura,Ilx,Premium,S1,Front End,0,0 mi,99815715,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2015,Nissan,Versa,S,S1,Rear End,0,159053 mi,99851125,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -1440,7 +830,10 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2023,Chev,Corvette,Stingray 3Lt,Ct,Vandalism,0,14522 mi,87001484,,2026-04-27,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2022,Toyota,Corolla,Le,Sc,Side,0,81966 mi,70895585,,2026-04-13,Mo - Sikeston,MO,Rebrowser-Copart,COPART,
 2022,Freigliner,All Other,,Vd,Burn,0,0 mi,44413465,,,Fl - Tallahassee,FL,Rebrowser-Copart,COPART,
+2025,Mercedes-Benz,Cla-Class,250,Sc,Undercarriage,0,1944 mi,66960285,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2015,Nissan,Sentra,S,Sc,Front End,0,94162 mi,64475145,,,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
 2017,Kia,Optima,Lx,St,Rear End,0,122214 mi,55328305,,2026-04-09,Nm - Albuquerque,NM,Rebrowser-Copart,COPART,
+2018,Tesla,Model S,,Sc,Front End,0,70827 mi,86253355,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
 2017,Ram,1500,St,St,Front End,0,191180 mi,96878275,,2026-04-22,Ia - Cedar Rapids,IA,Rebrowser-Copart,COPART,
 2020,Ford,Edge,Titanium,St,Side,0,62886 mi,79948465,,,Ia - Cedar Rapids,IA,Rebrowser-Copart,COPART,
 2018,Chevrolet,Trax,1Lt,Sv,Front End,0,104874 mi,78827885,,2026-04-09,Tx - North Austin,TX,Rebrowser-Copart,COPART,
@@ -1892,6 +1285,19 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Honda,Accord,Exl,Po,Front End,0,0 mi,94323255,,2026-04-10,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2021,Jeep,Grand Cher,L Limited,Sc,Side,0,58170 mi,79544565,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2017,Mazda,6,Sport,Sc,Front End,0,72771 mi,77155915,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2023,Kia,Ev6 Gt-Lin,Gt-Line,Sc,Side,0,57448 mi,79781425,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Mercedes-Benz,E-Class,300,Sc,Rear End,0,74833 mi,77942995,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Audi,Q5,Premium Plus,Sc,Front End,0,136134 mi,77244495,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Honda,Civic,Sport,Sc,All Over,0,0 mi,74484835,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Hyundai,Elantra Va,Value Edition,Sc,Rear End,0,134177 mi,48705546,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Nissan,Altima,2.5 Sv,Dv,Minor Dent/Scratches,0,174695 mi,48498616,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Mazda,3,I,Sc,Rear End,0,94667 mi,48942316,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Nissan,Rogue,S,Sc,Front End,0,65173 mi,48512446,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Mercedes-Benz,Slk-Class,250,Sc,Rear End,0,61824 mi,48781296,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Cruze,Lt,Sc,Rollover,0,198553 mi,48318336,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Ford,All Models,,Sc,Front End,0,35700 mi,47909066,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Kia,Sorento,Lx,Dv,Mechanical,0,129224 mi,47595326,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Ford,Expedition,El Xlt,Ct,Minor Dent/Scratches,0,220057 mi,46237376,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2018,Honda,Accord,Lx,Rb,Front End,0,133291 mi,98710255,,2026-04-20,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2019,Jeep,Grand Cher,Limited,Rb,Front End,0,127258 mi,99286525,,,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2019,Kia,Forte,,Rb,Rear End,0,67271 mi,98497435,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -2654,6 +2060,14 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2017,Ford,Fusion,Se,Sc,Front End,0,103091 mi,45551436,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2015,Toyota,Rav4,Le,Sc,Rear End,0,173486 mi,42056156,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2024,Gmc,Sierra K2,K2500 At4,Sc,Front End,0,67749 mi,41982256,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2012,Toyota,Prius,,Sc,Vandalism,0,36282 mi,92663295,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2026,Toyota,Corolla,Se,Sc,Rollover,0,739 mi,79833585,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Cadillac,Cts,Luxury Collection,Sc,Rear End,0,127585 mi,48499776,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Toyota,Rav4,Xle,Sc,Front End,0,131448 mi,46527636,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Chevrolet,Equinox,Ls,Sc,Front End,0,73856 mi,46199776,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Lexus,Gs350,Base,Sc,Front End,0,192037 mi,45447836,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Corolla Cr,Le,Sc,Front End,0,14502 mi,42000746,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Mini,Cooper,Clubman,Sc,Front End,0,85281 mi,41582696,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2015,Chevrolet,All Models,C1500 Ltz,Cd,Side,0,147729 mi,99174535,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2013,Infiniti,M37,X,Rr,Front End,0,102085 mi,79152155,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2015,Chevrolet,Silverado,C1500 Lt,Rb,Side,0,233954 mi,79254345,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -3000,6 +2414,12 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Ford,Ecosport,Se,Sc,Front End,0,72660 mi,45988986,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2022,Chevrolet,Malibu,Ls,Sc,Side,0,67899 mi,41665906,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2018,Audi,A6,Premium Plus,Sm,Minor Dent/Scratches,0,67885 mi,45484146,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2020,Subaru,Wrx,Premium,Sc,Rear End,0,37040 mi,97982505,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2025,Mazda,Cx30,Premium,Sc,Front End,0,17184 mi,48173946,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2018,Buick,Encore,Preferred,Dv,Minor Dent/Scratches,0,69564 mi,47770496,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Ford,Edge,Sel,Sh,Front End,0,143299 mi,47025486,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Toyota,Tacoma,Trd Sport,Sc,Front End,0,44394 mi,46500396,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Gmc,Terrain,Slt,Sc,Front End,0,0 mi,46194176,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2023,Toyota,Camry,Le,S1,Rear End,0,29631 mi,99657755,,2026-04-07,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2023,Acura,Mdx,,S1,All Over,0,35623 mi,99686925,,2026-04-07,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2016,Hyundai,Sonata,Se,S1,Front End,0,152851 mi,99576025,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -3314,6 +2734,12 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2018,Chrysler,Pacifica,Touring L,Sc,Rear End,0,136640 mi,46097506,,,Ks - Kansas City,KS,Rebrowser-Copart,COPART,
 2014,Ford,Expedition,El Limited,Sc,Side,0,290137 mi,45842696,,,Ks - Kansas City,KS,Rebrowser-Copart,COPART,
 2024,Nissan,All Other,Performance,St,Front End,0,10828 mi,45628156,,2026-04-21,Ks - Kansas City,KS,Rebrowser-Copart,COPART,
+2018,Nissan,Sentra,Sv,Sc,Front End,0,100770 mi,79946555,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Subaru,Crosstrek,Limited,Sc,Rollover,0,126441 mi,79641655,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Cadillac,Xt5,Luxury,Sc,Front End,0,68344 mi,48174306,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Hyundai,Sonata,Limited,Sc,Side,0,119281 mi,46052086,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Hyundai,Veloster,Turbo R-Spec,Sc,Side,0,138182 mi,45801346,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Honda,Civic,Lx,Sc,Front End,0,112782 mi,46360676,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2017,Ford,Fusion,Se Hybrid,Sc,Side,0,153570 mi,98551785,,2026-04-16,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2018,Subaru,Impreza,Limited,Sc,Front End,0,60967 mi,98232625,,2026-04-16,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2014,Toyota,Sienna,L 7-Passenger,Sc,Rear End,0,115943 mi,90754395,,2026-04-09,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
@@ -3445,6 +2871,11 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Kia,Sorento,Lx V6,Sc,Front End,0,89411 mi,41765816,,2026-04-17,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
 2020,Jeep,Wrangler,Sport,Sc,Rear End,0,69303 mi,41709706,,2026-04-17,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
 2020,Nissan,Pathfinder,Sl,Ps,Front End,0,54200 mi,72461605,,,Wy - Casper,WY,Rebrowser-Copart,COPART,
+2023,Lexus,Es300,Base,Sc,Front End,0,45162 mi,95020715,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2014,Bmw,X5,Xdrive50I,Sc,Rear End,0,108411 mi,79544445,,2026-04-27,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2019,Subaru,Wrx,Sti Limited,Sc,Front End,0,0 mi,72282195,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2018,Polaris,Rzrxp41000,,Sc,Rear End,0,1379 mi,72874875,,2026-04-23,Crashedtoys Powersport Auction,CA,Rebrowser-Copart,COPART,
+2023,Kia,Forte,Lxs,Sc,Rear End,0,42017 mi,45457396,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
 2014,Ford,Fusion,Se Hybrid,Ps,Front End,0,134029 mi,95170615,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2012,Volvo,Xc90,3.2,Bs,Rear End,0,184795 mi,94717155,,2026-04-08,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2024,Subaru,Outback,Limited,Ps,Burn - Engine,0,0 mi,94828725,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
@@ -3489,8 +2920,34 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2021,Honda,Accord,Hybrid Exl,Ps,Front End,0,109527 mi,41901866,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2016,Volvo,Xc70,T5 Classic Premier,Ps,Side,0,100606 mi,41656096,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2015,Harley Davidson,Fltruse C,Cvo Road Glide,Ps,Side,0,57298 mi,41649416,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
+2014,Honda,Crv,Lx,Sc,Front End,0,0 mi,97858955,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2020,Toyota,Highlander,Hybrid Limited,Sc,Side,0,254717 mi,95519675,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2025,Tesla,Model Y,,Sc,Rear End,0,3569 mi,84231255,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2024,Bmw,All Other,Edrive 35,Sc,Rear End,0,22983 mi,78649075,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2017,Toyota,Corolla,Le,Sc,Rear End,0,73079 mi,77733415,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2014,Bmw,3 Series,I,Sc,Front End,0,87486 mi,46611346,,2026-04-16,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2018,Chevrolet,Tahoe,K1500 Lt,Sc,Front End,0,54476 mi,46359366,,2026-04-16,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Cruze,Ltz,Sc,Front End,0,99859 mi,79362235,,2026-04-10,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2024,Lexus,Rc350,F Sport,Sc,Rear End,0,9365 mi,78867705,,2026-04-10,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2025,Honda,Passport,Trail Sport,Sc,Rear End,0,22384 mi,78225435,,2026-04-10,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2019,Subaru,Crosstrek,Premium,Sc,Side,0,32019 mi,77812055,,2026-04-10,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2019,Hyundai,Ioniq,Blue,Sc,Rear End,0,194198 mi,76216655,,2026-04-22,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2019,Kia,Optima,Lx,Sc,Vandalism,0,0 mi,74837325,,2026-04-08,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2017,Jaguar,Xe,,Sc,Front End,0,102998 mi,47028756,,2026-04-10,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2016,Chrysler,200,Limited,Sc,Front End,0,141445 mi,46235186,,2026-04-08,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
 2022,Ram,Promaster,3500 High,Sv,Front End,0,0 mi,48112226,,2026-04-22,Medium Duty Specialty Sale,TX,Rebrowser-Copart,COPART,
 2015,Chevrolet,Equinox,Lt,St,Front End,0,180825 mi,77744705,,,Tx - Dallas South,TX,Rebrowser-Copart,COPART,
+2024,Toyota,Tundra,Crewmax Limited,Sc,Vandalism,0,38581 mi,74137395,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2016,Lexus,Es300,,Ct,Minor Dent/Scratches,0,100919 mi,72364205,,,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2023,Honda,Civic,Si,Sc,Front End,0,75176 mi,47786406,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2016,Kia,Optima,Lx,Sc,Normal Wear,0,132328 mi,47240686,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2015,Honda,Fit,Lx,Sc,Front End,0,112644 mi,46496576,,,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2024,Subaru,Outback,Premium,Sc,Front End,0,16935 mi,45948096,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2016,Porsche,Cayenne,Se Hybrid,Sc,Front End,0,126641 mi,45791556,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2022,Tesla,Model Y,,Sc,Front End,0,0 mi,45722896,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Corolla,Le,Sc,Front End,0,76148 mi,41797456,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2012,Honda,Civic,Lx,Sc,Rear End,0,106804 mi,41761116,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2019,Ford,Fusion,Titanium,Sc,Front End,0,38158 mi,41611996,,2026-04-13,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
 2015,Ford,Escape,Se,Ct,Side,0,145505 mi,94214475,,2026-04-17,Mi - Ionia,MI,Rebrowser-Copart,COPART,
 2021,Ford,Explorer,Xlt,Po,Side,0,51203 mi,74991285,,2026-04-17,Mi - Ionia,MI,Rebrowser-Copart,COPART,
 2024,Chevrolet,Trax Activ,Activ,Po,Front End,0,36009 mi,97407785,,,Mi - Flint,MI,Rebrowser-Copart,COPART,
@@ -3500,6 +2957,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2018,Subaru,Forester,2.5I Premium,Ct,Front End,0,77340 mi,74052225,,,Mi - Flint,MI,Rebrowser-Copart,COPART,
 2024,Jeep,Grand Cher,Limited,St,Side,0,49845 mi,72971015,,,Mi - Flint,MI,Rebrowser-Copart,COPART,
 2015,Mazda,Cx-5,Touring,Ct,Front End,0,197232 mi,45779376,,,Mi - Flint,MI,Rebrowser-Copart,COPART,
+2022,Subaru,Ascent,Touring,Sc,Rear End,0,73689 mi,79557455,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Mirai,Xle,Sc,Front End,0,12570 mi,79899155,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2014,Ram,1500,St,Sc,Front End,0,180989 mi,77346795,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Corolla,Le Plus,Sc,Rear End,0,201487 mi,48646206,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Prius,Two,Sc,Front End,0,0 mi,47777796,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2016,Hyundai,Sonata,Se,Sc,Front End,0,138217 mi,47054116,,2026-04-16,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2021,Nissan,Rogue,S,Sc,Front End,0,80353 mi,47118066,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2018,Ford,Fusion,Se Hybrid,Sc,Front End,0,117746 mi,46185416,,2026-04-09,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2014,Mazda,3,Touring,Sc,Side,0,64369 mi,45630156,,2026-04-23,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2018,Subaru,Outback,2.5I Premium,Sc,Side,0,54509 mi,41988396,,2026-04-16,Ca - Antelope,CA,Rebrowser-Copart,COPART,
 2014,Toyota,Corolla,Le,St,Rear End,0,93717 mi,47755536,,,Ar - Fayetteville,AR,Rebrowser-Copart,COPART,
 2012,Chevrolet,Express,,Sc,Side,0,130263 mi,47505686,,2026-04-08,Medium Duty Specialty Sale,NJ,Rebrowser-Copart,COPART,
 2015,Audi,A7,Prestige,Sc,Front End,0,126732 mi,79957635,,,Or - Portland South,OR,Rebrowser-Copart,COPART,
@@ -3629,6 +3096,23 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2023,Ford,F-150,Supercrew,Sc,Front End,0,45318 mi,73249715,,,Nv - Reno,NV,Rebrowser-Copart,COPART,
 2017,Kia,Soul,+,Ct,Mechanical,0,74721 mi,48858756,,2026-04-09,Nv - Reno,NV,Rebrowser-Copart,COPART,
 2024,Ford,Mustang,Select,Sc,Side,0,17170 mi,45807096,,2026-04-16,Nv - Reno,NV,Rebrowser-Copart,COPART,
+2019,Hyundai,Tucson,Se,Sc,Front End,0,101143 mi,79833815,,2026-04-07,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2015,Bmw,M3,,Sc,Minor Dent/Scratches,0,79789 mi,79309885,,2026-04-21,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Camry,Se,Sc,Front End,0,160217 mi,79366555,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2019,Cadillac,Cts,Luxury,Sc,Front End,0,94932 mi,77239885,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2015,Toyota,Camry,Xse,Sc,Front End,0,128157 mi,75867225,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2025,Chev,Colorado,,Sc,Rear End,0,8113 mi,75673995,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2012,Ford,All Models,E250 Van,Sc,Front End,0,100019 mi,75254885,,2026-04-15,Medium Duty Specialty Sale,CA,Rebrowser-Copart,COPART,
+2020,Nissan,Versa,S,Sc,Front End,0,124051 mi,74128975,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2013,Dodge,Charger,R/T,Sc,Front End,0,82597 mi,68885055,,2026-04-21,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2019,Chevrolet,Equinox,Premier,Sc,Side,0,118073 mi,47743256,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2013,Volkswagen,Jetta,Se,Sc,Side,0,50036 mi,47291236,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Tacoma,Trd Off-Road,Sc,Front End,0,154474 mi,46945846,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2018,Hyundai,Santa Fe,2.4L,Sc,Front End,0,64464 mi,46503846,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2014,Kia,Soul,Base,Sc,Side,0,191566 mi,42064836,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2023,Can-Am,Sidebyside,Unknown,Sc,Front End,0,2032 mi,42075466,,2026-04-23,Crashedtoys Powersport Auction,CA,Rebrowser-Copart,COPART,
+2025,Ford,Bronco,Heritage,Sc,All Over,0,10876 mi,41862946,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2021,Subaru,Wrx,,Sc,Front End,0,47856 mi,41816486,,2026-04-16,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
 2017,Ford,Expedition,El Xlt,St,Front End,0,226508 mi,78693215,,,Tx - Amarillo,TX,Rebrowser-Copart,COPART,
 2012,Ford,F-150,Supercrew,St,Side,0,193615 mi,76431345,,,Tx - Amarillo,TX,Rebrowser-Copart,COPART,
 2016,Volkswagen,Jetta,S,Sc,Side,0,59622 mi,98991025,,2026-04-10,Az - Tucson,AZ,Rebrowser-Copart,COPART,
@@ -3645,6 +3129,13 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2015,Mazda,3,Sv,Sc,Front End,0,131565 mi,41946086,,2026-04-17,Az - Tucson,AZ,Rebrowser-Copart,COPART,
 2023,Ford,Expedition,Xlt,St,Rear End,0,37292 mi,73817055,,,Mo - Springfield,MO,Rebrowser-Copart,COPART,
 2023,Freightliner,All Other,106 Medium Duty,Sc,Side,0,0 mi,48230796,,2026-04-22,Medium Duty Specialty Sale,MN,Rebrowser-Copart,COPART,
+2026,Toyota,Corolla,Le,Sc,Front End,0,1712 mi,73267865,,2026-04-08,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2013,Ford,Fusion,Titanium,Sc,Vandalism,0,0 mi,48626256,,2026-04-08,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2013,Ram,Tradesman,,Dv,Rear End,0,218008 mi,47321076,,2026-04-15,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2016,Cadillac,Ct6,Premium,Sc,Side,0,196452 mi,47114456,,2026-04-08,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2021,Lexus,Rx350,Base,Sc,Side,0,176070 mi,46909426,,2026-04-22,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2019,Honda,Accord,Touring,Sc,Vandalism,0,64244 mi,45654446,,2026-04-08,Ca - Martinez,CA,Rebrowser-Copart,COPART,
+2017,Lexus,Ls500,Base,Sc,Rear End,0,53380 mi,41848416,,2026-04-15,Ca - Martinez,CA,Rebrowser-Copart,COPART,
 2024,Mazda,Cx-5 Selec,Select,Bs,Front End,0,73275 mi,76535415,,2026-04-10,Wa - Pasco,WA,Rebrowser-Copart,COPART,
 2015,Kia,Soul,,Bs,Side,0,168325 mi,77956865,,2026-04-10,Wa - Pasco,WA,Rebrowser-Copart,COPART,
 2012,Toyota,Camry,Le,Bs,Side,0,175075 mi,48287186,,2026-04-10,Wa - Pasco,WA,Rebrowser-Copart,COPART,
@@ -3716,6 +3207,17 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Hyundai,Elantra,Se,Ct,Front End,0,0 mi,77497755,,,Mi - Detroit,MI,Rebrowser-Copart,COPART,
 2023,Tesla,Model Y,,St,Front End,0,70000 mi,75259725,,,Mi - Detroit,MI,Rebrowser-Copart,COPART,
 2021,Buick,Envision,Preferred,Ct,Front End,0,84873 mi,41884606,,,Mi - Detroit,MI,Rebrowser-Copart,COPART,
+2022,Hyundai,Santa Fe,Sel,Sc,Front End,0,42849 mi,79115635,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2023,Kia,Sportage,Ex,Sc,Front End,0,59026 mi,78317065,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2020,Dodge,Caravan,Sxt,Sc,Front End,0,0 mi,47119936,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2020,Toyota,Camry Sola,Xle,Sc,Front End,0,107929 mi,46955766,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2019,Kia,Sportage,Ex,Sc,Front End,0,76402 mi,46163136,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2017,Mitsubishi,Outlander,Se,Sc,Rear End,0,115294 mi,46061216,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2022,Bmw Motorrad,5 Series,,Sc,Front End,0,0 mi,45881086,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2023,Tesla,Model Y,,Sc,Side,0,49410 mi,45633486,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2018,Jeep,Compass,Limited,Sc,Rear End,0,137121 mi,45476646,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2025,Honda,Civic,Sport,Sc,Side,0,21861 mi,42007236,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2019,Honda,Civic,Lx,Sc,Front End,0,88710 mi,41789036,,2026-04-17,Ca - San Diego,CA,Rebrowser-Copart,COPART,
 2021,Chrysler,300,Touring,Sc,Front End,0,49256 mi,97812845,,,Nv - Las Vegas,NV,Rebrowser-Copart,COPART,
 2012,Kia,Optima,Ex,Sc,Front End,0,142601 mi,77010165,,2026-04-16,Nv - Las Vegas,NV,Rebrowser-Copart,COPART,
 2023,Honda,Odyssey,Touring,Sc,Front End,0,32645 mi,75848315,,2026-04-23,Nv - Las Vegas,NV,Rebrowser-Copart,COPART,
@@ -3729,6 +3231,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2022,Hyundai,Santa Cruz,Sel Premium,Bs,Mechanical,0,71140 mi,98498925,,2026-04-13,Wa - North Seattle,WA,Rebrowser-Copart,COPART,
 2018,Jeep,Compass,Latitude,Bs,Side,0,96248 mi,90891645,,2026-04-20,Wa - North Seattle,WA,Rebrowser-Copart,COPART,
 2017,Nissan,Altima,2.5,Rb,Front End,0,76741 mi,37652764,,2026-04-07,Fl - Punta Gorda,FL,Rebrowser-Copart,COPART,
+2012,Volkswagen,Jetta,Se,Sc,Side,0,130324 mi,82104295,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
 2019,Ford,Ranger,Xl,Cd,Rear End,0,45678 mi,80368635,,2026-04-07,Fl - Orlando South,FL,Rebrowser-Copart,COPART,
 2019,Ram,All Models,3500 High,Sc,Front End,0,0 mi,76982095,,2026-04-15,Medium Duty Specialty Sale,IL,Rebrowser-Copart,COPART,
 2025,Dodge,Durango,Gt,St,Side,0,1829 mi,45350135,,,Co - Denver,OK,Rebrowser-Copart,COPART,
@@ -4055,6 +3558,19 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Honda,Pilot,Exl,Sc,Front End,0,113432 mi,72620715,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2012,Toyota,Corolla,S,Sc,Rear End,0,248417 mi,47922896,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2015,Mazda,3 Grand T,Grand Touring,Sc,Front End,0,106929 mi,45516726,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2019,Gmc,Sierra,K1500 Denali,Sc,Undercarriage,0,84187 mi,98196495,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Camry,Se,Sc,Rear End,0,166441 mi,97589945,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Mazda,Cx-5,Touring,Sc,Front End,0,66918 mi,97052245,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Audi,Q3,Premium Plus S Line 45,Sc,Front End,0,19342 mi,95907995,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Camry,Se,Sc,Front End,0,0 mi,95708865,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Honda,Civic,Sport,Sc,Front End,0,147830 mi,79579725,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Dodge,Caravan,Sxt,Dv,Minor Dent/Scratches,0,160118 mi,79435845,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Toyota,Corolla,L,Sc,Side,0,0 mi,72986195,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Hyundai,Elantra,,Sc,Side,0,211827 mi,68187225,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Hyundai,Sonata,Se,Sc,Vandalism,0,86903 mi,47651566,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Indian Motorcycle Co.,Motorcycle,Bobber Sixty Abs,Sc,Front End,0,0 mi,47424986,,2026-04-09,Crashedtoys Powersport Auction,CA,Rebrowser-Copart,COPART,
+2020,Honda,Accord,Hybrid,Sc,Front End,0,181349 mi,46710986,,2026-04-22,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2026,Toyota,Camry,Xse,Sc,Rear End,0,3349 mi,45942456,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2017,Bmw,X5,Sdrive35I,Rb,Front End,0,117854 mi,98456985,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2016,Hyundai,Sonata,Se,Rr,Front End,0,194908 mi,99714195,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2016,Honda,Pilot,Lx,Rb,Side,0,107836 mi,99424935,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -4391,7 +3907,18 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Ford,Escape,Se,Sm,Front End,0,149709 mi,45938486,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2014,Ford,Edge,Sel,Sm,Side,0,53117 mi,45651216,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2018,Jeep,Renegade,Sport,Sm,Rear End,0,111915 mi,41764296,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2013,Ford,F-150,Supercrew,Nr,Burn,0,0 mi,99736235,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2017,Chevrolet,Cruze,Ls,Sm,Front End,0,122391 mi,41707586,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2023,Chevrolet,Silverado,K1500 Rst,Sc,Front End,0,56256 mi,79845425,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Kia,Optima,Lx,Sc,Front End,0,129667 mi,79880105,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Honda,Civic,Sport,Sc,Front End,0,17765 mi,79554015,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2015,Nissan,Leaf,S,Sc,Mechanical,0,128409 mi,78501465,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Ford,Explorer,Limited,Sc,Front End,0,51381 mi,78537805,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2015,Ram,3500,Laramie,Sc,Stripped,0,0 mi,76176225,,2026-04-15,Medium Duty Specialty Sale,CA,Rebrowser-Copart,COPART,
+2016,Dodge,Journey,Sxt,Sc,Front End,0,114784 mi,73256975,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Volvo,Xc60,T6,Sc,Front End,0,123408 mi,48450596,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Honda,Cr-Z,Ex,Dv,Mechanical,0,172952 mi,48024216,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Ram,1500,Laramie,Sc,Front End,0,63357 mi,47765116,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2017,Mercedes-Benz,S-Class,550,S1,Front End,0,57352 mi,98506735,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2024,Honda,Accord,Hybrid Sport-L,S2,Rear End,0,65974 mi,97968585,,2026-04-21,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2022,Chrysler,Pacifica,Touring L,S1,Mechanical,0,102808 mi,97150105,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -4522,6 +4049,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2017,Kia,Sorento,Lx,Ct,Mechanical,0,118854 mi,68993405,,2026-04-08,Tx - Andrews,TX,Rebrowser-Copart,COPART,
 2019,Nissan,Rogue,S,St,Side,0,77216 mi,54663865,,2026-04-10,Fl - Tallahassee,FL,Rebrowser-Copart,COPART,
 2013,Toyota,Avalon,Base,Ps,Rear End,0,91647 mi,54325624,,,La - Shreveport,LA,Rebrowser-Copart,COPART,
+2014,Hyundai,Elantra,Se,Sc,Rear End,0,97781 mi,70939565,,2026-04-07,Ca - San Diego,CA,Rebrowser-Copart,COPART,
 2014,Kia,Optima,Sxl Turbo,Ct,Front End,0,140162 mi,63618775,,2026-04-07,Tx - Houston,TX,Rebrowser-Copart,COPART,
 2015,Chevrolet,Malibu,1Lt,St,Front End,0,147996 mi,97795865,,,Ia - Cedar Rapids,IA,Rebrowser-Copart,COPART,
 2017,Nissan,Armada,Platinum,St,Side,0,110911 mi,79554515,,,Ia - Cedar Rapids,IA,Rebrowser-Copart,COPART,
@@ -4837,6 +4365,26 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2014,Honda,Crv,Exl,Sc,Front End,0,176595 mi,45674336,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2019,Volkswagen,Atlas,Se,Sc,Front End,0,131527 mi,41718986,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2016,Ford,Fiesta,S,Sc,Front End,0,74110 mi,41645186,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2019,Chevrolet,Colorado,Lt,Sc,Front End,0,127756 mi,97847445,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Camry,Xse,Sc,Mechanical,0,15143 mi,96848185,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Honda,Accord,Sport,Sc,Rear End,0,127731 mi,79520265,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Ford,Focus,Se,Sc,Front End,0,126291 mi,79575585,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Niss,Rogue,Sl,Sc,Front End,0,119213 mi,78805265,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Honda,Civic,Sport,Sc,Front End,0,28332 mi,78191445,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Nissan,Leaf,Sv,Sc,Rear End,0,30410 mi,77246525,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Mercedes-Benz,S-Class,500 4Matic,Sc,Undercarriage,0,30928 mi,77433155,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Honda,Civic,Sport,Sc,Undercarriage,0,47702 mi,76446995,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Honda,Civic,Ex,Sc,Undercarriage,0,121638 mi,74884105,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Chevrolet,Colorado,Z71,Sc,Front End,0,135072 mi,74929535,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Nissan,Altima,2.5,Sc,All Over,0,58764 mi,56766875,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Honda,Accord,Lx,Sc,Front End,0,186745 mi,48147736,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Nissan,Versa,1.8 S,Sc,Front End,0,65174 mi,47883626,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Jeep,Cherokee,Overland,Sc,Front End,0,195133 mi,47127146,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Mazda,Cx-3,Grand Touring,Sc,Front End,0,186509 mi,46701936,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Buick,Enclave,,Sc,Front End,0,82605 mi,46566256,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Nissan,Rogue,Sv,Sc,Side,0,95342 mi,46852746,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Bmw,X5,Xdrive45E,Sc,Front End,0,0 mi,46166016,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Cruze,Lt,Sc,Front End,0,100003 mi,45673006,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2020,Lexus,Es350,Base,Rb,Front End,0,23325 mi,97652105,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2025,Ford,Escape Act,Active,Rb,Front End,0,5442 mi,96455675,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2020,Ford,Mustang,Gt,Rb,Front End,0,40227 mi,93588875,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -5191,6 +4739,20 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2025,Nissan,Altima,2.5 Sr,Sm,Front End,0,21808 mi,46510406,,2026-04-13,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2016,Yamaha,Sidebyside,Unknown,Ms,Front End,0,0 mi,46327896,,2026-04-09,Crashedtoys Powersport Auction,NY,Rebrowser-Copart,COPART,
 2017,Lincoln,Mkz,Premiere,Sm,Front End,0,62606 mi,41846266,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2013,Subaru,Outback,2.5I Limited,Sc,Rear End,0,254596 mi,93407365,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Chevrolet,Colorado,Z71,Sc,Front End,0,21984 mi,79570675,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2020,Nissan,Sentra,Sr,Sc,Front End,0,61408 mi,79058225,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2018,Subaru,Outback,2.5I Limited,Sc,Rear End,0,131945 mi,78738935,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Ford,Fusion Sel,Sel,Sc,Front End,0,156589 mi,77992405,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Nissan,Sentra,Sr,Ct,Minor Dent/Scratches,0,43425 mi,77398225,,2026-04-14,Wholesale Auction,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Camry,Xse,Nr,Front End,0,31566 mi,74796985,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Toyota,Prius,Four,Sc,Front End,0,167941 mi,73450505,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Chevrolet,Cruze,Lt,Sc,Burn - Interior,0,0 mi,47778546,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2020,Ram,1500,Rebel,Sc,Rollover,0,111268 mi,45876116,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Volvo,Xc60,Ultimate,Sc,Front End,0,34408 mi,45568696,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Mercedes-Benz,E-Class,300 4Matic,Sc,Front End,0,0 mi,41941716,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2019,Subaru,Ascent,Limited,Sc,Rear End,0,82060 mi,41606886,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Kia,Forte,Lxs,Sc,Side,0,40827 mi,41658346,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2023,Kia,Forte,Lx,S1,Front End,0,13608 mi,99362235,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2022,Toyota,Tundra,Crewmax Sr,S1,Front End,0,33621 mi,98239695,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2018,Honda,Crv,Lx,S1,Front End,0,0 mi,98157255,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -5623,6 +5185,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2012,Honda,Civic,Ex,Sc,Front End,0,160882 mi,45608936,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2020,Volkswagen,Jetta,S,Sc,Front End,0,65120 mi,42059056,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2020,Mazda,Cx-5,Touring,Sc,Rear End,0,67604 mi,41941556,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2015,Infiniti,Q50,Base,Sc,Rear End,0,116427 mi,89740565,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Ford,Expedition,Limited,Sc,Undercarriage,0,146314 mi,86317285,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2026,Toyota,Tundra,Trd Pro Hv,Sc,Front End,0,1990 mi,79476055,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Camry,Se,Sc,Side,0,245189 mi,79261145,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Ram,2500,Tradesman,Sc,Front End,0,9688 mi,78040755,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Tacoma,Trd Sport,Sc,Front End,0,104772 mi,74434355,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Toyota,Prius,Three,Sc,Front End,0,180048 mi,48155976,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Tacoma,Sr5 V6,Sc,Front End,0,66318 mi,47970946,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Honda,Accord,Exl,Sc,Front End,0,166721 mi,46545546,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Chrysler,300,,Sc,Rear End,0,84826 mi,46703066,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2014,Honda,Civic,Lx,Rb,Front End,0,160028 mi,98427855,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2021,Kia,K5,Ex,Rb,Front End,0,68198 mi,97280225,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2019,Lincoln Townhouse,Nautilus,Reserve,Rr,Side,0,65316 mi,84206055,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -5957,6 +5529,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Dodge,Caravan,Se,Sc,Side,0,109191 mi,45647676,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2018,Chrysler,Pacifica,Touring Plus,Sm,Side,0,61112 mi,45853716,,2026-04-20,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2022,Chevrolet,Equinox,Lt,Sm,Rear End,0,31580 mi,45803636,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2018,Subaru,Forester,2.5I Premium,Sc,Front End,0,145642 mi,98983835,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2019,Chevrolet,Tahoe,K1500 Lt,St,Missing/Altered Vin,0,75885 mi,95718705,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2019,Toyota,Tacoma,Double Cab,Sc,Front End,0,56757 mi,78252475,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Scion,,Sc,Front End,0,174897 mi,76595565,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Nissan,Frontier,S,Da,Mechanical,0,237932 mi,48528836,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Jeep,Liberty Sp,Sport,Dv,Mechanical,0,150323 mi,47611046,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Kia,Optima,Sx Turbo,Sc,Minor Dent/Scratches,0,125734 mi,47766696,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Toyota,Tacoma,Trd Sport,Sc,Front End,0,42569 mi,47540686,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2018,Honda,Hr-V,Exl,Sc,Front End,0,100823 mi,47787116,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Rav4,Limited,Sc,Front End,0,163321 mi,41994616,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2017,Nissan,Sentra,S,S1,Front End,0,132132 mi,99478645,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2021,Tesla,Model 3,,S1,Side,0,34693 mi,98769985,,2026-04-02,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2018,Toyota,Rav4,Le,S1,Side,0,175090 mi,97374445,,2026-04-02,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -6137,6 +5719,15 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2015,Ford,Taurus,Sel,Sc,Rear End,0,153680 mi,47061296,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2018,Toyota,Corolla,Se,Sc,Rear End,0,97016 mi,46435696,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2020,Honda,Accord,Sport,Sc,Front End,0,113024 mi,46370286,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2019,Toyota,Corolla,Se,Sc,Rear End,0,84072 mi,79296185,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Honda,Accord,Touring,Sc,Front End,0,92359 mi,79175405,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Kia,Forte,Gt Line,Sc,Front End,0,33491 mi,75494605,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Chevrolet,Colorado,Lt,Sc,Rollover,0,113677 mi,74990825,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Tesla,Model Y,,Sc,Front End,0,70112 mi,75013095,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Honda,Hr-V,Exl,Sc,Side,0,19353 mi,74614725,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Acura,Integra,,Sc,All Over,0,6416 mi,65051315,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Chevrolet,Camaro,Lt,Nr,Side,0,28228 mi,66675375,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Bmw,X5,Sdrive35I,Sc,Front End,0,98501 mi,67262265,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2019,Audi,A4,Premium,Ct,Side,0,66260 mi,75666625,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2021,Tesla,Model Y,,Rb,Front End,0,58359 mi,48144456,,2026-04-13,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2015,Ford,All Models,,Ct,Biohazard/Chemical,0,152434 mi,48177116,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -6339,6 +5930,9 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2014,Buick,Lacrosse,,Sm,Front End,0,153277 mi,41892656,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2018,Hyundai,Santa Fe,2.4L,Sm,Front End,0,113335 mi,45755006,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2020,Kia,Optima,Lx,Sm,Mechanical,0,79637 mi,41604326,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2022,Nissan,Altima,Sr,Sc,Rear End,0,36432 mi,95197885,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Jaguar,Xe,,Sc,Front End,0,96287 mi,78835395,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2025,Chevrolet,All Models,K2500 Heavy Duty Lt,Sc,Front End,0,13688 mi,74710855,,2026-04-22,Medium Duty Specialty Sale,CA,Rebrowser-Copart,COPART,
 2015,Nissan,Altima,2.5,Nt,Undercarriage,0,129605 mi,99262565,,2026-04-02,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2023,Mazda,Cx-5 Selec,Select,S1,Front End,0,19114 mi,95701625,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2013,Ford,Escape,Titanium,Ct,Side,0,76099 mi,78354435,,2026-04-07,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -6402,6 +5996,10 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2018,Jeep,Grand Cher,Latitude Plus,St,Front End,0,217867 mi,98160085,,2026-04-15,Ms - Grenada,MS,Rebrowser-Copart,COPART,
 2019,Ford,Fusion,Se,St,Front End,0,192285 mi,97789765,,,Ms - Grenada,MS,Rebrowser-Copart,COPART,
 2025,Toyota,Corolla,Le,Ct,Front End,0,3945 mi,79189905,,2026-04-07,Wholesale Auction,MS,Rebrowser-Copart,COPART,
+2025,Chevrolet,Suburban,C1500 Rst,Sc,Front End,0,0 mi,95959975,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2021,Chrysler,Pacifica,Touring L,Sc,Front End,0,98459 mi,79486825,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2023,Chrysler,Pacifica,Hybrid Limited,Sc,Side,0,0 mi,74704075,,,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2025,Tesla,Model 3,,Sc,Side,0,11446 mi,73315435,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
 2015,Volkswagen,Golf,,St,Front End,0,82221 mi,93706385,,2026-04-02,Ontario Auction,ON,Rebrowser-Copart,COPART,
 2019,Jeep,Cherokee,Trailhawk,St,Front End,0,149878 mi,91881255,,2026-04-02,Ontario Auction,ON,Rebrowser-Copart,COPART,
 2020,Volkswagen,Passat,S,Nu,Side,0,455698 mi,79806615,,2026-04-02,Ontario Auction,ON,Rebrowser-Copart,COPART,
@@ -6533,6 +6131,12 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2021,Cadillac,Escalade,Premium Luxury Platinum,Ct,Front End,0,17727 mi,48074966,,2026-04-13,Wi - Appleton,WI,Rebrowser-Copart,COPART,
 2013,Hyundai,Veloster,Base,Ct,Front End,0,124068 mi,45673776,,,Wi - Appleton,WI,Rebrowser-Copart,COPART,
 2021,Gmc,Sierra,K1500 Slt,Sc,Burn,0,41602 mi,46540455,,2026-04-06,Wi - Appleton,WI,Rebrowser-Copart,COPART,
+2023,Honda,Accord,Ex,Sc,Side,0,63274 mi,77440555,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2019,Honda,Accord,Touring,Sc,Front End,0,73075 mi,76786375,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2025,Tesla,Model 3,,Sc,Side,0,11814 mi,73490465,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2012,Toyota,Prius,Three,Sc,Front End,0,167433 mi,48168846,,2026-04-06,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2018,Dodge,Caravan,Gt,Sc,Front End,0,123928 mi,46959626,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Highlander,Se,Sc,Front End,0,123002 mi,46578276,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
 2018,Hyundai,Tucson,Sel,Ct,Minor Dent/Scratches,0,104495 mi,78693625,,2026-04-02,Wholesale Auction,IL,Rebrowser-Copart,COPART,
 2015,Jeep,Cherokee,Trailhawk,Ct,Minor Dent/Scratches,0,159664 mi,78277345,,2026-04-07,Wholesale Auction,IL,Rebrowser-Copart,COPART,
 2019,Chevrolet,Equinox,Lt,Sc,Front End,0,254013 mi,72584965,,2026-04-08,Il - Southern Illinois,IL,Rebrowser-Copart,COPART,
@@ -6546,6 +6150,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Hyundai,Sonata,Sel,Ct,Front End,0,0 mi,46334746,,2026-04-02,Wholesale Auction,GA,Rebrowser-Copart,COPART,
 2018,Nissan,Rogue,S,Ct,Normal Wear,0,164622 mi,45768206,,2026-04-07,Wholesale Auction,GA,Rebrowser-Copart,COPART,
 2014,Kia,Cadenza,Premium,St,Front End,0,158243 mi,45919386,,2026-04-09,Ga - Macon,GA,Rebrowser-Copart,COPART,
+2015,Infiniti,Q50,Premium,Sc,Front End,0,125971 mi,79481115,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2022,Tesla,Model Y,,Sc,Rear End,0,63222 mi,79483975,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2022,Chevrolet,Malibu,Lt,Sc,Undercarriage,0,64574 mi,79063195,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2023,Tesla,Model 3,,Sc,Rear End,0,74361 mi,75892565,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2021,Tesla,Model 3,,Sc,Front End,0,112626 mi,75872465,,2026-04-03,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2019,Infiniti,Q50,Luxe,Sc,Vandalism,0,0 mi,75076985,,,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2025,Nissan,Versa,S,Dv,All Over,0,23092 mi,47809116,,2026-04-14,*Ncs - Pacific Region,CA,Rebrowser-Copart,COPART,
+2017,Porsche,Boxster,,Dv,All Over,0,51918 mi,47807006,,2026-04-07,*Ncs - Pacific Region,CA,Rebrowser-Copart,COPART,
+2015,Jaguar,F-Type,S,Dv,All Over,0,75576 mi,46903276,,2026-04-14,*Ncs - Pacific Region,CA,Rebrowser-Copart,COPART,
+2016,Ford,Mustang,Gt,Dv,All Over,0,41700 mi,46722366,,2026-04-14,*Ncs - Pacific Region,CA,Rebrowser-Copart,COPART,
 2015,Ford,F150,Super Cab,Ct,Minor Dent/Scratches,0,165799 mi,77228575,,2026-04-02,Wholesale Auction,TX,Rebrowser-Copart,COPART,
 2018,Ford,F550,Super Duty,Ct,Hail,0,119769 mi,70119055,,2026-04-06,Medium Duty Clean Title Sale,TX,Rebrowser-Copart,COPART,
 2019,Ford,F250,Super Duty,Ct,Hail,0,191321 mi,45837376,,2026-04-09,Wholesale Auction,TX,Rebrowser-Copart,COPART,
@@ -6581,6 +6195,15 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Chevrolet,All Models,C3500,Ct,Minor Dent/Scratches,0,331995 mi,46551966,,2026-04-06,Medium Duty Clean Title Sale,TX,Rebrowser-Copart,COPART,
 2019,Toyota,Camry,Se,Ct,Front End,0,153383 mi,46550056,,2026-04-16,Tx - Dallas South,TX,Rebrowser-Copart,COPART,
 2024,Toyota,Corolla,Le,Ct,Minor Dent/Scratches,0,87913 mi,41929716,,2026-04-02,Wholesale Auction,TX,Rebrowser-Copart,COPART,
+2018,Ford,Fusion,S Hybrid,Sc,Rear End,0,18448 mi,79844615,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2022,Tesla,Model Y,,Sc,Front End,0,121212 mi,79655725,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2019,Hyundai,Sonata,Se,Sc,Front End,0,63350 mi,78271855,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2025,Tesla,Model 3,,Sc,Front End,0,2010 mi,77684815,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2019,Tesla,Model 3,,Sc,Side,0,132714 mi,77181695,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Camry,Xse,Sc,Side,0,13964 mi,74497365,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2024,Tesla,Model Y,,Sc,Front End,0,33096 mi,72861365,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2023,Kia,Forte,Lx,Sc,Front End,0,32200 mi,72805845,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Avalon,,Sc,Front End,0,180065 mi,41909166,,2026-04-15,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
 2023,Kia,K5,Lxs,Bp,Rollover,0,0 mi,78482475,,2026-04-09,Ga - Cartersville,GA,Rebrowser-Copart,COPART,
 2017,Toyota,Tacoma,Sr5 V6,Ct,Rear End,0,231942 mi,47360916,,2026-04-02,Ga - Cartersville,GA,Rebrowser-Copart,COPART,
 2015,Chev,Trax,1Lt,Sc,Side,0,155193 mi,79191385,,2026-04-08,Pa - Pittsburgh West,PA,Rebrowser-Copart,COPART,
@@ -6740,6 +6363,17 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2020,Subaru,Brz,Limited,Rb,Front End,0,46283 mi,57231024,,2026-04-06,Fl - Orlando North,FL,Rebrowser-Copart,COPART,
 2016,Volkswagen,Passat,Se,Ct,Minor Dent/Scratches,0,178509 mi,47980276,,2026-04-06,Fl - Orlando North,FL,Rebrowser-Copart,COPART,
 2016,Jeep,Cherokee,Latitude,Cd,Burn,0,0 mi,41750326,,2026-04-06,Fl - Orlando North,FL,Rebrowser-Copart,COPART,
+2018,Jeep,Wrangler,Sport,Sc,Front End,0,58516 mi,99600525,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Acura,Mdx,,Sc,Front End,0,44684 mi,93923765,,2026-04-07,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Sienna,Le 8-Passenger,Sc,Front End,0,226769 mi,79126705,,2026-03-31,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Toyota,Prius,,Sc,Minor Dent/Scratches,0,58435 mi,78529155,,2026-04-07,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2022,Nissan,Leaf,S,Sc,Front End,0,29644 mi,77714185,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2015,Honda,Civic,Lx,Sc,Front End,0,113008 mi,75986715,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2016,Toyota,Corolla,L,Sc,Front End,0,143659 mi,74842025,,2026-04-07,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2020,Kia,Optima,Lx,Sc,Rear End,0,69071 mi,74090355,,2026-04-02,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Kia,Sorento,Lx V6,Sc,Front End,0,99574 mi,47766356,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2025,Subaru,Crosstrek,Wilderness,Sc,Front End,0,31305 mi,46566696,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2016,Kia,Optima,Lx Turbo,Sc,Front End,0,88736 mi,41799786,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
 2024,Nissan,Rogue,Sv,St,Front End,0,21223 mi,79462395,,,Ma - West Warren,MA,Rebrowser-Copart,COPART,
 2015,Toyota,Venza,Le,Rs,Front End,0,148883 mi,78095175,,2026-04-08,Ma - West Warren,MA,Rebrowser-Copart,COPART,
 2023,Honda,Ridgeline,Rtl-E,St,Side,0,47850 mi,77402955,,,Ma - West Warren,MA,Rebrowser-Copart,COPART,
@@ -6825,6 +6459,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2019,Kia,Optima,Lx,St,Front End,0,101408 mi,54401905,,2026-04-14,Ga - Atlanta South,GA,Rebrowser-Copart,COPART,
 2016,Honda,Odyssey,Exl,Rs,Front End,0,0 mi,80196535,,2026-04-03,Mi - Detroit,MI,Rebrowser-Copart,COPART,
 2019,Toyota,Highlander,Le,Sc,Front End,0,45814 mi,59899765,,2026-04-06,Az - Phoenix,AZ,Rebrowser-Copart,COPART,
+2016,Tesla,Model S,,Sc,Front End,0,0 mi,43400820,,2026-04-10,Ca - Van Nuys,CA,Rebrowser-Copart,COPART,
 2017,Honda,Accord,Sport Special Edition,Rb,Front End,0,104019 mi,65903325,,2026-04-03,Fl - Miami North,FL,Rebrowser-Copart,COPART,
 2013,Ram,1500,Slt,St,Rollover,0,164707 mi,64979105,,2026-04-01,Ok - Tulsa,OK,Rebrowser-Copart,COPART,
 2016,Chevrolet,All Models,K2500 Heavy Duty,St,Front End,0,169933 mi,79076295,,,Medium Duty Specialty Sale,IA,Rebrowser-Copart,COPART,
@@ -7108,6 +6743,18 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Hyundai,Elantra,Gls,Sc,Front End,0,113677 mi,46021936,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2016,Toyota,Camry,Se,Sc,Front End,0,435096 mi,45836886,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2013,Toyota,Rav4,Xle,Sc,Front End,0,124340 mi,45641446,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2015,Toyota,4Runner,Sr5,Sc,Front End,0,134629 mi,99376925,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Honda,Civic,Lx,Sc,Side,0,55565 mi,96383545,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Honda,Accord,Lx,Sc,Front End,0,159865 mi,92421675,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Honda,Civic,Sport,Sc,Front End,0,73467 mi,90708815,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Honda,Accord,Se,Dv,Minor Dent/Scratches,0,193220 mi,79940565,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Land Rover,Discovery Sport,S,Sc,Front End,0,80510 mi,79647475,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Nissan,Frontier,S,Sc,Front End,0,150390 mi,79272095,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Honda,Civic,Lx,Sc,Side,0,87414 mi,77828495,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Bmw Motorrad,4 Series,,Sc,Rear End,0,11362 mi,76738525,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Gmc,Acadia,Sle,St,Vandalism,0,60228 mi,76445575,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Hyundai,Accent,Se,Sc,Undercarriage,0,0 mi,47100036,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Kia,Sorento,Lx V6,Nr,Vandalism,0,0 mi,41653316,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2019,Honda,Hr-V,Lx,Rb,Front End,0,77719 mi,99074805,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2025,Toyota,Camry,Xse,Rb,Front End,0,2654 mi,96683725,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2021,Gmc,Acadia,Sle,Cd,Rear End,0,87831 mi,97042505,,2026-04-20,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -7427,6 +7074,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2020,Volkswagen,Jetta,Sel,Sm,Side,0,50844 mi,79025055,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2016,Ford,Fusion,S,St,Front End,0,103579 mi,41761636,,,Ky - Earlington,KY,Rebrowser-Copart,COPART,
 2017,Fiat,500,Pop,St,Front End,0,74777 mi,41826386,,2026-04-02,Ky - Earlington,KY,Rebrowser-Copart,COPART,
+2017,Jeep,Grand Cher,Sport,Ct,Rear End,0,130826 mi,75060415,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2016,Subaru,Crosstrek,Premium,Sm,All Over,0,62574 mi,79047945,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2018,Genesis,G80,3.8,Sm,Front End,0,39149 mi,79363545,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2023,Ford,Explorer,Xlt,Ct,All Over,0,68346 mi,76656145,,2026-04-01,Rental Vehicle Sale,NY,Rebrowser-Copart,COPART,
@@ -7446,9 +7094,21 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2012,Honda,Civic,,Sc,Side,0,191237 mi,45757186,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2019,Ford,Transit,T-250,Sc,Rear End,0,254646 mi,47259826,,2026-04-08,Medium Duty Specialty Sale,NY,Rebrowser-Copart,COPART,
 2016,Chevrolet,Tahoe,K1500 Ltz,Sm,Front End,0,65444 mi,47500576,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2015,Chevrolet,All Models,K2500 Heavy Duty Ltz,Sc,Front End,0,434391 mi,94801395,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2017,Nissan,Rogue,Sl,Sc,Side,0,70899 mi,46717286,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2015,Chevrolet,Silverado,K1500 Lt,Sm,Mechanical,0,152899 mi,41768566,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2021,Kia,Sorento,Sx,Sm,Rear End,0,46070 mi,45527246,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2013,Chevrolet,Malibu,Ls,Sc,Vandalism,0,268906 mi,78877635,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2021,Subaru,Crosstrek,,Ct,Front End,0,77860 mi,77425795,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2022,Mitsubishi,Mirage,G4 Es,Sc,Front End,0,81112 mi,75697125,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2026,Toyota,Corolla,Le,Sc,Front End,0,4589 mi,76674235,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Dodge,Ram 1500,St,Sc,Front End,0,140651 mi,75016185,,2026-04-17,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2023,Niss,Frontier,Sv,Sc,Rear End,0,26979 mi,72699955,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2021,Ford,F150,Supercrew,Sc,Front End,0,87708 mi,46210746,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Chrysler,300,S,Sc,Front End,0,185909 mi,47195186,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Honda,Civic,,Sc,Front End,0,113970 mi,46762916,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Toyota,Tacoma,Trd Off-Road,Sc,Rear End,0,93012 mi,41840656,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Volkswagen,Passat,Sel,Ct,Side,0,145019 mi,45447776,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2013,Ford,Fusion,Se,S1,Side,0,121063 mi,99278185,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2019,Chrysler,Pacifica,Touring L,S1,Front End,0,291715 mi,98865015,,2026-03-31,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2018,Nissan,Altima,2.5,S1,Front End,0,126005 mi,98950765,,2026-04-14,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -7668,6 +7328,8 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Audi,Q5,Premium,Sc,Front End,0,90758 mi,95303065,,2026-04-01,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2025,Chevrolet,Trax 2Rs,2Rs,St,Front End,0,9745 mi,75083275,,2026-04-01,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2016,Toyota,Camry,Se,Ct,Side,0,126414 mi,45798066,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
+2016,Hyundai,Sonata,Se,Nr,Vandalism,0,124630 mi,72805915,,2026-04-01,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2015,Honda,Accord,Sport,Sc,Side,0,138755 mi,47136636,,2026-04-01,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
 2018,Hyundai,Accent,Se,Sc,Front End,0,31783 mi,79574925,,,Hi - Honolulu,HI,Rebrowser-Copart,COPART,
 2019,Chevrolet,Equinox,Lt,Sc,Front End,0,121194 mi,79619245,,,Hi - Honolulu,HI,Rebrowser-Copart,COPART,
 2019,Toyota,Tacoma Sr,Sr V6,Sc,Front End,0,92562 mi,79275895,,,Hi - Honolulu,HI,Rebrowser-Copart,COPART,
@@ -7741,6 +7403,8 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2014,Audi,Q7,Premium Plus,Ct,Normal Wear,0,205778 mi,48180666,,2026-04-13,*Ncs - Eastern Region,MA,Rebrowser-Copart,COPART,
 2017,Hyundai,Sonata,Base,Sc,Front End,0,0 mi,79294715,,2026-04-02,Nc - Concord,NC,Rebrowser-Copart,COPART,
 2022,Lincoln,Aviator R,Reserve,Sc,Front End,0,0 mi,41664526,,,Nc - Concord,NC,Rebrowser-Copart,COPART,
+2016,Chev,Express,,Dv,Minor Dent/Scratches,0,175595 mi,47345726,,2026-04-06,Medium Duty Clean Title Sale,CA,Rebrowser-Copart,COPART,
+2015,Toyota,Prius,Two,Sc,Front End,0,132763 mi,45548796,,2026-04-02,Ca - Antelope,CA,Rebrowser-Copart,COPART,
 2013,Land Rover,Rangerover,Prestige Premium,Ct,Front End,0,0 mi,74733025,,2026-04-15,Fl - Miami South,FL,Rebrowser-Copart,COPART,
 2017,Volvo,Xc90,T6,Rb,Stripped,0,103257 mi,46494896,,2026-04-15,Fl - Miami South,FL,Rebrowser-Copart,COPART,
 2019,Volvo,Xc60,T5 Momentum,St,Front End,0,80214 mi,78477375,,2026-04-16,Al - Montgomery,AL,Rebrowser-Copart,COPART,
@@ -7799,6 +7463,16 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Audi,S6/Rs6,Premium Plus,Ct,Front End,0,136226 mi,46950276,,2026-04-13,*Ncs - Central Region,TX,Rebrowser-Copart,COPART,
 2017,Mazda,6,Touring,Sv,Rear End,0,61581 mi,46467316,,2026-04-09,Tx - Dallas,TX,Rebrowser-Copart,COPART,
 2019,Land Rover,Range Rover Velar,S,Ct,Normal Wear,0,60145 mi,41636576,,2026-04-06,*Ncs - Central Region,TX,Rebrowser-Copart,COPART,
+2019,Jayco,Slide In,,S2,Top/Roof,0,0 mi,47800666,,2026-04-13,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
+2014,Jeep,Patriot,Sport,Dv,Rear End,0,240983 mi,47653546,,2026-04-02,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
+2018,Jeep,Cherokee,Laredo,Dv,Minor Dent/Scratches,0,113473 mi,47400386,,2026-04-09,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
+2017,Kia,Forte,Lx,Dv,Minor Dent/Scratches,0,121358 mi,46373776,,2026-04-02,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
+2016,Chevrolet,Malibu,Lt,Dv,Front End,0,127864 mi,46229866,,2026-04-13,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
+2021,Volvo,Vn,Vnl,Dv,All Over,0,1007183 mi,46039256,,2026-03-31,Heavy-Trailer-Rv Clean Sale,CA,Rebrowser-Copart,COPART,
+2015,Kia,Optima Hyb,Base,Dv,Minor Dent/Scratches,0,154491 mi,46776436,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Nissan,Versa,S Plus,Dv,Rear End,0,102793 mi,46542646,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Toyota,Corolla,S,Sc,Rear End,0,140680 mi,45888976,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2013,Kia,Soul,+,Sc,Front End,0,196977 mi,41672576,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2017,Nissan,Versa,1.6 S,Ct,Minor Dent/Scratches,0,137060 mi,48118606,,2026-04-14,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2016,Honda,Civic,Ex,Sc,Front End,0,106976 mi,47712626,,2026-04-02,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2025,Kia,Sorento,S,Sc,Front End,0,30138 mi,46640796,,2026-04-02,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
@@ -7808,6 +7482,12 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2012,Chevrolet,Equinox,Lt,Sc,Front End,0,135339 mi,46978416,,2026-04-16,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2017,Volvo,S60,Premier,Sc,Front End,0,106504 mi,46657396,,2026-04-02,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2012,Nissan,Altima,2.5,Sc,Side,0,174216 mi,46131096,,2026-04-09,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
+2022,Dodge,Challenger,Gt,Sc,Front End,0,3767 mi,76128105,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2017,Nissan,Sentra,S,Sc,Side,0,66486 mi,78525565,,2026-04-15,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2017,Subaru,Crosstrek,Premium,Sc,Rear End,0,63309 mi,46939246,,2026-04-03,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2020,Jeep,Gladiator,,Sc,Front End,0,55112 mi,47043986,,,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2015,Honda,Fit,Ex,Sc,Front End,0,170317 mi,75185605,,2026-04-01,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
+2015,Mini,Cooper,S Countryman,Sc,Front End,0,57192 mi,47706456,,2026-04-01,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
 2013,Chevrolet,All Models,K2500 Heavy Duty Lt,Sc,Rear End,0,91525 mi,99523095,,2026-04-20,Or - Portland South,OR,Rebrowser-Copart,COPART,
 2020,Subaru,Legacy,,Sc,Front End,0,0 mi,41993386,,2026-04-13,Or - Portland South,OR,Rebrowser-Copart,COPART,
 2016,Kia,Sorento,Sx V6,Sc,Front End,0,83802 mi,46407736,,2026-04-13,Or - Portland South,OR,Rebrowser-Copart,COPART,
@@ -7947,6 +7627,8 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2025,Toyota,Tacoma,Sr5,St,Front End,0,16739 mi,79561525,,,Sc - Spartanburg,SC,Rebrowser-Copart,COPART,
 2021,Hyundai,Venue,Sel,St,Front End,0,106122 mi,74817815,,,Sc - Spartanburg,SC,Rebrowser-Copart,COPART,
 2017,Toyota,Camry,Se,St,Front End,0,119668 mi,76766775,,,Sc - Spartanburg,SC,Rebrowser-Copart,COPART,
+2017,Acura,Mdx,Sport Hybrid Advance,Sc,Front End,0,97436 mi,73549855,,,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2023,Hyundai,Santa Fe,Se,Sc,Rear End,0,29809 mi,73875575,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
 2013,Ford,F-150,Supercrew,Ct,Hail,0,222788 mi,73222285,,,Tx - Corpus Christi,TX,Rebrowser-Copart,COPART,
 2019,Jeep,Grand Cher,Latitude Plus,Ct,Front End,0,222217 mi,75512425,,2026-03-31,Tx - Corpus Christi,TX,Rebrowser-Copart,COPART,
 2012,Mitsubishi,Galant,Fe,Sv,Front End,0,193789 mi,78641645,,2026-03-31,Tx - Corpus Christi,TX,Rebrowser-Copart,COPART,
@@ -8035,6 +7717,41 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2024,Chevrolet,Colorado,Z71,Ct,Rear End,0,44686 mi,78790545,,,Mi - Detroit,MI,Rebrowser-Copart,COPART,
 2019,Buick,Encore,Preferred,St,Front End,0,0 mi,78847365,,2026-04-14,Mi - Detroit,MI,Rebrowser-Copart,COPART,
 2023,Mazda,Cx30,Preferred,St,Rear End,0,32380 mi,78693225,,,Mi - Detroit,MI,Rebrowser-Copart,COPART,
+2013,Hyundai,Sonata,Gls,Dv,Front End,0,152708 mi,78471085,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2023,Tesla,Model Y,,Sc,Rollover,0,48901 mi,78465665,,,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2024,Toyota,Rav4 Hybrid,Xle,Sc,Front End,0,28225 mi,78422595,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2023,Volvo,Xc40,Ultimate,Sc,Front End,0,15017 mi,78399125,,2026-04-03,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2022,Mercedes-Benz,Gt-Class,43,Sc,Front End,0,48149 mi,73517945,,,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2018,Kia,Sportage,Ex,Sc,Front End,0,121464 mi,47930886,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2021,Toyota,Corolla,Le,Sc,Rear End,0,128662 mi,47772586,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2023,Bmw,X1,Xdrive28I,Sc,Front End,0,29926 mi,47836796,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2014,Bmw,X1,Sdrive28I,Dq,Side,0,151646 mi,47470206,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2013,Mercedes-Benz,Cls-Class,550,Sc,Front End,0,121200 mi,47327246,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2019,Ford,F450 Supe,Super Duty,Dv,Front End,0,175990 mi,47608416,,2026-04-13,Medium Duty Clean Title Sale,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Corolla,Base,Dy,Front End,0,138012 mi,47423826,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2026,Tesla,Model Y,,Sc,Front End,0,22758 mi,47433996,,,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2013,Mazda,Cx-5,Touring,Dv,Vandalism,0,0 mi,47317706,,2026-04-03,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2019,Toyota,Yaris,Le,Ac,Front End,0,112532 mi,47278936,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2015,Chevrolet,Tahoe,C1500 Ltz,Sc,Front End,0,127250 mi,47451146,,2026-04-03,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2026,Toyota,Corolla,Se,Ct,Front End,0,8857 mi,46917926,,2026-04-06,Rental Vehicle Sale,CA,Rebrowser-Copart,COPART,
+2017,Hyundai,Accent,Se,Dv,Front End,0,165841 mi,46770816,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2025,Ford,Escape,St Line,Ct,Front End,0,17269 mi,47199056,,2026-04-01,Rental Vehicle Sale,CA,Rebrowser-Copart,COPART,
+2024,Toyota,Sienna,Xle 7-Passenger,Sc,Rear End,0,48119 mi,46936646,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2018,Hyundai,Elantra,Sel,Dv,Front End,0,167012 mi,46066796,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2013,Nissan,Altima,2.5,Sc,Front End,0,149261 mi,46061896,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2015,Chevrolet,Silverado,K1500 Lt,Sc,Rear End,0,117193 mi,46521196,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2015,Bmw,3 Series,Xi,Sc,Front End,0,0 mi,46332626,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2024,Toyota,Tundra,Platinum,Sc,Rear End,0,91190 mi,46499286,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2013,Honda,Accord,Exl,Sc,Front End,0,128140 mi,41663606,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2020,Hyundai,Elantra,Sel,Sc,Front End,0,87038 mi,41803746,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2015,Toyota,Camry,Se,Sc,Front End,0,166796 mi,45866226,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2018,Honda,Civic,Exl,Sc,Front End,0,28798 mi,45951886,,2026-03-31,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2017,Hyundai,Ioniq,Blue,Dv,Minor Dent/Scratches,0,122562 mi,41673386,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2020,Toyota,Corolla,Le,Sc,Rear End,0,56988 mi,46045976,,2026-04-14,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2017,Hyundai,Sonata,Base,Dv,Minor Dent/Scratches,0,178098 mi,45705386,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Sienna,Xle 8-Passenger,Sc,Front End,0,151722 mi,45790636,,2026-04-03,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2016,Chevrolet,Colorado,Lt,Sc,Front End,0,158448 mi,45820576,,2026-04-03,Ca - San Diego,CA,Rebrowser-Copart,COPART,
+2016,Hyundai,Elantra,Se,Dv,Front End,0,112483 mi,41621666,,2026-04-10,Ca - San Diego,CA,Rebrowser-Copart,COPART,
 2023,Subaru,Forester,Wilderness,Rb,Front End,0,55444 mi,79051775,,2026-04-06,Al - Mobile,AL,Rebrowser-Copart,COPART,
 2017,Ford,F150,Supercrew,Ct,Minor Dent/Scratches,0,178893 mi,79222425,,2026-03-30,Rental Vehicle Sale,AL,Rebrowser-Copart,COPART,
 2019,Toyota,Rav4,Le,Sc,Rear End,0,56742 mi,46037476,,,Il - Chicago North,IL,Rebrowser-Copart,COPART,
@@ -8164,9 +7881,11 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2015,Bmw,X6,Xdrive35I,Ct,Minor Dent/Scratches,0,130576 mi,45935036,,2026-04-06,*Ncs - Eastern Region,NY,Rebrowser-Copart,COPART,
 2018,Audi,A6,Premium,Ct,Normal Wear,0,160929 mi,45935346,,2026-04-16,Ny - Newburgh,NY,Rebrowser-Copart,COPART,
 2020,Kia,Forte Lxs,Lxs,Sm,Rear End,0,39456 mi,46021356,,2026-03-31,Ny - Newburgh,NY,Rebrowser-Copart,COPART,
+2017,Chevrolet,Spark,Ls,Sc,Front End,0,125820 mi,59234875,,2026-04-02,Ca - San Bernardino,CA,Rebrowser-Copart,COPART,
 2023,Dodge,Challenger,R,Sc,Front End,0,23270 mi,74820955,,2026-04-07,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2016,Volkswagen,Golf,Se,Sc,Front End,0,81679 mi,77240415,,2026-04-16,Az - Phoenix North,AZ,Rebrowser-Copart,COPART,
 2024,Cfmoto,C Force 60,,Sc,Frame Damage,0,266 mi,77889755,,2026-04-09,Crashedtoys Powersport Auction,AZ,Rebrowser-Copart,COPART,
+2014,Jayco,Trailer,,Ct,Vandalism,0,0 mi,78515115,,,Heavy-Trailer-Rv Clean Sale,CA,Rebrowser-Copart,COPART,
 2015,Nissan,Rogue,S,Bs,Front End,0,59713 mi,52557645,,2026-03-31,Wa - Spanaway,WA,Rebrowser-Copart,COPART,
 2012,Subaru,Forester,2.5X,Sc,Front End,0,136062 mi,98805905,,2026-04-14,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
 2015,Nissan,Altima,2.5 S,Sc,Side,0,113737 mi,79971875,,,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
@@ -8219,6 +7938,9 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2021,Ford,Edge,Titanium,Sc,Rear End,0,101015 mi,41787676,,,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
 2021,Ram,1500,Tradesman,Sc,Front End,0,51377 mi,41779346,,,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
 2012,Nissan,Versa 1.8,1.8 S,Sc,Front End,0,134903 mi,41689866,,2026-04-14,Ut - Salt Lake City,UT,Rebrowser-Copart,COPART,
+2020,Toyota,Prius,,Sc,Rear End,0,130695 mi,93124355,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2023,Tesla,Model 3,,Sc,Side,0,61779 mi,90354475,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
+2020,Mercedes-Benz,Cla-Class,250,Sc,Front End,0,60489 mi,82544065,,2026-04-13,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
 2021,Chev,Malibu,,Ps,Front End,0,102752 mi,97987185,,2026-04-13,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2018,Bmw,4 Series,Gran Coupe,Ps,Front End,0,94785 mi,97128165,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2016,Ford,Transit,Xlt,Ps,Front End,0,75501 mi,79923695,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
@@ -8259,7 +7981,26 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Mercedes-Benz,Gla-Class,250 4Matic,Ps,Front End,0,85088 mi,45473776,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2018,Honda,Civic,Ex,St,Rollover,0,0 mi,41651096,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
 2024,Toyota,All Models,Trd Off-Road,St,Front End,0,15197 mi,41646736,,,Co - Denver South,CO,Rebrowser-Copart,COPART,
+2019,Bmw,X3,Xdrive30I,Nr,Water/Flood,0,0 mi,78728115,,2026-04-02,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2019,Ford,F450 Supe,Super Duty,Sc,Water/Flood,0,71382 mi,78508305,,2026-04-15,Medium Duty Specialty Sale,CA,Rebrowser-Copart,COPART,
+2021,Toyota,Corolla,Le,Sc,Front End,0,71332 mi,78185975,,2026-04-09,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2012,Honda,Civic,Lx,Sc,Rear End,0,0 mi,74397535,,2026-04-02,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2013,Jeep,Wrangler,Sport,Sc,Front End,0,131164 mi,47418156,,,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2013,Scion,Tc,Base,Sc,Front End,0,247754 mi,47295446,,2026-04-02,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2015,Hyundai,Elantra,Limited,Sc,Vandalism,0,89811 mi,46211966,,2026-04-02,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2014,Mercedes-Benz,C-Class,250,Sc,Front End,0,153139 mi,45867726,,2026-04-06,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Prius,Two,Sc,Front End,0,407714 mi,45808156,,2026-04-02,Ca - Napa,CA,Rebrowser-Copart,COPART,
+2016,Mazda,Cx-5,Touring,Sc,Front End,0,65956 mi,41665976,,2026-04-06,Ca - Napa,CA,Rebrowser-Copart,COPART,
 2017,Chevrolet,Traverse,Ls,Sc,Rear End,0,86405 mi,94868785,,,Il - Southern Illinois,IL,Rebrowser-Copart,COPART,
+2015,Lincoln,Mkz,,Nr,Side,0,85398 mi,79408405,,2026-04-03,Ca - Long Beach,CA,Rebrowser-Copart,COPART,
+2016,Jeep,Patriot,Latitude,Sc,Front End,0,101565 mi,96256845,,2026-04-16,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Jaguar,Xe,Premium,Sc,Side,0,0 mi,77787715,,2026-04-02,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2014,Ram,1500,Slt,Ps,Front End,0,152989 mi,76001745,,,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2020,Lexus,Nx,Base,Sc,Front End,0,102644 mi,47304416,,2026-04-14,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2015,Volkswagen,Jetta,Tdi,Sc,Front End,0,176194 mi,46918446,,2026-04-14,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2013,Toyota,Corolla,S,Sc,Front End,0,126263 mi,46057846,,2026-04-02,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Toyota,Corolla,Le,Sc,Rear End,0,96660 mi,45989826,,2026-04-02,Ca - Antelope,CA,Rebrowser-Copart,COPART,
+2017,Nissan,Altima,2.5 S,Sc,Side,0,122159 mi,41663256,,2026-04-14,Ca - Antelope,CA,Rebrowser-Copart,COPART,
 2014,Kia,Forte,Lx,Sc,Side,0,137083 mi,79113125,,2026-04-20,Or - Portland South,OR,Rebrowser-Copart,COPART,
 2015,Mercedes-Benz,E-Class,63 Amg-S,Sc,Undercarriage,0,51349 mi,75784625,,2026-04-15,Nv - Las Vegas West,NV,Rebrowser-Copart,COPART,
 2019,Chev,Equinox,,Sc,Front End,0,89317 mi,45884096,,2026-04-13,Nv - Las Vegas West,NV,Rebrowser-Copart,COPART,
@@ -8322,6 +8063,17 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Ford,Taurus,Sho,Ct,Mechanical,0,149295 mi,46390706,,2026-04-09,Nv - Reno,NV,Rebrowser-Copart,COPART,
 2021,Ford,Expeditio,Max Xlt,Ct,Front End,0,282778 mi,41895696,,2026-04-16,Nv - Reno,NV,Rebrowser-Copart,COPART,
 2013,Mini,Cooper,,Ct,Minor Dent/Scratches,0,110279 mi,41665206,,2026-04-16,Nv - Reno,NV,Rebrowser-Copart,COPART,
+2023,Tesla,Model Y,,Sc,Front End,0,0 mi,99282495,,,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2025,Subaru,Crosstrek,Premium,Sc,Front End,0,1462 mi,79820465,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2017,Maserati,All Other,Sport,Sc,Side,0,23902 mi,79646775,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2015,Volkswagen,Beetle,1.8T,Sc,Front End,0,158253 mi,78763795,,,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2025,Audi,Q6 E-Tron,Sportback Premium,Sc,Front End,0,8829 mi,76980555,,,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2020,Nissan,Sentra,Sv,Sc,Front End,0,101332 mi,76043385,,2026-04-09,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2020,Honda,Civic,Lx,Sc,Side,0,0 mi,75688625,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2017,Porsche,Macan,,Sc,Rear End,0,95272 mi,72609005,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2015,Honda,Civic,Exl,Sc,Rear End,0,119145 mi,47985436,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2017,Ford,Escape,Se,Sc,Front End,0,104350 mi,47528976,,2026-04-02,Ca - Rancho Cucamonga,CA,Rebrowser-Copart,COPART,
+2021,Toyota,Tacoma,Double Cab,Sc,Front End,0,64619 mi,84591525,,2026-04-01,Ca - Sun Valley,CA,Rebrowser-Copart,COPART,
 2019,Nissan,Rogue,S,Sc,Minor Dent/Scratches,0,69521 mi,69992375,,2026-03-30,Nj - Trenton,NJ,Rebrowser-Copart,COPART,
 2015,Harley-Davidson,Flstfb Fat,Fatboy Lo,S1,Rear End,0,22893 mi,62812185,,2026-04-07,De - Seaford,DE,Rebrowser-Copart,COPART,
 2020,Ford,Explorer,Xlt,St,Front End,0,62366 mi,69327685,,2026-03-31,Mn - Minneapolis,MN,Rebrowser-Copart,COPART,
@@ -8640,6 +8392,17 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Kia,Sorento,Lx,Sc,Front End,0,46191 mi,45966136,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2014,Buick,Enclave,,Sc,Front End,0,81940 mi,46100296,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2019,Chevrolet,Trax,1Lt,Sc,Front End,0,103905 mi,41764776,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2023,Tesla,Model X,,Sc,Side,0,59901 mi,98282825,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Lexus,Is,F Sport,Sc,Rear End,0,58535 mi,79837695,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Kia,Ev6 Light,Light,Sc,Front End,0,89061 mi,78660125,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2023,Honda,Civic,Lx,Sc,Front End,0,112808 mi,78535205,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Chrysler,Pacifica,Touring L,Sc,Front End,0,46615 mi,78205865,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Ford,Focus,Se,Dv,Minor Dent/Scratches,0,123106 mi,72699385,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2020,Lexus,Nx,Base,Sc,Front End,0,95894 mi,47627616,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Jeep,Cherokee,Trailhawk,Dv,Front End,0,129932 mi,47581056,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Honda,Civic,Natural Gas,Sc,Side,0,183396 mi,47393336,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Volkswagen,Tiguan,S,Dv,Minor Dent/Scratches,0,145680 mi,45865566,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Chevrolet,Malibu,Ls,Sc,Front End,0,67025 mi,42021226,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2016,Toyota,Corolla,Le,Rb,Front End,0,73447 mi,97766185,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2017,Infiniti,Qx60,,Rb,Front End,0,136078 mi,96927475,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2018,Ford,Explorer,Limited,Rb,Front End,0,138059 mi,96994275,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -8979,6 +8742,18 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2017,Infiniti,Q50,,Sm,Front End,0,64646 mi,42081566,,2026-03-30,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2013,Chevrolet,Silverado,K1500 Lt,Sm,Front End,0,194681 mi,41926176,,2026-03-30,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2020,Mack,All Other,,Sm,Side,0,0 mi,41930866,,2026-04-02,Heavy Truck Specialty Sale,NY,Rebrowser-Copart,COPART,
+2018,Mitsubishi,Outlander,Es,Sc,Front End,0,139248 mi,79832205,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2019,Nissan,Sentra,S,Sc,Side,0,106549 mi,79559195,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2022,Dodge,Challenger,R,Sc,Front End,0,59989 mi,79403725,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Volvo,C70,T5,Sc,Rear End,0,126870 mi,79310635,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Ford,Escape,Titanium,Sc,Front End,0,143748 mi,77423345,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Ford,Fiesta,Se,Sc,Side,0,119115 mi,76287095,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Infiniti,Qx30,Luxury,Da,Minor Dent/Scratches,0,82495 mi,47904216,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2021,Ram,1500,Big Horn,Sc,Rear End,0,73988 mi,47411406,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2021,Hyundai,Tucson,Ultimate,Sc,Front End,0,0 mi,46930556,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2017,Volvo,S60,Platinum,Sc,Front End,0,146483 mi,47008386,,,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2016,Ford,Cmax,Premium Sel,Sc,Rear End,0,148067 mi,45975156,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Rav4 Hybrid,Xse,Sc,Side,0,31615 mi,41654446,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2013,Honda,All Models,Ex,S1,Rear End,0,205583 mi,99834885,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2025,Tesla,Model 3,,S2,Front End,0,5299 mi,99579745,,2026-04-14,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2022,Chevrolet,Malibu,Lt,S1,Front End,0,65166 mi,99221225,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -9081,6 +8856,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2018,Chev,Cruze,Lt,Sc,Front End,0,71597 mi,74471335,,,Nc - Gastonia,NC,Rebrowser-Copart,COPART,
 2020,Chevrolet,Equinox,Ls,Sc,Side,0,101793 mi,74594805,,2026-04-15,Nc - Gastonia,NC,Rebrowser-Copart,COPART,
 2012,Subaru,Tribeca,Limited,Sc,Rollover,0,113267 mi,74408945,,,Nc - Gastonia,NC,Rebrowser-Copart,COPART,
+2013,Honda,Accord,,Sc,All Over,0,135022 mi,70010505,,2026-03-30,Ca - Napa,CA,Rebrowser-Copart,COPART,
 2018,Chevrolet,Equinox,Lt,Fs,Water/Flood,0,85297 mi,69562305,,2026-03-30,Nj - Trenton,NJ,Rebrowser-Copart,COPART,
 2017,Chevrolet,Equinox,Ls,St,Front End,0,61791 mi,65892665,,2026-04-14,Mn - Minneapolis North,MN,Rebrowser-Copart,COPART,
 2021,Jeep,Grand Cher,Laredo,St,Front End,0,83539 mi,86507855,,2026-03-30,Ar - Little Rock,AR,Rebrowser-Copart,COPART,
@@ -9489,6 +9265,20 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2013,Chevrolet,Spark,Ls,Sc,Front End,0,84440 mi,45615166,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2017,Jeep,Cherokee,Laredo,Sc,Front End,0,120000 mi,41808276,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2015,Hyundai,Sonata,Limited,Sc,Front End,0,110570 mi,41699306,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2018,Toyota,Camry,Se,Sc,Front End,0,61811 mi,78131165,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2016,Jeep,Grand Cher,Limited,Sc,Rear End,0,112684 mi,77730265,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2018,Tesla,Model 3,,Sc,Rear End,0,79575 mi,77628525,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Lexus,Rx350,350 Base,Sc,Front End,0,74856 mi,76472775,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Camry,Xse,Sc,Rear End,0,77741 mi,76411605,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Mazda,6,Touring,Sc,Rollover,0,138661 mi,75515555,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Honda,Hr-V,Sport,Sc,Rear End,0,21386 mi,72584425,,2026-04-15,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Ford,Maverick,Xl,Sc,Rear End,0,808 mi,64743195,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Nissan,Altima,2.5,Sc,Rear End,0,200114 mi,47426146,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Honda,Civic,Lx,Sc,Side,0,93740 mi,47105056,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2019,Toyota,Prius,Le,Sc,Front End,0,134611 mi,47127796,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2012,Nissan,Altima,2.5 S,Sc,Front End,0,110289 mi,46903306,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2015,Mazda,3,Touring,Sc,Front End,0,141984 mi,46221906,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2022,Chrysler,300,Touring,Sc,Rear End,0,33365 mi,41787136,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2021,Honda,Accord,Lx,Rb,Front End,0,89824 mi,99330295,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2014,Bmw,3 Series,I,Rb,Front End,0,120451 mi,98490425,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2020,Dodge,Charger,Gt,Cd,Rear End,0,0 mi,98644225,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
@@ -9796,6 +9586,15 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2016,Chevrolet,Cruze,Lt,Sm,Front End,0,181952 mi,45824316,,2026-03-30,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2014,Dodge,Caravan,Sxt,Sm,Front End,0,152270 mi,41801096,,2026-03-30,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
 2013,Kia,Sorento,Lx,Sm,Rollover,0,0 mi,41764306,,2026-04-06,Ny - Buffalo,NY,Rebrowser-Copart,COPART,
+2019,Subaru,Legacy,2.5I Premium,Sc,Water/Flood,0,67621 mi,98654955,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2022,Toyota,Camry,Se,Sc,Front End,0,41145 mi,79949815,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2013,Hyundai,Sonata,Gls,Sc,Front End,0,117063 mi,78469375,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2012,Gmc,Terrain,Slt,Sc,Mechanical,0,139940 mi,74886335,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2015,Mazda,Cx-5,Gt,Dv,Minor Dent/Scratches,0,61683 mi,47617286,,2026-03-27,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Chevrolet,Impala,Ltz,Sc,Front End,0,69269 mi,46844106,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Toyota,Camry,Le,Sc,Front End,0,182823 mi,46230076,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2018,Toyota,Corolla,Le,Sc,Front End,0,0 mi,46178036,,2026-04-03,Ca - Redding,CA,Rebrowser-Copart,COPART,
+2014,Lexus,Is,Base,Dv,Mechanical,0,117143 mi,46060946,,2026-04-10,Ca - Redding,CA,Rebrowser-Copart,COPART,
 2022,Toyota,Corolla,Le,S1,Rear End,0,80516 mi,99655615,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2017,Chrysler,Pacifica,Touring L,S1,Side,0,102946 mi,98151955,,2026-03-31,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2026,Honda,Crv,Ex,S1,Side,0,8210 mi,98036065,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
@@ -9863,6 +9662,7 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2023,Honda,Crv,Sport,Cd,Front End,0,104211 mi,46858946,,2026-04-09,*Ncs - Eastern Region,MD,Rebrowser-Copart,COPART,
 2015,Infiniti,Q50,Sport,S1,Rear End,0,66441 mi,46227606,,,Md - Baltimore East,MD,Rebrowser-Copart,COPART,
 2025,Volvo,Xc40,Plus,Nx,All Over,0,19395 mi,68040725,,2026-04-08,Rental Vehicle Sale,TX,Rebrowser-Copart,COPART,
+2019,Mini,Cooper,,Nr,Rollover,0,0 mi,33733139,,2026-03-30,Ca - Adelanto,CA,Rebrowser-Copart,COPART,
 2020,Tesla,Model 3,,St,Front End,0,41725 mi,43658164,,2026-04-08,Sc - Spartanburg,SC,Rebrowser-Copart,COPART,
 2025,Chevrolet,Equinox,Lt,Sc,All Over,0,23997 mi,69852375,,2026-03-31,Tn - Knoxville,TN,Rebrowser-Copart,COPART,
 2019,Jeep,Grand Cher,,Rb,Front End,0,74717 mi,85478715,,2026-04-06,Al - Mobile,AL,Rebrowser-Copart,COPART,
@@ -10355,6 +10155,15 @@ year,make,model,trim,type,damage,price,odometer,lot,vin,date,location,state,sour
 2024,Buick,Envista Pr,Preferred,Sc,Rear End,0,30095 mi,75053585,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2019,Dodge,Charger,Scat Pack,Sc,Front End,0,126830 mi,72631215,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
 2018,Nissan,Altima,2.5 S,Sc,Rear End,0,69712 mi,41647326,,,Nc - Raleigh North,NC,Rebrowser-Copart,COPART,
+2022,Honda,Hr-V,Ex,Sc,Front End,0,50477 mi,92070795,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Grand High,Le,Sc,Rear End,0,943 mi,90069235,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Toyota,Corolla,Se,Sc,Rear End,0,7675 mi,79757075,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Honda,Civic,Lx,Sc,Rear End,0,103763 mi,78560575,,2026-04-01,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2025,Kia,K4 Gt-Line,Gt-Line Turbo,Sc,Front End,0,794 mi,78275155,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2024,Hyundai,Ioniq,Limited,Sc,Rear End,0,22275 mi,77869175,,,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2021,Tesla,Model Y,,Sc,Front End,0,109005 mi,76821405,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2014,Audi,Q5,Premium Plus,Dv,Mechanical,0,142830 mi,47470306,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
+2017,Honda,Civic,Touring,Sc,Side,0,94659 mi,47016376,,2026-04-08,Ca - Mentone,CA,Rebrowser-Copart,COPART,
 2024,Honda,Civic,Sport,Cd,Rear End,0,21042 mi,99432805,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2021,Mazda,3,Preferred,Cd,Water/Flood,0,104616 mi,98238885,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
 2020,Mercedes-Benz,Glb-Class,250 4Matic,Cd,Front End,0,95638 mi,98814935,,2026-04-06,Fl - Clewiston,FL,Rebrowser-Copart,COPART,
