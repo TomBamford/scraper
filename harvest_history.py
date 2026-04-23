@@ -190,18 +190,26 @@ def save_state(state: Dict[str, Any]) -> None:
 def extract_price(html: str) -> int:
     """
     Extract final sold price from autobidcar.com page.
-    Price is in the <title> and <meta description>:
-      "Sold for: $12,100"  or  "Sold for: $5100"
-    Skip if page says "Sold for: $null" (unsold lot).
+    Works for both VIN-based and lot-based pages.
+    Price appears as: "Sold for: $12,100" in title/meta
+    Or in body text for lot pages.
     """
-    head = html[:4000]
+    head = html[:5000]
 
     # Quick rejection — unsold or no price
     if "Sold for: $null" in head or "price was N/A" in head:
         return 0
 
-    # Primary: exact "Sold for: $X,XXX" pattern (always in title/meta)
+    # Primary: exact "Sold for: $X,XXX" pattern
     for m in SOLD_RE.finditer(head):
+        try:
+            p = int(m.group(1).replace(",", ""))
+            if MIN_PRICE <= p <= 500_000:
+                return p
+        except: pass
+
+    # Also scan full page body (lot pages may have price deeper in HTML)
+    for m in SOLD_RE.finditer(html):
         try:
             p = int(m.group(1).replace(",", ""))
             if MIN_PRICE <= p <= 500_000:
@@ -211,7 +219,7 @@ def extract_price(html: str) -> int:
     # Secondary: JSON data blob
     nd = re.search(
         r'"(?:finalBid|soldPrice|highBid|salePrice|sold_for|price)"\s*:\s*"?([\d.]+)"?',
-        html[:8000]
+        html[:10000]
     )
     if nd:
         try:
@@ -231,14 +239,32 @@ def extract_price(html: str) -> int:
 
 def best_lookup_url(vin: str, make: str, model: str, year: Any,
                     lot: str = "", auction: str = "") -> str:
-    """Build the best autobidcar.com URL for this vehicle."""
-    vin = (vin or "").strip().upper()
-    if len(vin) != 17:
-        return ""
+    """
+    Build the best autobidcar.com URL for this vehicle.
+    Primary:  autobidcar.com/car/{make}-{model}-{year}-{VIN}
+    Fallback: autobidcar.com/en/copart/{lot} or /en/iaai/{lot}
+    """
+    vin     = (vin     or "").strip().upper()
+    lot     = (lot     or "").strip()
+    auction = (auction or "").strip().upper()
     make_s  = slugify(make  or "unknown")
     model_s = slugify(model or "unknown")
     year_s  = str(clean_year(year)) if year else "0"
-    return f"https://autobidcar.com/car/{make_s}-{model_s}-{year_s}-{vin}"
+
+    # Best: full VIN URL (most accurate)
+    if len(vin) == 17:
+        return f"https://autobidcar.com/car/{make_s}-{model_s}-{year_s}-{vin}"
+
+    # Fallback: lot-based URL (works without VIN)
+    if lot and len(lot) >= 5:
+        if auction == "COPART":
+            return f"https://autobidcar.com/en/copart/{lot}"
+        if auction == "IAAI":
+            return f"https://autobidcar.com/en/iaai/{lot}"
+        # Unknown auction — try copart first
+        return f"https://autobidcar.com/en/copart/{lot}"
+
+    return ""
 
 
 
@@ -425,17 +451,28 @@ async def enrich_prices(df: pd.DataFrame) -> pd.DataFrame:
     done_count  = 0
     hit_count   = 0
 
-    # Build (idx, url) pairs — one URL per VIN, computed upfront
+    # Debug: show sample of what VINs/lots we actually have
+    sample = rows.head(3)
+    for _, r in sample.iterrows():
+        log(f"  Sample → vin={str(r.get('vin',''))[:20]}  lot={str(r.get('lot',''))[:15]}  auction={r.get('auction','')}  make={r.get('make','')}  year={r.get('year','')}")
+
+    # Build (idx, url) pairs — one URL per VIN/lot, computed upfront
     tasks_meta = []
     for idx, row in rows.iterrows():
         url = best_lookup_url(
-            vin=str(row.get("vin","")),
-            make=str(row.get("make","")),
-            model=str(row.get("model","")),
+            vin=str(row.get("vin", "")),
+            make=str(row.get("make", "")),
+            model=str(row.get("model", "")),
             year=row.get("year", 0),
+            lot=str(row.get("lot", "")),
+            auction=str(row.get("auction", "")),
         )
         if url:
             tasks_meta.append((idx, url))
+
+    # Debug: show first built URL
+    if tasks_meta:
+        log(f"  Sample URL: {tasks_meta[0][1]}")
 
     log(f"Valid URLs built    : {len(tasks_meta):,}")
 
