@@ -1,23 +1,22 @@
 """
 Copart & IAAI Final Price Harvester
 ===================================
-Debug-focused, target-driven scraper designed to help resolve why:
+Debug-first, target-driven scraper for:
 
-1. AutoBidCar is returning 0 rows
-2. Rebrowser rows have no prices unless AutoBidCar enriches them
+1. AutoBidCar sold listings
+2. Rebrowser Copart metadata
+3. Rebrowser IAAI metadata
 
-What this version adds:
-- Debug HTML dumps for AutoBidCar catalog pages
-- Block-page detection
-- Broader AutoBidCar parser
-- Safer write guard: refuses to overwrite outputs if priced rows are too low
-- Checkpoints
-- Rotating make order
-- Optional proxy support
-- Optional Kaggle support
+This version removes Kaggle/Manheim entirely.
+
+Goals:
+- help diagnose why AutoBidCar returns 0 rows
+- keep Rebrowser as a secondary metadata source
+- refuse to overwrite outputs when priced rows are too low
+- write debug files even when AutoBidCar fetches fail
 
 Install:
-    pip install aiohttp aiodns requests pandas pyarrow beautifulsoup4 kaggle lxml fastparquet
+    pip install aiohttp aiodns pandas pyarrow beautifulsoup4 lxml fastparquet
 
 Run:
     python harvest_history.py
@@ -31,11 +30,10 @@ import json
 import os
 import random
 import re
-import shutil
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
 import pandas as pd
@@ -81,7 +79,12 @@ RETRIES = 3
 
 MIN_PRICED_ROWS_TO_WRITE = 100
 
-ENABLE_KAGGLE = os.environ.get("ENABLE_KAGGLE", "").strip().lower() in {"1", "true", "yes", "on"}
+SCRAPER_PROXY = (
+    os.environ.get("SCRAPER_PROXY")
+    or os.environ.get("HTTPS_PROXY")
+    or os.environ.get("HTTP_PROXY")
+    or ""
+).strip()
 
 MAKES_TO_SCRAPE = [
     "toyota", "honda", "chevrolet", "ford", "nissan",
@@ -93,16 +96,6 @@ MAKES_TO_SCRAPE = [
     "ram", "fiat", "alfa-romeo", "genesis", "suzuki",
     "saab", "saturn", "pontiac", "scion", "mercury",
 ]
-
-KAGGLE_USERNAME = os.environ.get("KAGGLE_USERNAME", "")
-KAGGLE_KEY = os.environ.get("KAGGLE_KEY", "")
-
-SCRAPER_PROXY = (
-    os.environ.get("SCRAPER_PROXY")
-    or os.environ.get("HTTPS_PROXY")
-    or os.environ.get("HTTP_PROXY")
-    or ""
-).strip()
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -171,7 +164,50 @@ def rh() -> Dict[str, str]:
     return {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
     }
+
+
+def ensure_dir(path: str | Path) -> None:
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def save_json(path: str | Path, data: Dict[str, Any]) -> None:
+    Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def load_json(path: str | Path) -> Dict[str, Any]:
+    p = Path(path)
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def rotated_makes(makes: List[str], state_file: str) -> List[str]:
+    if not makes:
+        return makes
+    state = load_json(state_file)
+    idx = int(state.get("next_index", 0)) if str(state.get("next_index", "")).isdigit() else 0
+    idx %= len(makes)
+    rotated = makes[idx:] + makes[:idx]
+    next_idx = (idx + 7) % len(makes)
+    save_json(state_file, {"next_index": next_idx, "updated_at": datetime.now(timezone.utc).isoformat()})
+    return rotated
+
+
+def save_debug_text(name: str, content: str) -> None:
+    ensure_dir(DEBUG_DIR)
+    Path(DEBUG_DIR, name).write_text(content, encoding="utf-8", errors="ignore")
+
+
+def save_debug_html(name: str, html: str) -> None:
+    ensure_dir(DEBUG_DIR)
+    Path(DEBUG_DIR, f"{name}.html").write_text(html[:500000], encoding="utf-8", errors="ignore")
 
 
 def clean_price(val: Any) -> int:
@@ -271,6 +307,7 @@ def normalize_record(rec: Dict[str, Any]) -> Dict[str, Any]:
 def normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return ensure_standard_cols(df)
+
     out = ensure_standard_cols(df.copy())
     out["year"] = out["year"].apply(clean_year)
     out["make"] = out["make"].apply(cap)
@@ -291,41 +328,8 @@ def normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def ensure_dir(path: str | Path) -> None:
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-
-def save_json(path: str | Path, data: Dict[str, Any]) -> None:
-    Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-
-def load_json(path: str | Path) -> Dict[str, Any]:
-    p = Path(path)
-    if not p.exists():
-        return {}
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def rotated_makes(makes: List[str], state_file: str) -> List[str]:
-    state = load_json(state_file)
-    idx = int(state.get("next_index", 0)) if str(state.get("next_index", "")).isdigit() else 0
-    idx = idx % len(makes) if makes else 0
-    rotated = makes[idx:] + makes[:idx]
-    next_idx = (idx + 7) % len(makes) if makes else 0
-    save_json(state_file, {"next_index": next_idx, "updated_at": datetime.now(timezone.utc).isoformat()})
-    return rotated
-
-
-def save_debug_html(name: str, html: str) -> None:
-    ensure_dir(DEBUG_DIR)
-    Path(DEBUG_DIR, f"{name}.html").write_text(html[:500000], encoding="utf-8", errors="ignore")
-
-
 # ─────────────────────────────────────────────────────────────
-# CHECKPOINTING
+# CHECKPOINTS
 # ─────────────────────────────────────────────────────────────
 
 class CheckpointManager:
@@ -360,15 +364,12 @@ class CheckpointManager:
             return
 
         ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        preview_path = Path(CHECKPOINT_DIR) / f"preview_{ts}.csv"
-        delta_path = Path(CHECKPOINT_DIR) / f"delta_{ts}.csv"
-
-        combined.to_csv(preview_path, index=False)
+        combined.to_csv(Path(CHECKPOINT_DIR) / f"preview_{ts}.csv", index=False)
 
         if self.frames:
             delta = pd.concat(self.frames, ignore_index=True)
             delta = ensure_standard_cols(delta)
-            delta.to_csv(delta_path, index=False)
+            delta.to_csv(Path(CHECKPOINT_DIR) / f"delta_{ts}.csv", index=False)
 
         self.last_checkpoint_at = actual_new
         log(f"Checkpoint written at +{actual_new:,} actual new rows")
@@ -384,6 +385,8 @@ async def fetch_text(
     timeout: int,
     retries: int = RETRIES,
 ) -> Optional[str]:
+    last_error = None
+
     for attempt in range(retries):
         try:
             async with session.get(
@@ -413,16 +416,21 @@ async def fetch_text(
 
                 if resp.status in (403, 429):
                     print(f"[HTTP {resp.status}] {url}")
+                    last_error = f"HTTP {resp.status}"
                     await asyncio.sleep(1.5 * (attempt + 1))
                     continue
 
                 print(f"[HTTP {resp.status}] {url}")
                 return None
         except Exception as e:
+            last_error = str(e)
             if attempt == retries - 1:
                 print(f"[ERROR] {url} -> {e}")
                 return None
             await asyncio.sleep(0.8 * (attempt + 1))
+
+    if last_error:
+        print(f"[ERROR] {url} -> {last_error}")
     return None
 
 
@@ -484,13 +492,8 @@ def parse_catalog_page(html: str, make: str) -> List[Dict[str, Any]]:
             seen_urls.add(url)
 
             text = a.get_text(" ", strip=True)
-            nearby_text = text
-
-            parent = a.parent
-            if parent:
-                nearby_text = parent.get_text(" ", strip=True)
-
-            blob = " ".join(filter(None, [text, nearby_text]))
+            parent_text = a.parent.get_text(" ", strip=True) if a.parent else text
+            blob = " ".join(filter(None, [text, parent_text]))
 
             vin_match = re.search(r"([A-HJ-NPR-Z0-9]{17})", url, re.IGNORECASE)
             vin = vin_match.group(1).upper() if vin_match else ""
@@ -522,8 +525,8 @@ def parse_catalog_page(html: str, make: str) -> List[Dict[str, Any]]:
             if price < MIN_PRICE:
                 price = 0
 
-            upper = blob.upper()
             auction = ""
+            upper = blob.upper()
             if "COPART" in upper:
                 auction = "COPART"
             elif "IAAI" in upper:
@@ -556,18 +559,28 @@ async def fetch_catalog_page(
 
     async with sem:
         html = await fetch_text(session, url, timeout=CATALOG_TIMEOUT, retries=RETRIES)
-        if not html:
-            print(f"[AutoBidCar] empty response: {url}")
-            return []
 
-        if page_num == 1 and make in {"toyota", "honda", "ford"}:
-            save_debug_html(f"{make}_page1", html)
+        if page_num == 1:
+            ensure_dir(DEBUG_DIR)
+            if html:
+                save_debug_html(f"{make}_page1", html)
+            else:
+                save_debug_text(f"{make}_page1_ERROR.txt", f"FAILED TO FETCH\nURL: {url}\nPROXY: {SCRAPER_PROXY or 'none'}\n")
+
+        if not html:
+            print(f"[AutoBidCar] FAILED FETCH: {url}")
+            return []
 
         cars = parse_catalog_page(html, make)
 
         if not cars:
             print(f"[AutoBidCar] 0 cars parsed: {url}")
             print(f"[AutoBidCar] first 300 chars: {html[:300]!r}")
+            if page_num == 1:
+                save_debug_text(
+                    f"{make}_page1_PARSE_INFO.txt",
+                    f"URL: {url}\nParsed cars: 0\nFirst 1000 chars:\n\n{html[:1000]}",
+                )
 
         return cars
 
@@ -621,9 +634,6 @@ async def scrape_car_detail_async(
         h1 = soup.find("h1")
         h1_text = h1.get_text(strip=True) if h1 else ""
 
-        year_m = re.search(r"\b(20\d{2}|19\d{2})\b", h1_text)
-        year_detail = int(year_m.group(1)) if year_m else 0
-
         vin_m = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", html)
         vin = vin_m.group(1).upper() if vin_m else ""
 
@@ -637,7 +647,6 @@ async def scrape_car_detail_async(
             "auction": auction,
             "lot": lot,
             "vin": vin,
-            "year_detail": year_detail,
             "h1": h1_text,
         }
 
@@ -668,7 +677,7 @@ def build_autobidcar_record(
     model_h = parts[2].title() if len(parts) > 2 else ""
     trim_h = " ".join(p.title() for p in parts[3:]) if len(parts) > 3 else ""
 
-    rec = {
+    return normalize_record({
         "year": year_h or car.get("year", 0),
         "make": make_h,
         "model": model_h,
@@ -685,8 +694,7 @@ def build_autobidcar_record(
         "source": "AutoBidCar",
         "auction": str(auction).strip().upper(),
         "url": car.get("url", ""),
-    }
-    return normalize_record(rec)
+    })
 
 
 async def scrape_make_until_target(
@@ -752,7 +760,6 @@ async def scrape_make_until_target(
             continue
 
         empty_pages = 0
-
         room_left = hard_cap_remaining - len(records)
         if room_left <= 0:
             break
@@ -760,10 +767,7 @@ async def scrape_make_until_target(
 
         detail_map: Dict[str, Dict[str, Any]] = {}
         if ENRICH_DETAILS and detail_budget_remaining[0] > 0:
-            needs_detail = [
-                c for c in unique_new
-                if (not c.get("price")) or (not c.get("lot")) or (not c.get("vin"))
-            ]
+            needs_detail = [c for c in unique_new if (not c.get("price")) or (not c.get("lot")) or (not c.get("vin"))]
             if needs_detail:
                 detail_budget = min(detail_budget_remaining[0], len(needs_detail))
                 detail_tasks = [scrape_car_detail_async(session, c["url"], detail_sem) for c in needs_detail[:detail_budget]]
@@ -886,8 +890,8 @@ async def fetch_rebrowser_async(name: str, cfg: Dict[str, Any]) -> pd.DataFrame:
         return pd.DataFrame(columns=STANDARD_COLS)
 
     raw = pd.concat(frames, ignore_index=True)
-
     out = pd.DataFrame()
+
     for std, src in cfg["cols"].items():
         out[std] = raw[src].astype(str) if src in raw.columns else ""
 
@@ -921,72 +925,10 @@ def enrich_prices(df: pd.DataFrame, price_map: Dict[str, int]) -> pd.DataFrame:
     out = df.copy()
     out["vin"] = out["vin"].astype(str).str.strip().str.upper()
     out["price"] = to_int_price_series(out["price"])
+
     mask = (out["price"] == 0) & out["vin"].ne("") & (out["vin"].str.len() == 17)
     out.loc[mask, "price"] = out.loc[mask, "vin"].map(price_map).fillna(0).astype(int)
     return out
-
-
-# ─────────────────────────────────────────────────────────────
-# KAGGLE
-# ─────────────────────────────────────────────────────────────
-
-def fetch_kaggle_manheim() -> pd.DataFrame:
-    if not ENABLE_KAGGLE:
-        log("Skipping Kaggle (ENABLE_KAGGLE not set)")
-        return pd.DataFrame(columns=STANDARD_COLS)
-
-    if not KAGGLE_USERNAME or not KAGGLE_KEY:
-        log("Skipping Kaggle (missing KAGGLE_USERNAME or KAGGLE_KEY)")
-        return pd.DataFrame(columns=STANDARD_COLS)
-
-    log("Fetching Kaggle Manheim dataset...")
-    try:
-        import kaggle  # type: ignore
-
-        path = Path("/tmp/kgl_manheim")
-        if path.exists():
-            shutil.rmtree(path)
-        path.mkdir(parents=True, exist_ok=True)
-
-        kaggle.api.authenticate()
-        kaggle.api.dataset_download_files(
-            "syedanwarafridi/vehicle-sales-data",
-            path=str(path),
-            unzip=True,
-            quiet=True,
-        )
-
-        csv = next(path.glob("**/*.csv"), None)
-        if not csv:
-            return pd.DataFrame(columns=STANDARD_COLS)
-
-        df = pd.read_csv(csv, dtype=str).fillna("")
-
-        out = pd.DataFrame()
-        out["year"] = df.get("year", "").apply(clean_year)
-        out["make"] = df.get("make", "").apply(cap)
-        out["model"] = df.get("model", "").apply(cap)
-        out["trim"] = df.get("trim", "").apply(cap)
-        out["type"] = ""
-        out["damage"] = ""
-        out["price"] = df.get("sellingprice", "0").apply(clean_price)
-        out["odometer"] = df.get("odometer", "").apply(clean_odo)
-        out["lot"] = df.get("vin", "").astype(str).str.strip()
-        out["vin"] = df.get("vin", "").astype(str).str.strip().str.upper()
-        out["date"] = df.get("saledate", "").apply(norm_date)
-        out["location"] = df.get("state", "").astype(str).str.title()
-        out["state"] = df.get("state", "").astype(str).str.strip().str.upper()
-        out["source"] = "Kaggle-Manheim"
-        out["auction"] = "MANHEIM"
-        out["url"] = ""
-
-        out = out[(out["price"] > 0) & (out["year"] >= MIN_YEAR)]
-        out = ensure_standard_cols(out)
-        log(f"Kaggle rows with price: {len(out):,}")
-        return out
-    except Exception as e:
-        log(f"Kaggle error: {e}")
-        return pd.DataFrame(columns=STANDARD_COLS)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1079,6 +1021,7 @@ def build_price_map_from_frames(frames: List[pd.DataFrame]) -> Dict[str, int]:
     for df in frames:
         if df.empty:
             continue
+
         subset = ensure_standard_cols(df.copy())
         subset["vin"] = subset["vin"].astype(str).str.strip().str.upper()
         subset["price"] = to_int_price_series(subset["price"])
@@ -1089,6 +1032,7 @@ def build_price_map_from_frames(frames: List[pd.DataFrame]) -> Dict[str, int]:
             if vin and len(vin) == 17 and price > 0:
                 if vin not in price_map or price > price_map[vin]:
                     price_map[vin] = price
+
     return price_map
 
 
@@ -1104,7 +1048,7 @@ def main() -> None:
     print(f"  Date         : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     print(f"  Target new   : {TARGET_NEW_MIN}-{TARGET_NEW_MAX}")
     print(f"  Proxy        : {'enabled' if SCRAPER_PROXY else 'disabled'}")
-    print(f"  Kaggle       : {'enabled' if ENABLE_KAGGLE else 'disabled'}")
+    print("  Kaggle       : removed")
     print("=" * 68)
 
     existing, existing_vins, existing_lots = load_existing()
@@ -1114,7 +1058,7 @@ def main() -> None:
     ordered_makes = rotated_makes(MAKES_TO_SCRAPE, ROTATION_STATE_FILE)
     log(f"Rotated make order starts with: {', '.join(ordered_makes[:8])}")
 
-    print("\n[1/4] AutoBidCar — targeted collection")
+    print("\n[1/3] AutoBidCar — targeted collection")
     abc_records = asyncio.run(
         scrape_autobidcar_targeted(
             makes_to_scrape=ordered_makes,
@@ -1137,15 +1081,14 @@ def main() -> None:
         log(f"AutoBidCar collected: {len(abc_df):,} rows, {abc_priced:,} priced")
     else:
         log("AutoBidCar collected no rows")
-        log(f"Inspect {DEBUG_DIR}/toyota_page1.html, {DEBUG_DIR}/honda_page1.html, and {DEBUG_DIR}/ford_page1.html")
+        log(f"Inspect {DEBUG_DIR}/ for *_page1.html, *_ERROR.txt, and *_PARSE_INFO.txt")
 
     combined_preview, actual_new_preview = merge_preview(existing, all_frames)
     print(f"After AutoBidCar merge preview: +{actual_new_preview:,} actual new rows")
 
     if actual_new_preview < TARGET_NEW_MIN:
-        print("\n[2/4] Rebrowser — Copart")
+        print("\n[2/3] Rebrowser — Copart")
         rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
-
         if not rb_copart.empty:
             price_map = build_price_map_from_frames(all_frames)
             rb_copart = enrich_prices(rb_copart, price_map)
@@ -1154,9 +1097,8 @@ def main() -> None:
             checkpoints.maybe_checkpoint(force=True)
 
     if actual_new_preview < TARGET_NEW_MIN:
-        print("\n[3/4] Rebrowser — IAAI")
+        print("\n[3/3] Rebrowser — IAAI")
         rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
-
         if not rb_iaai.empty:
             price_map = build_price_map_from_frames(all_frames)
             rb_iaai = enrich_prices(rb_iaai, price_map)
@@ -1166,18 +1108,6 @@ def main() -> None:
 
         combined_preview, actual_new_preview = merge_preview(existing, all_frames)
         print(f"After Rebrowser merge preview: +{actual_new_preview:,} actual new rows")
-
-    if actual_new_preview < TARGET_NEW_MIN:
-        print("\n[4/4] Kaggle — Manheim")
-        manheim = fetch_kaggle_manheim()
-        if not manheim.empty:
-            all_frames.append(manheim)
-            checkpoints.add_frame(manheim)
-            checkpoints.maybe_checkpoint(force=True)
-            combined_preview, actual_new_preview = merge_preview(existing, all_frames)
-            print(f"After Kaggle merge preview: +{actual_new_preview:,} actual new rows")
-        else:
-            log("Kaggle contributed no rows")
 
     combined, actual_new = merge_preview(existing, all_frames)
 
@@ -1199,7 +1129,7 @@ def main() -> None:
 
     if with_price < MIN_PRICED_ROWS_TO_WRITE:
         print(f"Too few priced rows found ({with_price} < {MIN_PRICED_ROWS_TO_WRITE}); refusing to overwrite outputs.")
-        print(f"Use debug files in {DEBUG_DIR}/ to inspect the AutoBidCar response.")
+        print(f"Inspect files in {DEBUG_DIR}/ to diagnose AutoBidCar.")
         checkpoints.maybe_checkpoint(force=True)
         elapsed = int(time.time() - t0)
         print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
@@ -1224,7 +1154,7 @@ def main() -> None:
     elapsed = int(time.time() - t0)
     print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 68)
-    print(f"\nIf AutoBidCar still returns 0, inspect files in: {DEBUG_DIR}/")
+    print(f"\nInspect {DEBUG_DIR}/ if AutoBidCar still produced 0 rows.")
 
 
 if __name__ == "__main__":
