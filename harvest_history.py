@@ -1,25 +1,35 @@
 """
 Copart & IAAI Final Price Harvester
 ===================================
-Debug-first, target-driven scraper for:
 
-1. AutoBidCar sold listings
-2. Rebrowser Copart metadata
-3. Rebrowser IAAI metadata
+Practical split-mode workflow:
 
-This version removes Kaggle/Manheim entirely.
+1. local mode
+   - scrape AutoBidCar
+   - refresh Rebrowser
+   - enrich Rebrowser from AutoBidCar VIN->price matches
+   - intended for your own machine or a proxy/browser-friendly host
 
-Goals:
-- help diagnose why AutoBidCar returns 0 rows
-- keep Rebrowser as a secondary metadata source
-- refuse to overwrite outputs when priced rows are too low
-- write debug files even when AutoBidCar fetches fail
+2. github mode
+   - skip AutoBidCar completely
+   - refresh Rebrowser only
+   - intended for GitHub Actions where AutoBidCar returns 403
+
+Modes are selected with:
+    RUN_MODE=local
+    RUN_MODE=github
+
+Default:
+    local
 
 Install:
     pip install aiohttp aiodns pandas pyarrow beautifulsoup4 lxml fastparquet
 
-Run:
+Run locally:
     python harvest_history.py
+
+Run GitHub-safe mode:
+    RUN_MODE=github python harvest_history.py
 """
 
 from __future__ import annotations
@@ -44,13 +54,16 @@ from bs4 import BeautifulSoup
 # CONFIG
 # ─────────────────────────────────────────────────────────────
 
+RUN_MODE = os.environ.get("RUN_MODE", "local").strip().lower() or "local"
+
 OUTPUT_CSV = "cars.csv"
 MASTER_CSV = "master.csv"
 
 CHECKPOINT_DIR = "checkpoints"
 DEBUG_DIR = "debug"
-CHECKPOINT_EVERY_NEW_ROWS = 500
 ROTATION_STATE_FILE = os.environ.get("ROTATION_STATE_FILE", "rotation_state.json")
+
+CHECKPOINT_EVERY_NEW_ROWS = 500
 
 MIN_YEAR = 2012
 MIN_PRICE = 200
@@ -77,7 +90,7 @@ DETAIL_TIMEOUT = 20
 PARQUET_TIMEOUT = 20
 RETRIES = 3
 
-MIN_PRICED_ROWS_TO_WRITE = 100
+MIN_PRICED_ROWS_TO_WRITE_LOCAL = 100
 
 SCRAPER_PROXY = (
     os.environ.get("SCRAPER_PROXY")
@@ -385,8 +398,6 @@ async def fetch_text(
     timeout: int,
     retries: int = RETRIES,
 ) -> Optional[str]:
-    last_error = None
-
     for attempt in range(retries):
         try:
             async with session.get(
@@ -416,21 +427,16 @@ async def fetch_text(
 
                 if resp.status in (403, 429):
                     print(f"[HTTP {resp.status}] {url}")
-                    last_error = f"HTTP {resp.status}"
                     await asyncio.sleep(1.5 * (attempt + 1))
                     continue
 
                 print(f"[HTTP {resp.status}] {url}")
                 return None
         except Exception as e:
-            last_error = str(e)
             if attempt == retries - 1:
                 print(f"[ERROR] {url} -> {e}")
                 return None
             await asyncio.sleep(0.8 * (attempt + 1))
-
-    if last_error:
-        print(f"[ERROR] {url} -> {last_error}")
     return None
 
 
@@ -565,7 +571,10 @@ async def fetch_catalog_page(
             if html:
                 save_debug_html(f"{make}_page1", html)
             else:
-                save_debug_text(f"{make}_page1_ERROR.txt", f"FAILED TO FETCH\nURL: {url}\nPROXY: {SCRAPER_PROXY or 'none'}\n")
+                save_debug_text(
+                    f"{make}_page1_ERROR.txt",
+                    f"FAILED TO FETCH\nURL: {url}\nPROXY: {SCRAPER_PROXY or 'none'}\nRUN_MODE: {RUN_MODE}\n",
+                )
 
         if not html:
             print(f"[AutoBidCar] FAILED FETCH: {url}")
@@ -573,14 +582,11 @@ async def fetch_catalog_page(
 
         cars = parse_catalog_page(html, make)
 
-        if not cars:
-            print(f"[AutoBidCar] 0 cars parsed: {url}")
-            print(f"[AutoBidCar] first 300 chars: {html[:300]!r}")
-            if page_num == 1:
-                save_debug_text(
-                    f"{make}_page1_PARSE_INFO.txt",
-                    f"URL: {url}\nParsed cars: 0\nFirst 1000 chars:\n\n{html[:1000]}",
-                )
+        if not cars and page_num == 1:
+            save_debug_text(
+                f"{make}_page1_PARSE_INFO.txt",
+                f"URL: {url}\nParsed cars: 0\nFirst 1000 chars:\n\n{html[:1000]}",
+            )
 
         return cars
 
@@ -925,7 +931,6 @@ def enrich_prices(df: pd.DataFrame, price_map: Dict[str, int]) -> pd.DataFrame:
     out = df.copy()
     out["vin"] = out["vin"].astype(str).str.strip().str.upper()
     out["price"] = to_int_price_series(out["price"])
-
     mask = (out["price"] == 0) & out["vin"].ne("") & (out["vin"].str.len() == 17)
     out.loc[mask, "price"] = out.loc[mask, "vin"].map(price_map).fillna(0).astype(int)
     return out
@@ -1032,27 +1037,19 @@ def build_price_map_from_frames(frames: List[pd.DataFrame]) -> Dict[str, int]:
             if vin and len(vin) == 17 and price > 0:
                 if vin not in price_map or price > price_map[vin]:
                     price_map[vin] = price
-
     return price_map
 
 
 # ─────────────────────────────────────────────────────────────
-# MAIN
+# RUN MODES
 # ─────────────────────────────────────────────────────────────
 
-def main() -> None:
-    t0 = time.time()
-
-    print("=" * 68)
-    print("  Copart & IAAI Final Price Harvester")
-    print(f"  Date         : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
-    print(f"  Target new   : {TARGET_NEW_MIN}-{TARGET_NEW_MAX}")
-    print(f"  Proxy        : {'enabled' if SCRAPER_PROXY else 'disabled'}")
-    print("  Kaggle       : removed")
-    print("=" * 68)
-
-    existing, existing_vins, existing_lots = load_existing()
-    checkpoints = CheckpointManager(existing)
+def run_local_mode(
+    existing: pd.DataFrame,
+    existing_vins: set[str],
+    existing_lots: set[str],
+    checkpoints: CheckpointManager,
+) -> List[pd.DataFrame]:
     all_frames: List[pd.DataFrame] = []
 
     ordered_makes = rotated_makes(MAKES_TO_SCRAPE, ROTATION_STATE_FILE)
@@ -1086,28 +1083,75 @@ def main() -> None:
     combined_preview, actual_new_preview = merge_preview(existing, all_frames)
     print(f"After AutoBidCar merge preview: +{actual_new_preview:,} actual new rows")
 
-    if actual_new_preview < TARGET_NEW_MIN:
-        print("\n[2/3] Rebrowser — Copart")
-        rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
-        if not rb_copart.empty:
-            price_map = build_price_map_from_frames(all_frames)
-            rb_copart = enrich_prices(rb_copart, price_map)
-            all_frames.append(rb_copart)
-            checkpoints.add_frame(rb_copart)
-            checkpoints.maybe_checkpoint(force=True)
+    print("\n[2/3] Rebrowser — Copart")
+    rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
+    if not rb_copart.empty:
+        price_map = build_price_map_from_frames(all_frames)
+        rb_copart = enrich_prices(rb_copart, price_map)
+        all_frames.append(rb_copart)
+        checkpoints.add_frame(rb_copart)
+        checkpoints.maybe_checkpoint(force=True)
 
-    if actual_new_preview < TARGET_NEW_MIN:
-        print("\n[3/3] Rebrowser — IAAI")
-        rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
-        if not rb_iaai.empty:
-            price_map = build_price_map_from_frames(all_frames)
-            rb_iaai = enrich_prices(rb_iaai, price_map)
-            all_frames.append(rb_iaai)
-            checkpoints.add_frame(rb_iaai)
-            checkpoints.maybe_checkpoint(force=True)
+    print("\n[3/3] Rebrowser — IAAI")
+    rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
+    if not rb_iaai.empty:
+        price_map = build_price_map_from_frames(all_frames)
+        rb_iaai = enrich_prices(rb_iaai, price_map)
+        all_frames.append(rb_iaai)
+        checkpoints.add_frame(rb_iaai)
+        checkpoints.maybe_checkpoint(force=True)
 
-        combined_preview, actual_new_preview = merge_preview(existing, all_frames)
-        print(f"After Rebrowser merge preview: +{actual_new_preview:,} actual new rows")
+    combined_preview, actual_new_preview = merge_preview(existing, all_frames)
+    print(f"After Rebrowser merge preview: +{actual_new_preview:,} actual new rows")
+
+    return all_frames
+
+
+def run_github_mode(
+    checkpoints: CheckpointManager,
+) -> List[pd.DataFrame]:
+    all_frames: List[pd.DataFrame] = []
+
+    print("\n[1/2] GitHub mode — skipping AutoBidCar")
+    log("AutoBidCar skipped because RUN_MODE=github")
+
+    print("\n[2/2] Rebrowser refresh")
+    rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
+    if not rb_copart.empty:
+        all_frames.append(rb_copart)
+        checkpoints.add_frame(rb_copart)
+
+    rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
+    if not rb_iaai.empty:
+        all_frames.append(rb_iaai)
+        checkpoints.add_frame(rb_iaai)
+
+    checkpoints.maybe_checkpoint(force=True)
+    return all_frames
+
+
+# ─────────────────────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────────────────────
+
+def main() -> None:
+    t0 = time.time()
+
+    print("=" * 68)
+    print("  Copart & IAAI Final Price Harvester")
+    print(f"  Date         : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  Run mode     : {RUN_MODE}")
+    print(f"  Target new   : {TARGET_NEW_MIN}-{TARGET_NEW_MAX}")
+    print(f"  Proxy        : {'enabled' if SCRAPER_PROXY else 'disabled'}")
+    print("=" * 68)
+
+    existing, existing_vins, existing_lots = load_existing()
+    checkpoints = CheckpointManager(existing)
+
+    if RUN_MODE == "github":
+        all_frames = run_github_mode(checkpoints)
+    else:
+        all_frames = run_local_mode(existing, existing_vins, existing_lots, checkpoints)
 
     combined, actual_new = merge_preview(existing, all_frames)
 
@@ -1127,9 +1171,9 @@ def main() -> None:
             priced = (to_int_price_series(grp["price"]) > 0).sum()
             print(f"Incoming {src}: {len(grp):,} rows, {priced:,} priced")
 
-    if with_price < MIN_PRICED_ROWS_TO_WRITE:
-        print(f"Too few priced rows found ({with_price} < {MIN_PRICED_ROWS_TO_WRITE}); refusing to overwrite outputs.")
-        print(f"Inspect files in {DEBUG_DIR}/ to diagnose AutoBidCar.")
+    if RUN_MODE == "local" and with_price < MIN_PRICED_ROWS_TO_WRITE_LOCAL:
+        print(f"Too few priced rows found ({with_price} < {MIN_PRICED_ROWS_TO_WRITE_LOCAL}); refusing to overwrite outputs.")
+        print(f"Inspect {DEBUG_DIR}/ to diagnose AutoBidCar.")
         checkpoints.maybe_checkpoint(force=True)
         elapsed = int(time.time() - t0)
         print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
@@ -1143,18 +1187,12 @@ def main() -> None:
         print("=" * 68)
         return
 
-    if actual_new < TARGET_NEW_MIN:
-        print(f"Warning: target minimum not reached. Added {actual_new:,}, target min is {TARGET_NEW_MIN:,}.")
-    elif actual_new > TARGET_NEW_MAX:
-        print(f"Warning: final deduped additions exceed target max ({actual_new:,} > {TARGET_NEW_MAX:,}).")
-
     write_outputs(combined)
     checkpoints.maybe_checkpoint(force=True)
 
     elapsed = int(time.time() - t0)
     print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 68)
-    print(f"\nInspect {DEBUG_DIR}/ if AutoBidCar still produced 0 rows.")
 
 
 if __name__ == "__main__":
