@@ -56,12 +56,13 @@ jobs:
         run: |
           python harvest_history.py
 
-      - name: Upload checkpoints artifact
+      - name: Upload harvest artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: harvest-checkpoints
+          name: harvest-debug
           path: |
+            debug/
             checkpoints/
             cars.csv
             master.csv
@@ -75,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add cars.csv master.csv rotation_state.json checkpoints/
+          git add cars.csv master.csv rotation_state.json checkpoints/ debug/
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
