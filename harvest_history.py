@@ -1,16 +1,17 @@
 """
 Copart Historical Sales Harvester
 =================================
-Optimized version with:
+Fast batch version designed to finish reliably in GitHub Actions.
 
-- Rebrowser daily Copart parquet ingestion
-- LOT-first price lookup
-- VIN fallback lookup
-- Caches for lot/VIN URLs and prices
-- Minimum model year = 2000
-- Skip only lots/VINs that already HAVE a price
-- Concurrent detail-page scraping
-- Better lot URL resolution
+What this version changes:
+- MIN_YEAR lowered to 2000
+- Hard runtime limit
+- Smaller lookup batches
+- LOT-first pricing
+- VIN fallback pricing
+- Skips only lots/VINs that already HAVE a price
+- Removes search-engine fallback that caused huge slowdowns
+- Keeps caches so each run gets smarter over time
 
 INSTALL
 -------
@@ -29,7 +30,6 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote_plus
 
 import pandas as pd
 import requests
@@ -51,13 +51,16 @@ MASTER_CSV       = "master.csv"
 
 RESUME_FROM_MASTER = True
 
+# Fast-safe settings for GitHub Actions
 API_DELAY        = 0.6
-LOT_DELAY        = 0.2
-SCRAPE_TIMEOUT   = 20
-SCRAPE_WORKERS   = 10
+LOT_DELAY        = 0.1
+SCRAPE_TIMEOUT   = 12
+SCRAPE_WORKERS   = 6
 
-MAX_LOT_LOOKUPS  = 3000
-MAX_VIN_LOOKUPS  = 1200
+MAX_LOT_LOOKUPS  = 200
+MAX_VIN_LOOKUPS  = 200
+
+MAX_RUN_SECONDS  = 45 * 60
 
 VIN_URL_CACHE_FILE   = "vin_url_cache.json"
 PRICE_CACHE_FILE     = "price_cache.json"
@@ -96,15 +99,15 @@ def build_session() -> requests.Session:
     })
 
     retry = Retry(
-        total=4,
-        connect=4,
-        read=4,
-        backoff_factor=1.0,
+        total=3,
+        connect=3,
+        read=3,
+        backoff_factor=0.8,
         status_forcelist=(429, 500, 502, 503, 504),
         allowed_methods=frozenset(["GET"]),
         raise_on_status=False,
     )
-    adapter = HTTPAdapter(max_retries=retry, pool_connections=30, pool_maxsize=30)
+    adapter = HTTPAdapter(max_retries=retry, pool_connections=20, pool_maxsize=20)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     return session
@@ -132,7 +135,7 @@ def normalize_whitespace(text: str) -> str:
 
 
 def maybe_sleep(base: float):
-    time.sleep(base + random.uniform(0, 0.15))
+    time.sleep(base + random.uniform(0, 0.1))
 
 
 # ─────────────────────────────────────────────
@@ -152,7 +155,7 @@ def download_rebrowser_lots(days: int, state_filter: str, min_year: int) -> pd.D
         url = REBROWSER_BASE + date + ".parquet"
 
         try:
-            r = session.get(url, timeout=25)
+            r = session.get(url, timeout=20)
             if r.status_code == 404:
                 continue
             if r.status_code != 200:
@@ -178,7 +181,7 @@ def download_rebrowser_lots(days: int, state_filter: str, min_year: int) -> pd.D
         except Exception as e:
             print(f"  [{date}] Error: {e}")
 
-        time.sleep(0.2)
+        time.sleep(0.15)
 
     if not all_frames:
         print("  No data downloaded.")
@@ -422,68 +425,36 @@ def get_autobidcar_lot_search_url(lot: str) -> str:
     return f"https://autobidcar.com/en/search-result?search={lot}"
 
 
-def _extract_candidate_links_from_html(html: str, base_hint: str) -> list[str]:
-    soup = BeautifulSoup(html, "html.parser")
-    out = []
-
-    for a in soup.find_all("a", href=True):
-        href = a["href"].strip()
-        if not href:
-            continue
-
-        if href.startswith("/"):
-            if "carsbidshistory.com" in base_hint:
-                href = "https://carsbidshistory.com" + href
-            elif "autobidcar.com" in base_hint:
-                href = "https://autobidcar.com" + href
-
-        if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
-            out.append(href)
-        elif "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
-            out.append(href)
-
-    return list(dict.fromkeys(out))
-
-
 def _find_candidate_detail_url_from_search_page(search_url: str, session: requests.Session) -> str | None:
     try:
         r = session.get(search_url, timeout=SCRAPE_TIMEOUT)
         if r.status_code != 200:
             return None
 
-        links = _extract_candidate_links_from_html(r.text, search_url)
-        if links:
-            return links[0]
-    except Exception:
-        return None
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    return None
-
-
-def _find_candidate_detail_url_via_search_engine(lot: str, session: requests.Session) -> str | None:
-    queries = [
-        f'site:carsbidshistory.com "{lot}"',
-        f'site:autobidcar.com "{lot}"',
-    ]
-
-    for q in queries:
-        url = f"https://html.duckduckgo.com/html/?q={quote_plus(q)}"
-        try:
-            r = session.get(url, timeout=SCRAPE_TIMEOUT)
-            if r.status_code != 200:
+        candidates = []
+        for a in soup.find_all("a", href=True):
+            href = a["href"].strip()
+            if not href:
                 continue
 
-            soup = BeautifulSoup(r.text, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"].strip()
-                if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
-                    return href
-                if "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
-                    return href
-        except Exception:
-            continue
+            if href.startswith("/"):
+                if "carsbidshistory.com" in search_url:
+                    href = "https://carsbidshistory.com" + href
+                elif "autobidcar.com" in search_url:
+                    href = "https://autobidcar.com" + href
 
-    return None
+            if "carsbidshistory.com" in href and re.search(r"/make/\d+-[^/]+/\d+-[^/]+/(19|20)\d{2}_", href):
+                candidates.append(href)
+            elif "autobidcar.com" in href and (re.search(r"/car/", href) or re.search(r"/details/", href)):
+                candidates.append(href)
+
+        candidates = list(dict.fromkeys(candidates))
+        return candidates[0] if candidates else None
+
+    except Exception:
+        return None
 
 
 def scrape_price_by_lot(lot: str, session: requests.Session, lot_url_cache: dict, lot_price_cache: dict) -> tuple[int | None, str | None]:
@@ -503,9 +474,6 @@ def scrape_price_by_lot(lot: str, session: requests.Session, lot_url_cache: dict
 
     if not page_url:
         page_url = _find_candidate_detail_url_from_search_page(get_autobidcar_lot_search_url(lot), session)
-
-    if not page_url:
-        page_url = _find_candidate_detail_url_via_search_engine(lot, session)
 
     lot_url_cache[lot] = page_url or ""
 
@@ -575,7 +543,7 @@ def _lookup_price_for_vin(vin: str, car_url: str, price_cache: dict) -> tuple[st
 # ─────────────────────────────────────────────
 # ENRICH WITH PRICES
 # ─────────────────────────────────────────────
-def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set) -> pd.DataFrame:
+def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set, run_start: float) -> pd.DataFrame:
     print(f"\n{'='*60}")
     print("  STEP 3: Price lookup by LOT first, VIN second")
     print(f"{'='*60}")
@@ -589,7 +557,7 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
 
     try:
         session.get("https://autobidcar.com/", timeout=10)
-        time.sleep(1.0)
+        time.sleep(0.8)
     except Exception:
         pass
 
@@ -637,6 +605,10 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
     lot_price_pending = {}
 
     for idx, lot in enumerate(lot_candidates, start=1):
+        if time.time() - run_start > MAX_RUN_SECONDS:
+            print("  Runtime limit reached during lot lookup, stopping early.")
+            break
+
         price, url = scrape_price_by_lot(lot, session, lot_url_cache, lot_price_cache)
 
         if url:
@@ -646,12 +618,12 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
         elif url:
             lot_price_pending[lot] = url
 
-        if idx % 100 == 0 or idx == len(lot_candidates):
+        if idx % 50 == 0 or idx == len(lot_candidates):
             print(f"  Lot lookup progress: {idx}/{len(lot_candidates)} — prices found: {len(lot_to_price)}")
 
         maybe_sleep(LOT_DELAY)
 
-    if lot_price_pending:
+    if lot_price_pending and (time.time() - run_start <= MAX_RUN_SECONDS):
         with ThreadPoolExecutor(max_workers=SCRAPE_WORKERS) as ex:
             futures = [
                 ex.submit(_lookup_price_for_lot, lot, url, lot_price_cache)
@@ -659,11 +631,15 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
             ]
             done = 0
             for fut in as_completed(futures):
+                if time.time() - run_start > MAX_RUN_SECONDS:
+                    print("  Runtime limit reached during lot detail scraping, stopping early.")
+                    break
+
                 lot, price = fut.result()
                 done += 1
                 if price:
                     lot_to_price[lot] = price
-                if done % 100 == 0 or done == len(futures):
+                if done % 50 == 0 or done == len(futures):
                     print(f"  Lot detail scrape progress: {done}/{len(futures)} — prices found: {len(lot_to_price)}")
 
     print(f"\n  Lot-based prices found: {len(lot_to_price)} / {len(lot_candidates)}")
@@ -688,17 +664,21 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
 
     vin_to_url = {}
     for idx, vin in enumerate(vin_candidates, start=1):
+        if time.time() - run_start > MAX_RUN_SECONDS:
+            print("  Runtime limit reached during VIN lookup, stopping early.")
+            break
+
         url = get_autobidcar_url(vin, session, vin_url_cache)
         if url:
             vin_to_url[vin] = url
 
-        if idx % 100 == 0 or idx == len(vin_candidates):
+        if idx % 50 == 0 or idx == len(vin_candidates):
             print(f"  VIN lookup progress: {idx}/{len(vin_candidates)} — URLs found: {len(vin_to_url)}")
 
         maybe_sleep(API_DELAY)
 
     vin_to_price = {}
-    if vin_to_url:
+    if vin_to_url and (time.time() - run_start <= MAX_RUN_SECONDS):
         with ThreadPoolExecutor(max_workers=SCRAPE_WORKERS) as ex:
             futures = [
                 ex.submit(_lookup_price_for_vin, vin, url, price_cache)
@@ -706,11 +686,15 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
             ]
             done = 0
             for fut in as_completed(futures):
+                if time.time() - run_start > MAX_RUN_SECONDS:
+                    print("  Runtime limit reached during VIN detail scraping, stopping early.")
+                    break
+
                 vin, price = fut.result()
                 done += 1
                 if price:
                     vin_to_price[vin] = price
-                if done % 100 == 0 or done == len(futures):
+                if done % 50 == 0 or done == len(futures):
                     print(f"  VIN detail scrape progress: {done}/{len(futures)} — prices found: {len(vin_to_price)}")
 
     print(f"\n  VIN-based prices found: {len(vin_to_price)} / {len(vin_to_url)}")
@@ -848,7 +832,8 @@ def write_csvs(new_df: pd.DataFrame):
 # MAIN
 # ─────────────────────────────────────────────
 def main():
-    t0 = time.time()
+    run_start = time.time()
+
     print("=" * 60)
     print("  Copart Historical Sales Harvester")
     print(f"  Date         : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
@@ -859,6 +844,7 @@ def main():
     print(f"  Max lots     : {MAX_LOT_LOOKUPS}")
     print(f"  Max VINs     : {MAX_VIN_LOOKUPS}")
     print(f"  Workers      : {SCRAPE_WORKERS}")
+    print(f"  Max runtime  : {MAX_RUN_SECONDS // 60} min")
     print("=" * 60)
 
     lots_df = download_rebrowser_lots(DAYS_TO_FETCH, STATE_FILTER, MIN_YEAR)
@@ -871,7 +857,7 @@ def main():
 
     existing_vins, existing_lots = load_existing_keys()
 
-    lots_df = enrich_with_prices(lots_df, existing_vins, existing_lots)
+    lots_df = enrich_with_prices(lots_df, existing_vins, existing_lots, run_start)
 
     print(f"\n  Normalizing columns...")
     norm_df = normalize_to_cars_csv(lots_df)
@@ -879,7 +865,7 @@ def main():
 
     write_csvs(norm_df)
 
-    elapsed = int(time.time() - t0)
+    elapsed = int(time.time() - run_start)
     print(f"\n  Total time: {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 60)
     print("\nDone. Commit cars.csv and master.csv to GitHub.")
