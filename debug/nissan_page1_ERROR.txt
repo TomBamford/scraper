@@ -1,3 +1,4 @@
 FAILED TO FETCH
 URL: https://autobidcar.com/catalog/nissan
 PROXY: none
+RUN_MODE: local
