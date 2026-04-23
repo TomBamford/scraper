@@ -743,10 +743,10 @@ Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     write_outputs(combined, incoming)
 
     elapsed = int(time.time() - t0)
-    print(f"\nDone in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
+    print(f"
+Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 68)
 
 
 if __name__ == "__main__":
     main()
-
