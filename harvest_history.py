@@ -531,7 +531,22 @@ def enrich_with_prices(df: pd.DataFrame, existing_vins: set, existing_lots: set)
             lot_series[
                 lot_series.notna() &
                 (lot_series != "") &
-                (~lot_series.isin(existing_lots))
+               existing_with_price = set()
+
+if os.path.exists(MASTER_CSV):
+    df_old = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
+    df_old["price"] = pd.to_numeric(df_old["price"], errors="coerce").fillna(0)
+    existing_with_price = set(df_old[df_old["price"] > 0]["lot"].astype(str))
+
+lot_candidates = (
+    lot_series[
+        lot_series.notna() &
+        (lot_series != "") &
+        (~lot_series.isin(existing_with_price))
+    ]
+    .drop_duplicates()
+    .tolist()
+)
             ]
             .drop_duplicates()
             .tolist()
