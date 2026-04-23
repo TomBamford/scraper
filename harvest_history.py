@@ -1,12 +1,33 @@
+"""
+Rebrowser → Stat.vin Final Price Harvester  (FAST ASYNC VERSION)
+================================================================
+Hits 2,000–5,000 price lookups per run using:
+
+  1. Rebrowser GitHub  → free daily Copart + IAAI lot parquets (30 days)
+  2. stat.vin          → real final hammer prices via:
+                         https://stat.vin/vin-decoding/{make}/{model}/{vin}
+
+Speed strategy:
+  - All parquet downloads: concurrent (asyncio + aiohttp)
+  - All stat.vin lookups:  concurrent semaphore pool
+  - Default 25 concurrent stat.vin requests  → ~5,000 lookups in ~10 min
+  - Rotating batches via state file so each run gets a fresh slice of unpriced rows
+  - ScraperAPI proxy support if stat.vin blocks direct GH Actions IPs
+
+Install:
+    pip install aiohttp pandas pyarrow beautifulsoup4
+
+Env vars (all optional):
+    SCRAPER_API_KEY         - ScraperAPI key (bypasses blocks, recommended)
+    REBROWSER_DAYS          - days of parquet files to fetch (default 30)
+    STATVIN_CONCURRENCY     - parallel stat.vin requests (default 25)
+    STATVIN_LOOKUPS_PER_RUN - max VINs to price per run (default 3000)
+    SAVE_STATVIN_DEBUG      - set to "1" to save HTML to debug/ folder
+"""
+
 from __future__ import annotations
 
-import asyncio
-import io
-import json
-import os
-import random
-import re
-import time
+import asyncio, io, json, os, random, re, time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -15,58 +36,46 @@ import aiohttp
 import pandas as pd
 from bs4 import BeautifulSoup
 
-"""
-Rebrowser -> Stat.vin Final Price Harvester
-==========================================
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG  (override with env vars)
+# ─────────────────────────────────────────────────────────────────────────────
+OUTPUT_CSV   = "cars.csv"
+MASTER_CSV   = "master.csv"
+STATE_FILE   = "statvin_state.json"        # tracks which VINs we've already tried
+DEBUG_DIR    = "debug"
 
-Pipeline:
-1. Download recent Rebrowser Copart and IAAI parquet snapshots.
-2. Normalize and combine them.
-3. Try to resolve final prices from direct Stat.vin pages only.
-4. Always write snapshot CSVs for the current run.
-5. Write master.csv and cars.csv when possible.
+MIN_YEAR     = 2012
+MIN_PRICE    = 200
 
-Notes:
-- This version avoids Stat.vin search endpoints because they are commonly blocked.
-- It uses direct pages only:
-    https://stat.vin/cars/<VIN>
-    https://stat.vin/en/copart/<LOT>
-    https://stat.vin/en/iaai/<LOT>
-- It is written to be GitHub Actions safe from a syntax perspective:
-  no multiline f-strings, no fragile string formatting.
-"""
+REBROWSER_DAYS        = int(os.environ.get("REBROWSER_DAYS", "30"))
+REBROWSER_CONCURRENCY = int(os.environ.get("REBROWSER_CONCURRENCY", "15"))
+PARQUET_TIMEOUT       = int(os.environ.get("PARQUET_TIMEOUT", "25"))
 
-OUTPUT_CSV = "cars.csv"
-MASTER_CSV = "master.csv"
-INCOMING_CSV = "incoming_latest.csv"
-UNRESOLVED_CSV = "statvin_unresolved.csv"
-DEBUG_DIR = "debug"
-LOOKUP_BATCH_STATE_FILE = os.environ.get("LOOKUP_BATCH_STATE_FILE", "statvin_lookup_state.json")
+STATVIN_CONCURRENCY     = int(os.environ.get("STATVIN_CONCURRENCY", "25"))
+STATVIN_LOOKUPS_PER_RUN = int(os.environ.get("STATVIN_LOOKUPS_PER_RUN", "3000"))
+STATVIN_TIMEOUT         = int(os.environ.get("STATVIN_TIMEOUT", "18"))
+STATVIN_DELAY_MIN       = float(os.environ.get("STATVIN_DELAY_MIN", "0.15"))
+STATVIN_DELAY_MAX       = float(os.environ.get("STATVIN_DELAY_MAX", "0.55"))
+RETRIES                 = int(os.environ.get("RETRIES", "3"))
 
-MIN_YEAR = 2012
-MIN_PRICE = 200
-REBROWSER_DAYS = int(os.environ.get("REBROWSER_DAYS", "30"))
-REBROWSER_CONCURRENCY = int(os.environ.get("REBROWSER_CONCURRENCY", "10"))
-STATVIN_CONCURRENCY = int(os.environ.get("STATVIN_CONCURRENCY", "2"))
-STATVIN_LOOKUPS_PER_RUN = int(os.environ.get("STATVIN_LOOKUPS_PER_RUN", "500"))
-STATVIN_TIMEOUT = int(os.environ.get("STATVIN_TIMEOUT", "20"))
-PARQUET_TIMEOUT = int(os.environ.get("PARQUET_TIMEOUT", "20"))
-RETRIES = int(os.environ.get("RETRIES", "3"))
-MIN_PRICED_ROWS_TO_WRITE = int(os.environ.get("MIN_PRICED_ROWS_TO_WRITE", "100"))
-SAVE_STATVIN_DEBUG = os.environ.get("SAVE_STATVIN_DEBUG", "0").strip() == "1"
+SAVE_DEBUG = os.environ.get("SAVE_STATVIN_DEBUG", "0").strip() == "1"
 
+# ScraperAPI proxy — routes requests through rotating residential IPs
+# Highly recommended for GitHub Actions since stat.vin blocks datacenter IPs
+SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "").strip()
+# Build proxy URL if key is set
 SCRAPER_PROXY = (
-    os.environ.get("SCRAPER_PROXY")
-    or os.environ.get("HTTPS_PROXY")
-    or os.environ.get("HTTP_PROXY")
-    or ""
-).strip()
+    f"http://scraperapi:{SCRAPER_API_KEY}@proxy-server.scraperapi.com:8001"
+    if SCRAPER_API_KEY else
+    (os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or "").strip()
+)
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
 ]
 
 STANDARD_COLS = [
@@ -77,654 +86,615 @@ STANDARD_COLS = [
 
 REBROWSER_SOURCES = {
     "Rebrowser-Copart": {
-        "url": "https://raw.githubusercontent.com/rebrowser/copart-dataset/main/auction-listings/data/",
+        "url":  "https://raw.githubusercontent.com/rebrowser/copart-dataset/main/auction-listings/data/",
         "cols": {
-            "year": "year",
-            "make": "make",
-            "model": "modelGroup",
-            "trim": "trim",
-            "type": "saleTitleType",
-            "damage": "damageDescription",
-            "odometer": "mileage",
-            "lot": "lotId",
-            "vin": "vin",
-            "date": "saleDate",
-            "location": "yardName",
-            "state": "locationState",
-            "url": "listingUrl",
+            "year": "year", "make": "make", "model": "modelGroup",
+            "trim": "trim", "type": "saleTitleType", "damage": "damageDescription",
+            "odometer": "mileage", "lot": "lotId", "vin": "vin",
+            "date": "saleDate", "location": "yardName",
+            "state": "locationState", "url": "listingUrl",
         },
         "auction": "COPART",
     },
     "Rebrowser-IAAI": {
-        "url": "https://raw.githubusercontent.com/rebrowser/iaai-dataset/main/auction-listings/data/",
+        "url":  "https://raw.githubusercontent.com/rebrowser/iaai-dataset/main/auction-listings/data/",
         "cols": {
-            "year": "year",
-            "make": "make",
-            "model": "model",
-            "trim": "trim",
-            "type": "titleCode",
-            "damage": "damageDescription",
-            "odometer": "mileage",
-            "lot": "stockNumber",
-            "vin": "vin",
-            "date": "saleDate",
-            "location": "branchName",
-            "state": "branchState",
-            "url": "listingUrl",
+            "year": "year", "make": "make", "model": "model",
+            "trim": "trim", "type": "titleCode", "damage": "damageDescription",
+            "odometer": "mileage", "lot": "stockNumber", "vin": "vin",
+            "date": "saleDate", "location": "branchName",
+            "state": "branchState", "url": "listingUrl",
         },
         "auction": "IAAI",
     },
 }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
 def log(msg: str) -> None:
-    print("  " + msg)
-
-
-def ensure_dir(path: str | Path) -> None:
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-
-def save_json(path: str | Path, data: Dict[str, Any]) -> None:
-    Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-
-def load_json(path: str | Path) -> Dict[str, Any]:
-    p = Path(path)
-    if not p.exists():
-        return {}
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def save_debug_html(name: str, html: str) -> None:
-    ensure_dir(DEBUG_DIR)
-    Path(DEBUG_DIR, name + ".html").write_text(html[:500000], encoding="utf-8", errors="ignore")
-
+    print("  " + msg, flush=True)
 
 def rh() -> Dict[str, str]:
     return {
         "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
+        "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
     }
 
-
 def clean_price(val: Any) -> int:
-    if pd.isna(val):
-        return 0
+    if pd.isna(val): return 0
     s = str(val).replace("$", "").replace(",", "").strip()
     m = re.search(r"(\d+(?:\.\d+)?)", s)
     p = int(float(m.group(1))) if m else 0
     return p if p >= MIN_PRICE else 0
 
-
 def clean_year(val: Any) -> int:
-    try:
-        return int(float(str(val).strip()))
-    except Exception:
-        return 0
-
+    try: return int(float(str(val).strip()))
+    except: return 0
 
 def clean_odo(val: Any) -> str:
-    if pd.isna(val) or not str(val).strip():
-        return ""
+    if pd.isna(val) or not str(val).strip(): return ""
     s = str(val).replace(",", "").strip()
     m = re.search(r"([\d.]+)", s)
-    if not m:
-        return ""
+    if not m: return ""
     unit = "km" if "km" in s.lower() else "mi"
-    return str(int(float(m.group(1)))) + " " + unit
-
+    return f"{int(float(m.group(1)))} {unit}"
 
 def cap(s: Any) -> str:
-    if not s or str(s).strip() in ("", "nan", "None", "[PREMIUM]", "N/A"):
-        return ""
+    if not s or str(s).strip() in ("", "nan", "None", "[PREMIUM]", "N/A"): return ""
     return str(s).strip().title()
 
-
 def norm_date(val: Any) -> str:
-    if not val:
-        return ""
+    if not val: return ""
     s = str(val).strip()
-
     m = re.search(r"(\d{4}-\d{2}-\d{2})", s)
-    if m:
-        return m.group(1)
-
+    if m: return m.group(1)
     m = re.search(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", s)
-    if m:
-        return m.group(3) + "-" + m.group(1).zfill(2) + "-" + m.group(2).zfill(2)
-
-    for fmt in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%a %d %b %Y"):
-        try:
-            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
-        except Exception:
-            pass
-
+    if m: return f"{m.group(3)}-{m.group(1).zfill(2)}-{m.group(2).zfill(2)}"
+    for fmt in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y"):
+        try: return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except: pass
     return ""
 
+def slugify(s: str) -> str:
+    """Convert 'Mercedes-Benz' → 'mercedes-benz', 'RAV 4' → 'rav-4'"""
+    s = s.lower().strip()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    return s.strip("-")
 
-def ensure_standard_cols(df: pd.DataFrame) -> pd.DataFrame:
-    for col in STANDARD_COLS:
-        if col not in df.columns:
-            df[col] = ""
+def ensure_cols(df: pd.DataFrame) -> pd.DataFrame:
+    for c in STANDARD_COLS:
+        if c not in df.columns:
+            df[c] = ""
     return df[STANDARD_COLS]
 
-
-def to_int_price_series(series: pd.Series) -> pd.Series:
+def num_price(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors="coerce").fillna(0).astype(int)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# STATE FILE  — tracks already-attempted VINs so we don't retry them
+# ─────────────────────────────────────────────────────────────────────────────
 
-def normalize_record(rec: Dict[str, Any]) -> Dict[str, Any]:
-    out = {c: rec.get(c, "") for c in STANDARD_COLS}
-    out["year"] = clean_year(out.get("year", 0))
-    out["make"] = cap(out.get("make", ""))
-    out["model"] = cap(out.get("model", ""))
-    out["trim"] = cap(out.get("trim", ""))
-    out["type"] = cap(out.get("type", ""))
-    out["damage"] = cap(out.get("damage", ""))
-    out["price"] = clean_price(out.get("price", 0))
-    out["odometer"] = clean_odo(out.get("odometer", ""))
-    out["lot"] = str(out.get("lot", "")).strip()
-    out["vin"] = str(out.get("vin", "")).strip().upper()
-    out["date"] = norm_date(out.get("date", ""))
-    out["location"] = cap(out.get("location", ""))
-    out["state"] = str(out.get("state", "")).strip().upper()
-    out["source"] = str(out.get("source", "")).strip()
-    out["auction"] = str(out.get("auction", "")).strip().upper()
-    out["url"] = str(out.get("url", "")).strip()
-    return out
+def load_state() -> Dict[str, Any]:
+    p = Path(STATE_FILE)
+    if p.exists():
+        try: return json.loads(p.read_text())
+        except: pass
+    return {"attempted_vins": [], "next_idx": 0}
 
+def save_state(state: Dict[str, Any]) -> None:
+    Path(STATE_FILE).write_text(json.dumps(state, indent=2))
 
-def normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return ensure_standard_cols(df)
+# ─────────────────────────────────────────────────────────────────────────────
+# ASYNC HTTP helpers
+# ─────────────────────────────────────────────────────────────────────────────
 
-    out = ensure_standard_cols(df.copy())
-    out["year"] = out["year"].apply(clean_year)
-    out["make"] = out["make"].apply(cap)
-    out["model"] = out["model"].apply(cap)
-    out["trim"] = out["trim"].apply(cap)
-    out["type"] = out["type"].apply(cap)
-    out["damage"] = out["damage"].apply(cap)
-    out["price"] = out["price"].apply(clean_price)
-    out["odometer"] = out["odometer"].apply(clean_odo)
-    out["lot"] = out["lot"].astype(str).str.strip()
-    out["vin"] = out["vin"].astype(str).str.strip().str.upper()
-    out["date"] = out["date"].apply(norm_date)
-    out["location"] = out["location"].apply(cap)
-    out["state"] = out["state"].astype(str).str.strip().str.upper()
-    out["source"] = out["source"].astype(str).str.strip()
-    out["auction"] = out["auction"].astype(str).str.strip().str.upper()
-    out["url"] = out["url"].astype(str).str.strip()
-    return out
+BLOCKED_SIGNALS = [
+    "captcha", "access denied", "cloudflare", "verify you are human",
+    "checking your browser", "/cdn-cgi/", "attention required",
+    "error 403", "error 429",
+]
 
-
-def rotated_slice(items: List[int], state_file: str, batch_size: int) -> List[int]:
-    if not items:
-        return []
-    state = load_json(state_file)
-    raw_idx = state.get("next_index", 0)
-    idx = int(raw_idx) if str(raw_idx).isdigit() else 0
-    idx = idx % len(items)
-    out = items[idx:idx + batch_size]
-    if len(out) < batch_size:
-        out += items[: max(0, batch_size - len(out))]
-    next_idx = (idx + batch_size) % len(items)
-    save_json(state_file, {"next_index": next_idx, "updated_at": datetime.now(timezone.utc).isoformat()})
-    return out
-
-
-async def fetch_text(
+async def fetch_bytes_async(
     session: aiohttp.ClientSession,
     url: str,
-    timeout: int,
-    retries: int = RETRIES,
-) -> Optional[str]:
-    for attempt in range(retries):
-        try:
-            await asyncio.sleep(random.uniform(0.3, 1.0))
-            async with session.get(
-                url,
-                headers=rh(),
-                proxy=SCRAPER_PROXY or None,
-                timeout=aiohttp.ClientTimeout(total=timeout),
-                allow_redirects=True,
-                ssl=False,
-            ) as resp:
-                text = await resp.text(errors="ignore")
-                if resp.status == 200:
-                    low = text.lower()
-                    blocked_signals = [
-                        "captcha",
-                        "access denied",
-                        "forbidden",
-                        "cloudflare",
-                        "attention required",
-                        "/cdn-cgi/",
-                        "verify you are human",
-                        "checking your browser",
-                    ]
-                    if any(sig in low for sig in blocked_signals):
-                        print("[BLOCKED] " + url)
-                        return None
-                    return text
-                if resp.status in (403, 429):
-                    print("[HTTP " + str(resp.status) + "] " + url)
-                    await asyncio.sleep(1.2 * (attempt + 1))
-                    continue
-                print("[HTTP " + str(resp.status) + "] " + url)
-                return None
-        except Exception as e:
-            if attempt == retries - 1:
-                print("[ERROR] " + url + " -> " + str(e))
-                return None
-            await asyncio.sleep(0.8 * (attempt + 1))
-    return None
-
-
-async def fetch_bytes(
-    session: aiohttp.ClientSession,
-    url: str,
-    timeout: int,
     sem: asyncio.Semaphore,
-    retries: int = RETRIES,
+    timeout: int = 20,
 ) -> Optional[bytes]:
+    """Fetch binary (for parquet files)."""
     async with sem:
-        for attempt in range(retries):
+        for attempt in range(RETRIES):
             try:
                 async with session.get(
-                    url,
-                    headers=rh(),
-                    proxy=SCRAPER_PROXY or None,
+                    url, headers=rh(),
                     timeout=aiohttp.ClientTimeout(total=timeout),
-                ) as resp:
-                    if resp.status == 200:
-                        return await resp.read()
-                    if resp.status in (403, 429):
-                        await asyncio.sleep(1.2 * (attempt + 1))
+                    ssl=False,
+                ) as r:
+                    if r.status == 200:
+                        return await r.read()
+                    if r.status in (403, 404, 429):
+                        if attempt < RETRIES - 1:
+                            await asyncio.sleep(1.0 * (attempt + 1))
+                        return None
+            except Exception:
+                if attempt < RETRIES - 1:
+                    await asyncio.sleep(0.8 * (attempt + 1))
+    return None
+
+async def fetch_html_async(
+    session: aiohttp.ClientSession,
+    url: str,
+    sem: asyncio.Semaphore,
+    timeout: int = 18,
+) -> Optional[str]:
+    """Fetch HTML page (for stat.vin). Returns None if blocked."""
+    async with sem:
+        await asyncio.sleep(random.uniform(STATVIN_DELAY_MIN, STATVIN_DELAY_MAX))
+        for attempt in range(RETRIES):
+            try:
+                kw: Dict[str, Any] = dict(
+                    headers=rh(),
+                    timeout=aiohttp.ClientTimeout(total=timeout),
+                    allow_redirects=True,
+                    ssl=False,
+                )
+                if SCRAPER_PROXY:
+                    kw["proxy"] = SCRAPER_PROXY
+                async with session.get(url, **kw) as r:
+                    if r.status == 404:
+                        return None   # VIN not in database
+                    text = await r.text(errors="ignore")
+                    if r.status == 200:
+                        low = text.lower()
+                        if any(sig in low for sig in BLOCKED_SIGNALS):
+                            return None
+                        return text
+                    if r.status in (403, 429):
+                        wait = 2.0 * (attempt + 1)
+                        await asyncio.sleep(wait)
                         continue
                     return None
+            except asyncio.TimeoutError:
+                if attempt < RETRIES - 1:
+                    await asyncio.sleep(1.0)
             except Exception:
-                if attempt == retries - 1:
-                    return None
-                await asyncio.sleep(0.7 * (attempt + 1))
+                if attempt < RETRIES - 1:
+                    await asyncio.sleep(0.8 * (attempt + 1))
     return None
 
 
-async def fetch_rebrowser_async(name: str, cfg: Dict[str, Any]) -> pd.DataFrame:
-    print("Fetching " + name + " (" + str(REBROWSER_DAYS) + " days)...")
+# ─────────────────────────────────────────────────────────────────────────────
+# REBROWSER FETCHER
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def fetch_rebrowser(name: str, cfg: Dict[str, Any]) -> pd.DataFrame:
+    print(f"\n  Fetching {name} ({REBROWSER_DAYS} days, {REBROWSER_CONCURRENCY} concurrent)...")
 
     today = datetime.now(timezone.utc)
-    date_strs = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(REBROWSER_DAYS)]
-    urls = [cfg["url"] + ds + ".parquet" for ds in date_strs]
+    urls = [
+        cfg["url"] + (today - timedelta(days=i)).strftime("%Y-%m-%d") + ".parquet"
+        for i in range(REBROWSER_DAYS)
+    ]
 
     sem = asyncio.Semaphore(REBROWSER_CONCURRENCY)
-    connector = aiohttp.TCPConnector(limit=max(REBROWSER_CONCURRENCY * 2, 20), ttl_dns_cache=300)
-
-    async with aiohttp.ClientSession(connector=connector, trust_env=True) as session:
+    connector = aiohttp.TCPConnector(limit=REBROWSER_CONCURRENCY * 2, ttl_dns_cache=300)
+    async with aiohttp.ClientSession(connector=connector) as session:
         blobs = await asyncio.gather(*[
-            fetch_bytes(session, url, timeout=PARQUET_TIMEOUT, sem=sem, retries=RETRIES)
+            fetch_bytes_async(session, url, sem, timeout=PARQUET_TIMEOUT)
             for url in urls
         ])
 
-    frames: List[pd.DataFrame] = []
+    frames = []
     for blob in blobs:
-        if not blob:
-            continue
-        try:
-            frames.append(pd.read_parquet(io.BytesIO(blob)))
-        except Exception:
-            continue
+        if blob:
+            try: frames.append(pd.read_parquet(io.BytesIO(blob)))
+            except: pass
 
     if not frames:
+        log(f"No data for {name}")
         return pd.DataFrame(columns=STANDARD_COLS)
 
     raw = pd.concat(frames, ignore_index=True)
     out = pd.DataFrame()
-
     for std, src in cfg["cols"].items():
         out[std] = raw[src].astype(str) if src in raw.columns else ""
 
-    out["year"] = out["year"].apply(clean_year)
-    out["make"] = out["make"].apply(cap)
-    out["model"] = out["model"].apply(cap)
-    out["trim"] = out["trim"].apply(cap)
-    out["type"] = out["type"].apply(cap)
-    out["damage"] = out["damage"].apply(cap)
+    out["year"]     = out["year"].apply(clean_year)
+    out["make"]     = out["make"].apply(cap)
+    out["model"]    = out["model"].apply(cap)
+    out["trim"]     = out["trim"].apply(cap)
+    out["type"]     = out["type"].apply(cap)
+    out["damage"]   = out["damage"].apply(cap)
     out["odometer"] = out["odometer"].apply(clean_odo)
-    out["price"] = 0
-    out["lot"] = out["lot"].astype(str).str.strip()
-    out["vin"] = out["vin"].apply(lambda v: "" if str(v).strip() in ("[PREMIUM]", "nan", "None") else str(v).strip().upper())
-    out["date"] = out["date"].apply(norm_date)
+    out["price"]    = 0
+    out["lot"]      = out["lot"].astype(str).str.strip()
+    out["vin"]      = out["vin"].apply(
+        lambda v: "" if str(v).strip() in ("[PREMIUM]", "nan", "None") else str(v).strip().upper()
+    )
+    out["date"]     = out["date"].apply(norm_date)
     out["location"] = out["location"].apply(cap)
-    out["state"] = out["state"].astype(str).str.strip().str.upper()
-    out["url"] = out["url"].apply(lambda v: "" if str(v).strip() == "[PREMIUM]" else str(v).strip())
-    out["auction"] = cfg["auction"]
-    out["source"] = name
+    out["state"]    = out["state"].astype(str).str.strip().str.upper()
+    out["url"]      = out["url"].apply(
+        lambda v: "" if str(v).strip() == "[PREMIUM]" else str(v).strip()
+    )
+    out["auction"]  = cfg["auction"]
+    out["source"]   = name
 
     out = out[(out["year"] >= MIN_YEAR) & out["make"].ne("") & out["model"].ne("")]
-    out = ensure_standard_cols(out)
-    print(name + ": " + format(len(out), ",") + " rows")
+    out = ensure_cols(out)
+    log(f"{name}: {len(out):,} rows from {len(frames)} files")
     return out
 
 
-class StatVinClient:
-    def __init__(self, session: aiohttp.ClientSession, sem: asyncio.Semaphore) -> None:
-        self.session = session
-        self.sem = sem
+# ─────────────────────────────────────────────────────────────────────────────
+# STAT.VIN PRICE EXTRACTOR
+# ─────────────────────────────────────────────────────────────────────────────
 
-    def _make_slug_from_vin_page_hint(self, vin: str) -> str:
-        return ""
+PRICE_PATTERNS = [
+    r"Final\s*Bid\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"Sale\s*Price\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"Sold\s*[Ff]or\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"Winning\s*Bid\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"Last\s*Bid\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"Purchase\s*Price\s*[:\-]?\s*\$?\s*([\d,]+)",
+    r"\$\s*([\d,]{3,})",            # fallback: any $X,XXX amount
+]
 
-    async def lookup_price(self, vin: str, lot: str, auction: str, make_slug: str = "", model_slug: str = "") -> Tuple[int, str]:
-        vin = (vin or "").strip().upper()
-        lot = str(lot or "").strip()
-        auction = (auction or "").strip().upper()
-        make_slug = (make_slug or "").strip().lower()
-        model_slug = (model_slug or "").strip().lower()
+def extract_price(html: str) -> int:
+    """Extract the final hammer price from a stat.vin page."""
+    soup  = BeautifulSoup(html, "html.parser")
+    text  = soup.get_text("\n", strip=True)
 
-        urls: List[str] = []
-        if vin and len(vin) == 17:
-            if make_slug and model_slug:
-                urls.append("https://stat.vin/vin-decoding/" + make_slug + "/" + model_slug + "/" + vin)
-            if make_slug:
-                urls.append("https://stat.vin/vin-decoding/" + make_slug + "/" + vin)
-            urls.append("https://stat.vin/vin-decoding/" + vin)
-        if lot:
-            if auction == "COPART":
-                urls.append("https://stat.vin/en/copart/" + lot)
-            elif auction == "IAAI":
-                urls.append("https://stat.vin/en/iaai/" + lot)
-
-        for idx, url in enumerate(urls):
-            async with self.sem:
-                html = await fetch_text(self.session, url, timeout=STATVIN_TIMEOUT, retries=RETRIES)
-            if not html:
-                continue
-            if SAVE_STATVIN_DEBUG and idx == 0:
-                safe_key = vin or lot or "unknown"
-                save_debug_html("statvin_" + safe_key, html)
-            if not self._page_matches(html, vin, lot, auction):
-                continue
-            price = self._extract_price_from_html(html)
-            if price > 0:
-                return price, url
-
-        return 0, ""
-
-    def _page_matches(self, html: str, vin: str, lot: str, auction: str) -> bool:
-        text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
-        upper = re.sub(r"\s+", " ", text).upper()
-        if vin and vin in upper:
-            return True
-        if lot and lot in upper:
-            return True
-        if auction and auction in upper and "FINAL BID" in upper:
-            return True
-        return False
-
-    def _extract_price_from_html(self, html: str) -> int:
-        text = BeautifulSoup(html, "html.parser").get_text("\n", strip=True)
-        patterns = [
-            r"Final\s*Bid\s*:?\s*\$?\s*([\d,]+)",
-            r"Sale\s*Price\s*:?\s*\$?\s*([\d,]+)",
-            r"Sold\s*for\s*:?\s*\$?\s*([\d,]+)",
-            r"Winning\s*Bid\s*:?\s*\$?\s*([\d,]+)",
-            r"Amount\s*:\s*\$?\s*([\d,]+)",
-        ]
-        for pat in patterns:
-            m = re.search(pat, text, flags=re.IGNORECASE)
-            if not m:
-                continue
+    for pat in PRICE_PATTERNS:
+        for m in re.finditer(pat, text, re.IGNORECASE):
             try:
-                value = int(m.group(1).replace(",", ""))
-                if value >= MIN_PRICE:
-                    return value
-            except Exception:
+                val = int(m.group(1).replace(",", ""))
+                if MIN_PRICE <= val <= 500_000:
+                    return val
+            except:
                 pass
-        return 0
+
+    # Also try JSON-LD / structured data embedded in page
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string or "")
+            for key in ("price", "highBid", "finalBid", "soldPrice", "salePrice"):
+                val = data.get(key)
+                if val:
+                    p = int(float(str(val).replace(",", "")))
+                    if p >= MIN_PRICE:
+                        return p
+        except:
+            pass
+
+    # Try __NEXT_DATA__ (Next.js)
+    nd = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
+    if nd:
+        try:
+            data = json.loads(nd.group(1))
+            raw_str = json.dumps(data)
+            for key in ("finalBid", "soldPrice", "highBid", "salePrice", "price"):
+                m = re.search(rf'"{key}"\s*:\s*"?([\d.]+)"?', raw_str)
+                if m:
+                    p = int(float(m.group(1)))
+                    if p >= MIN_PRICE:
+                        return p
+        except:
+            pass
+
+    return 0
 
 
-async def enrich_from_statvin(df: pd.DataFrame) -> pd.DataFrame:
+def build_statvin_urls(vin: str, make: str, model: str, lot: str, auction: str) -> List[str]:
+    """
+    Build stat.vin URL variants to try for this vehicle.
+    Primary format: https://stat.vin/vin-decoding/{make}/{model}/{vin}
+    """
+    urls = []
+    make_s  = slugify(make)
+    model_s = slugify(model)
+
+    if vin and len(vin) == 17:
+        # Best URL: full make/model/vin path (as shown in screenshot)
+        if make_s and model_s:
+            urls.append(f"https://stat.vin/vin-decoding/{make_s}/{model_s}/{vin}")
+        # Fallback: make only
+        if make_s:
+            urls.append(f"https://stat.vin/vin-decoding/{make_s}/{vin}")
+        # Fallback: VIN only
+        urls.append(f"https://stat.vin/vin-decoding/{vin}")
+
+    # Lot-based URLs (no VIN needed)
+    if lot and lot.strip() not in ("", "nan", "None"):
+        if auction == "COPART":
+            urls.append(f"https://stat.vin/en/copart/{lot}")
+        elif auction == "IAAI":
+            urls.append(f"https://stat.vin/en/iaai/{lot}")
+
+    return urls
+
+
+async def lookup_one(
+    session: aiohttp.ClientSession,
+    sem: asyncio.Semaphore,
+    row: pd.Series,
+) -> Tuple[str, int, str]:
+    """Try stat.vin URLs for one vehicle. Returns (vin, price, source_url)."""
+    vin     = str(row.get("vin",     "")).strip().upper()
+    lot     = str(row.get("lot",     "")).strip()
+    auction = str(row.get("auction", "")).strip().upper()
+    make    = str(row.get("make",    "")).strip()
+    model   = str(row.get("model",   "")).strip()
+
+    urls = build_statvin_urls(vin, make, model, lot, auction)
+
+    for url in urls:
+        html = await fetch_html_async(session, url, sem, timeout=STATVIN_TIMEOUT)
+        if not html:
+            continue
+
+        if SAVE_DEBUG:
+            key = vin or lot or "unknown"
+            Path(DEBUG_DIR).mkdir(exist_ok=True)
+            Path(DEBUG_DIR, f"{key}.html").write_text(html[:300_000], errors="ignore")
+
+        price = extract_price(html)
+        if price > 0:
+            return vin, price, url
+
+    return vin, 0, ""
+
+
+async def enrich_prices(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Main price enrichment — runs STATVIN_LOOKUPS_PER_RUN concurrent lookups.
+    Uses a state file to rotate through unpriced rows across runs.
+    """
     if df.empty:
         return df
 
-    out = ensure_standard_cols(df.copy())
-    out["vin"] = out["vin"].astype(str).str.strip().str.upper()
-    out["lot"] = out["lot"].astype(str).str.strip()
-    out["price"] = to_int_price_series(out["price"])
+    df = df.copy()
+    df["price"] = num_price(df["price"])
 
-    mask = (out["price"] == 0) & ((out["vin"].str.len() == 17) | out["lot"].str.len().ge(5))
-    target_indexes = list(out[mask].index)
-    if not target_indexes:
-        return out
+    # Candidates: unpriced rows with a valid VIN or lot number
+    mask = (
+        (df["price"] == 0) &
+        (
+            (df["vin"].str.len() == 17) |
+            (df["lot"].str.strip().str.len() >= 5)
+        )
+    )
+    candidates = df[mask].copy()
 
-    run_indexes = rotated_slice(target_indexes, LOOKUP_BATCH_STATE_FILE, min(STATVIN_LOOKUPS_PER_RUN, len(target_indexes)))
-    run_targets = out.loc[run_indexes].copy()
+    if candidates.empty:
+        log("No unpriced candidates found.")
+        return df
 
-    log("Stat.vin lookup candidates available: " + format(len(target_indexes), ","))
-    log("Stat.vin lookup batch this run: " + format(len(run_targets), ","))
+    # Load state — skip VINs we've already attempted this cycle
+    state = load_state()
+    attempted = set(state.get("attempted_vins", []))
+    next_idx   = int(state.get("next_idx", 0))
 
-    connector = aiohttp.TCPConnector(limit=max(STATVIN_CONCURRENCY * 2, 20), ttl_dns_cache=300)
+    # Filter out already-attempted
+    fresh = candidates[~candidates["vin"].isin(attempted)]
+    if len(fresh) < STATVIN_LOOKUPS_PER_RUN // 2:
+        # Reset cycle if we've gone through most candidates
+        log("Resetting attempted VINs cache (full cycle complete).")
+        attempted = set()
+        fresh = candidates
+        next_idx = 0
+
+    # Take a rotating batch starting at next_idx
+    fresh_list = fresh.to_dict("records")
+    start = next_idx % max(len(fresh_list), 1)
+    batch_rows = fresh_list[start:start + STATVIN_LOOKUPS_PER_RUN]
+    if len(batch_rows) < STATVIN_LOOKUPS_PER_RUN and start > 0:
+        batch_rows += fresh_list[:max(0, STATVIN_LOOKUPS_PER_RUN - len(batch_rows))]
+
+    batch_df = pd.DataFrame(batch_rows).head(STATVIN_LOOKUPS_PER_RUN)
+
+    log(f"Unpriced candidates : {len(candidates):,}")
+    log(f"Already attempted   : {len(attempted):,}")
+    log(f"This batch          : {len(batch_df):,} lookups")
+    log(f"Concurrency         : {STATVIN_CONCURRENCY}")
+    log(f"Proxy               : {'ScraperAPI' if SCRAPER_API_KEY else ('custom' if SCRAPER_PROXY else 'none')}")
+
+    t_start = time.time()
+
+    # Run concurrent lookups
     sem = asyncio.Semaphore(STATVIN_CONCURRENCY)
+    connector = aiohttp.TCPConnector(
+        limit       = STATVIN_CONCURRENCY * 3,
+        ttl_dns_cache = 300,
+        force_close = False,
+        keepalive_timeout = 30,
+    )
 
-    async with aiohttp.ClientSession(connector=connector, trust_env=True) as session:
-        client = StatVinClient(session=session, sem=sem)
-
-        async def one(idx: int, row: pd.Series) -> Tuple[int, int, str]:
-            vin = str(row.get("vin", "")).strip().upper()
-            lot = str(row.get("lot", "")).strip()
-            auction = str(row.get("auction", "")).strip().upper()
-
-            make = str(row.get("make", "")).strip().lower()
-            model = str(row.get("model", "")).strip().lower()
-
-            make = re.sub(r"[^a-z0-9]+", "-", make).strip("-")
-            model = re.sub(r"[^a-z0-9]+", "-", model).strip("-")
-
-            price, matched_url = await client.lookup_price(
-                vin=vin,
-                lot=lot,
-                auction=auction,
-                make_slug=make,
-                model_slug=model,
-            )
-            return idx, price, matched_url
-
-        tasks = [one(idx, row) for idx, row in run_targets.iterrows()]
+    async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = [lookup_one(session, sem, pd.Series(row)) for row in batch_rows]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    hit_count = 0
-    unresolved_count = 0
+    # Apply results back to df
+    price_map: Dict[str, Tuple[int, str]] = {}
+    hits = 0
+    errors = 0
+
     for res in results:
         if isinstance(res, Exception):
-            unresolved_count += 1
+            errors += 1
             continue
-        idx, price, matched_url = res
+        vin, price, url = res
         if price > 0:
-            out.at[idx, "price"] = int(price)
-            out.at[idx, "url"] = matched_url
-            hit_count += 1
-        else:
-            unresolved_count += 1
+            price_map[vin] = (price, url)
+            hits += 1
 
-    log("Stat.vin prices recovered this run: " + format(hit_count, ","))
-    log("Stat.vin unresolved this run: " + format(unresolved_count, ","))
-    return out
+    # Update df with prices
+    for idx, row in df.iterrows():
+        vin = str(row["vin"]).strip().upper()
+        if vin in price_map and df.at[idx, "price"] == 0:
+            p, u = price_map[vin]
+            df.at[idx, "price"] = p
+            if u:
+                df.at[idx, "url"] = u
 
+    elapsed = int(time.time() - t_start)
+    rate = len(batch_df) / max(elapsed, 1) * 60
+    log(f"Prices found        : {hits:,} / {len(batch_df):,}")
+    log(f"Errors              : {errors:,}")
+    log(f"Time                : {elapsed}s  ({rate:.0f} lookups/min)")
+
+    # Save state
+    new_attempted = list(attempted | {str(r.get("vin","")) for r in batch_rows if r.get("vin")})
+    new_idx = (start + len(batch_df)) % max(len(fresh_list), 1)
+    save_state({"attempted_vins": new_attempted[-50_000:], "next_idx": new_idx,
+                "last_run": datetime.now(timezone.utc).isoformat()})
+
+    return df
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MASTER CSV  merge + dedup
+# ─────────────────────────────────────────────────────────────────────────────
 
 def load_existing() -> pd.DataFrame:
-    if os.path.exists(MASTER_CSV):
+    if Path(MASTER_CSV).exists():
         try:
             df = pd.read_csv(MASTER_CSV, dtype=str).fillna("")
-            df = ensure_standard_cols(df)
-            log("Existing master: " + format(len(df), ",") + " rows")
+            df = ensure_cols(df)
+            log(f"Existing master     : {len(df):,} rows")
             return df
         except Exception as e:
-            log("Could not read master: " + str(e))
+            log(f"Could not read master: {e}")
     return pd.DataFrame(columns=STANDARD_COLS)
 
 
-def dedupe_combined(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return ensure_standard_cols(df)
+def merge_and_dedup(existing: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
+    """Combine existing + new, dedup by lot then vin, prefer priced rows."""
+    combined = pd.concat([existing, new], ignore_index=True)
+    combined = ensure_cols(combined)
+    combined["_p"] = num_price(combined["price"])
+    combined = combined.sort_values("_p", ascending=False)
+    combined = combined.drop(columns=["_p"])
 
-    combined = normalize_dataframe(df)
-    combined["_price_num"] = to_int_price_series(combined["price"])
-    combined["_vin_len"] = combined["vin"].astype(str).str.len()
-    combined["_lot_len"] = combined["lot"].astype(str).str.len()
-
-    combined = combined.sort_values(
-        by=["_price_num", "_vin_len", "_lot_len"],
-        ascending=[False, False, False],
-        kind="mergesort",
-    )
-
-    has_lot = combined[combined["lot"].astype(str).str.strip().ne("") & combined["lot"].astype(str).str.len().gt(3)]
-    no_lot = combined[~combined.index.isin(has_lot.index)]
+    # Dedup by lot
+    has_lot = combined[combined["lot"].str.strip().ne("") & (combined["lot"].str.len() > 3)]
+    no_lot  = combined[~combined.index.isin(has_lot.index)]
     has_lot = has_lot.drop_duplicates(subset=["lot"], keep="first")
     combined = pd.concat([has_lot, no_lot], ignore_index=True)
 
-    has_vin = combined[combined["vin"].astype(str).str.strip().ne("") & combined["vin"].astype(str).str.len().eq(17)]
-    no_vin = combined[~combined.index.isin(has_vin.index)]
+    # Dedup by VIN
+    has_vin = combined[combined["vin"].str.len().eq(17)]
+    no_vin  = combined[~combined.index.isin(has_vin.index)]
     has_vin = has_vin.drop_duplicates(subset=["vin"], keep="first")
     combined = pd.concat([has_vin, no_vin], ignore_index=True)
 
-    combined = combined.drop(columns=["_price_num", "_vin_len", "_lot_len"], errors="ignore")
-    return ensure_standard_cols(combined)
+    return ensure_cols(combined)
 
 
-def merge_preview(existing: pd.DataFrame, frames: List[pd.DataFrame]) -> Tuple[pd.DataFrame, int]:
-    if frames:
-        new_data = pd.concat(frames, ignore_index=True)
-    else:
-        new_data = pd.DataFrame(columns=STANDARD_COLS)
-
-    new_data = normalize_dataframe(new_data)
-    before_count = len(existing)
-    combined = pd.concat([existing, new_data], ignore_index=True)
-    combined = dedupe_combined(combined)
-    actual_new = len(combined) - before_count
-    return combined, actual_new
-
-
-def write_snapshot_csvs(incoming: pd.DataFrame) -> None:
-    incoming = ensure_standard_cols(incoming)
-    incoming.to_csv(INCOMING_CSV, index=False)
-    log("Written: " + INCOMING_CSV + " (" + format(len(incoming), ",") + " rows)")
-
-    unresolved = incoming[to_int_price_series(incoming["price"]) == 0].copy()
-    unresolved.to_csv(UNRESOLVED_CSV, index=False)
-    log("Written: " + UNRESOLVED_CSV + " (" + format(len(unresolved), ",") + " unresolved rows)")
-
-
-def write_outputs(combined: pd.DataFrame, incoming: pd.DataFrame) -> None:
-    combined = ensure_standard_cols(combined)
-    incoming = ensure_standard_cols(incoming)
-
+def write_outputs(combined: pd.DataFrame) -> None:
     combined.to_csv(MASTER_CSV, index=False)
-    log("Written: " + MASTER_CSV + " (" + format(len(combined), ",") + " rows)")
+    log(f"Written : {MASTER_CSV} ({len(combined):,} total rows)")
 
-    priced = combined[to_int_price_series(combined["price"]) > 0].copy()
-    site_cols = [
-        "year", "make", "model", "trim", "type", "damage",
-        "price", "odometer", "lot", "date", "location", "state",
-        "auction", "source", "url",
-    ]
+    priced = combined[num_price(combined["price"]) > 0].copy()
+    site_cols = ["year","make","model","trim","type","damage",
+                 "price","odometer","lot","date","location","state","auction","source","url"]
     for c in site_cols:
-        if c not in priced.columns:
-            priced[c] = ""
+        if c not in priced.columns: priced[c] = ""
     priced[site_cols].to_csv(OUTPUT_CSV, index=False)
-    log("Written: " + OUTPUT_CSV + " (" + format(len(priced), ",") + " priced rows)")
-
-    write_snapshot_csvs(incoming)
+    log(f"Written : {OUTPUT_CSV} ({len(priced):,} priced rows)")
 
 
-def main() -> None:
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def run_async() -> None:
     t0 = time.time()
 
     print("=" * 68)
-    print("  Rebrowser -> Stat.vin Final Price Harvester")
-    print("  Date              : " + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
-    print("  Rebrowser days    : " + str(REBROWSER_DAYS))
-    print("  Stat.vin batch    : " + str(STATVIN_LOOKUPS_PER_RUN))
-    print("  Stat.vin concur   : " + str(STATVIN_CONCURRENCY))
-    print("  Proxy             : " + ("enabled" if SCRAPER_PROXY else "disabled"))
+    print("  Rebrowser → Stat.vin Final Price Harvester")
+    print(f"  Date         : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  Parquet days : {REBROWSER_DAYS}")
+    print(f"  Batch size   : {STATVIN_LOOKUPS_PER_RUN:,} VIN lookups")
+    print(f"  Concurrency  : {STATVIN_CONCURRENCY} parallel requests")
+    print(f"  Proxy        : {'ScraperAPI ✓' if SCRAPER_API_KEY else ('custom' if SCRAPER_PROXY else 'none (direct)')}")
     print("=" * 68)
 
-    existing = load_existing()
-
-    print("")
-    print("[1/3] Rebrowser refresh - Copart")
-    rb_copart = asyncio.run(fetch_rebrowser_async("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]))
-
-    print("")
-    print("[2/3] Rebrowser refresh - IAAI")
-    rb_iaai = asyncio.run(fetch_rebrowser_async("Rebrowser-IAAI", REBROWSER_SOURCES["Rebrowser-IAAI"]))
+    # ── Step 1: Rebrowser parquets ──────────────────────────────────────────
+    print("\n[1/3] Downloading Rebrowser Copart + IAAI parquets...")
+    rb_copart, rb_iaai = await asyncio.gather(
+        fetch_rebrowser("Rebrowser-Copart", REBROWSER_SOURCES["Rebrowser-Copart"]),
+        fetch_rebrowser("Rebrowser-IAAI",   REBROWSER_SOURCES["Rebrowser-IAAI"]),
+    )
 
     frames = [df for df in (rb_copart, rb_iaai) if not df.empty]
-    incoming = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=STANDARD_COLS)
-    incoming = ensure_standard_cols(incoming)
-
-    print("")
-    print("[3/3] Stat.vin final price enrichment")
-    incoming = asyncio.run(enrich_from_statvin(incoming))
-
-    combined, actual_new = merge_preview(existing, [incoming])
-
-    print("")
-    print("=" * 68)
-    print("Actual new rows added this run: " + format(actual_new, ","))
-
-    total = len(combined)
-    with_price = int((to_int_price_series(combined["price"]) > 0).sum())
-    print("Master total: " + format(total, ","))
-    print("Rows with price: " + format(with_price, ","))
-    print("Rows without price: " + format(total - with_price, ","))
-
-    if not incoming.empty:
-        for src, grp in incoming.groupby("source"):
-            priced = int((to_int_price_series(grp["price"]) > 0).sum())
-            print("Incoming " + str(src) + ": " + format(len(grp), ",") + " rows, " + format(priced, ",") + " priced")
-
-    write_snapshot_csvs(incoming)
-
-    if with_price < MIN_PRICED_ROWS_TO_WRITE:
-        print("Too few priced rows found (" + str(with_price) + " < " + str(MIN_PRICED_ROWS_TO_WRITE) + "); not updating master.csv or cars.csv.")
-        elapsed = int(time.time() - t0)
-        print("")
-        print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
-        print("=" * 68)
+    if not frames:
+        print("  No Rebrowser data fetched. Exiting.")
         return
 
-    if actual_new == 0:
-        print("No new rows found in master merge. Snapshot CSVs were still written.")
-        elapsed = int(time.time() - t0)
-        print("")
-        print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
-        print("=" * 68)
-        return
+    incoming = pd.concat(frames, ignore_index=True)
+    incoming = ensure_cols(incoming)
+    print(f"  Combined incoming : {len(incoming):,} rows")
 
-    write_outputs(combined, incoming)
+    # ── Step 2: Load existing master + merge to find truly unpriced ─────────
+    print("\n[2/3] Loading existing master + merging...")
+    existing = load_existing()
+
+    # Pre-enrich: copy prices from existing master into incoming
+    if not existing.empty:
+        vin_price = existing[num_price(existing["price"]) > 0].set_index("vin")["price"].to_dict()
+        lot_price = existing[num_price(existing["price"]) > 0].set_index("lot")["price"].to_dict()
+        def fill_price(row):
+            if row["price"] > 0:
+                return row
+            if row["vin"] in vin_price:
+                row["price"] = int(vin_price[row["vin"]])
+            elif row["lot"] in lot_price:
+                row["price"] = int(lot_price[row["lot"]])
+            return row
+        incoming["price"] = num_price(incoming["price"])
+        incoming = incoming.apply(fill_price, axis=1)
+        pre_filled = int((num_price(incoming["price"]) > 0).sum())
+        log(f"Pre-filled from master  : {pre_filled:,} prices")
+
+    # ── Step 3: Stat.vin enrichment ─────────────────────────────────────────
+    print("\n[3/3] Stat.vin price enrichment...")
+    incoming = await enrich_prices(incoming)
+
+    # ── Write outputs ────────────────────────────────────────────────────────
+    print("\n" + "=" * 68)
+    combined = merge_and_dedup(existing, incoming)
+
+    total      = len(combined)
+    with_price = int((num_price(combined["price"]) > 0).sum())
+    new_rows   = total - len(existing)
+
+    print(f"  New rows added   : {new_rows:,}")
+    print(f"  Master total     : {total:,}")
+    print(f"  With price       : {with_price:,}")
+    print(f"  Without price    : {total - with_price:,}")
+
+    # Source breakdown
+    for src, grp in incoming.groupby("source"):
+        priced = int((num_price(grp["price"]) > 0).sum())
+        print(f"  {src:<30} {len(grp):>7,} rows  {priced:>7,} priced")
+
+    write_outputs(combined)
 
     elapsed = int(time.time() - t0)
-    print("")
-    print("Done in " + str(elapsed) + "s (" + str(elapsed // 60) + "m " + str(elapsed % 60) + "s)")
+    print(f"\n  Done in {elapsed}s ({elapsed // 60}m {elapsed % 60}s)")
     print("=" * 68)
+
+
+def main() -> None:
+    asyncio.run(run_async())
 
 
 if __name__ == "__main__":
     main()
-
