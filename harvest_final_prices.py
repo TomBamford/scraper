@@ -143,74 +143,89 @@ def num_price(s: pd.Series) -> pd.Series:
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def fetch_rebrowser_lots() -> pd.DataFrame:
-    print(f"\n[1/3] Downloading Rebrowser lots ({REBROWSER_DAYS} days)...", flush=True)
+    print(f"\n[1/3] Cloning Rebrowser repos to get lot numbers...", flush=True)
 
-    today = datetime.now(timezone.utc)
+    import subprocess, tempfile
     all_frames = []
 
-    connector = aiohttp.TCPConnector(limit=20)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        for name, cfg in REBROWSER_SOURCES.items():
-            sem = asyncio.Semaphore(15)
-            urls = [
-                cfg["url"] + (today - timedelta(days=i)).strftime("%Y-%m-%d") + ".parquet"
-                for i in range(REBROWSER_DAYS)
-            ]
+    repos = {
+        "Rebrowser-Copart": {
+            "repo": "https://github.com/rebrowser/copart-dataset.git",
+            "glob": "auction-listings/data/*.parquet",
+            "cols": REBROWSER_SOURCES["Rebrowser-Copart"]["cols"],
+            "auction": "COPART",
+        },
+        "Rebrowser-IAAI": {
+            "repo": "https://github.com/rebrowser/iaai-dataset.git",
+            "glob": "auction-listings/data/*.parquet",
+            "cols": REBROWSER_SOURCES["Rebrowser-IAAI"]["cols"],
+            "auction": "IAAI",
+        },
+    }
 
-            async def fetch_parquet(url, s=sem):
-                async with s:
-                    try:
-                        async with session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as r:
-                            if r.status == 200:
-                                return await r.read()
-                    except Exception:
-                        pass
-                    return None
+    for name, cfg in repos.items():
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                log(f"Cloning {name}...")
+                result = subprocess.run(
+                    ["git", "clone", "--depth=1", "--filter=blob:limit=50m",
+                     cfg["repo"], tmpdir],
+                    capture_output=True, text=True, timeout=120
+                )
+                if result.returncode != 0:
+                    log(f"  Clone failed: {result.stderr[:200]}")
+                    continue
 
-            blobs = await asyncio.gather(*[fetch_parquet(u) for u in urls])
-            frames = []
-            for blob in blobs:
-                if blob:
-                    try: frames.append(pd.read_parquet(io.BytesIO(blob)))
+                # Find all parquet files
+                import glob as glob_mod
+                parquet_files = sorted(glob_mod.glob(f"{tmpdir}/{cfg['glob']}"))[-REBROWSER_DAYS:]
+                log(f"  Found {len(parquet_files)} parquet files")
+
+                frames = []
+                for f in parquet_files:
+                    try: frames.append(pd.read_parquet(f))
                     except: pass
 
-            if not frames:
-                log(f"{name}: no data")
-                continue
+                if not frames:
+                    log(f"  No readable parquet files")
+                    continue
 
-            raw = pd.concat(frames, ignore_index=True)
-            out = pd.DataFrame()
-            for std, src in cfg["cols"].items():
-                out[std] = raw[src].astype(str) if src in raw.columns else ""
+                raw = pd.concat(frames, ignore_index=True)
+                out = pd.DataFrame()
+                for std, src in cfg["cols"].items():
+                    out[std] = raw[src].astype(str) if src in raw.columns else ""
 
-            out["auction"] = cfg["auction"]
-            out["source"]  = name
-            out["price"]   = 0
-            out["url"]     = ""
+                out["auction"] = cfg["auction"]
+                out["source"]  = name
+                out["price"]   = 0
+                out["url"]     = ""
 
-            # Clean
-            out["year"]     = out["year"].apply(clean_year)
-            out["make"]     = out["make"].apply(cap)
-            out["model"]    = out["model"].apply(cap)
-            out["lot"]      = out["lot"].astype(str).str.strip()
-            out["vin"]      = out["vin"].apply(
-                lambda v: "" if str(v).strip() in ("[PREMIUM]","nan","None") else str(v).strip().upper()
-            )
-            out["date"]     = out["date"].apply(norm_date)
-            out["damage"]   = out["damage"].apply(cap)
-            out["location"] = out["location"].apply(cap)
-            out["state"]    = out["state"].astype(str).str.strip().str.upper()
-            out["odometer"] = out["odometer"].apply(clean_odo)
+                out["year"]     = out["year"].apply(clean_year)
+                out["make"]     = out["make"].apply(cap)
+                out["model"]    = out["model"].apply(cap)
+                out["lot"]      = out["lot"].astype(str).str.strip()
+                out["vin"]      = out["vin"].apply(
+                    lambda v: "" if str(v).strip() in ("[PREMIUM]","nan","None") else str(v).strip().upper()
+                )
+                out["date"]     = out["date"].apply(norm_date)
+                out["damage"]   = out["damage"].apply(cap)
+                out["location"] = out["location"].apply(cap)
+                out["state"]    = out["state"].astype(str).str.strip().str.upper()
+                out["odometer"] = out["odometer"].apply(clean_odo)
 
-            # Filter valid
-            out = out[
-                (out["year"] >= MIN_YEAR) &
-                out["make"].ne("") &
-                out["lot"].str.len().ge(5)  # must have a real lot number
-            ]
-            out = ensure_cols(out)
-            log(f"{name}: {len(out):,} lots with lot numbers")
-            all_frames.append(out)
+                out = out[
+                    (out["year"] >= MIN_YEAR) &
+                    out["make"].ne("") &
+                    out["lot"].str.len().ge(5)
+                ]
+                out = ensure_cols(out)
+                log(f"  {name}: {len(out):,} lots")
+                all_frames.append(out)
+
+        except subprocess.TimeoutExpired:
+            log(f"  Clone timed out for {name}")
+        except Exception as e:
+            log(f"  Error: {e}")
 
     if not all_frames:
         return pd.DataFrame(columns=STANDARD_COLS)
