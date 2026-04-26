@@ -2,32 +2,38 @@ name: Harvest Final Prices (ScraperAPI)
 
 on:
   schedule:
-    - cron: '0 8 1 * *'   # 1st of every month at 8am UTC — uses all free credits in one run
-  workflow_dispatch:        # manual trigger
+    - cron: '0 8 1 * *'   # 1st of every month
+  workflow_dispatch:
 
 jobs:
   harvest:
     runs-on: ubuntu-latest
-    timeout-minutes: 60     # ScraperAPI can be slow — give it time
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install git-lfs
+        run: |
+          sudo apt-get install -y git-lfs
+          git lfs install
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install aiohttp pandas beautifulsoup4 lxml
+        run: pip install aiohttp pandas pyarrow beautifulsoup4 lxml
 
       - name: Run harvester
         env:
           SCRAPER_API_KEY:  ${{ secrets.SCRAPER_API_KEY }}
-          TOTAL_REQUESTS:   "4800"   # uses all 5000 free credits (200 buffer)
-          CONCURRENCY:      "20"     # ScraperAPI recommended max concurrency
-          REQUEST_TIMEOUT:  "60"     # ScraperAPI needs longer timeouts
+          REBROWSER_DAYS:   "30"
+          TOTAL_REQUESTS:   "4800"
+          CONCURRENCY:      "20"
+          REQUEST_TIMEOUT:  "60"
           PROGRESS_EVERY:   "100"
-          MAX_RUNTIME_SEC:  "3000"   # 50 min
+          MAX_RUNTIME_SEC:  "3000"
         run: python harvest_final_prices.py
 
       - name: Commit results
@@ -36,7 +42,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add cars.csv master.csv checkpoint_*.csv 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "auto: $(python3 -c "import pandas as pd; df=pd.read_csv('cars.csv') if __import__('os').path.exists('cars.csv') else None; print(f'{len(df):,} priced records' if df is not None else 'harvest complete')" 2>/dev/null || echo 'harvest complete') $(date -u +'%Y-%m-%d')"
+          git diff --staged --quiet || git commit -m "auto: harvest $(date -u +'%Y-%m-%d')"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
