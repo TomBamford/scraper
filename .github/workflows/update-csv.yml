@@ -1,92 +1,42 @@
-name: harvest-final-prices
+name: Harvest Final Prices (ScraperAPI)
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "17 6 * * 1,4"
-
-permissions:
-  contents: write
-
-concurrency:
-  group: harvest-final-prices
-  cancel-in-progress: false
+    - cron: '0 8 1 * *'   # 1st of every month at 8am UTC — uses all free credits in one run
+  workflow_dispatch:        # manual trigger
 
 jobs:
-  run-harvest:
+  harvest:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60     # ScraperAPI can be slow — give it time
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-harvest-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-harvest-
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Show Python environment
-        run: |
-          python --version
-          pip --version
-          pip list
+        run: pip install aiohttp pandas beautifulsoup4 lxml
 
       - name: Run harvester
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-          ENABLE_KAGGLE: ${{ secrets.ENABLE_KAGGLE }}
-          HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
-          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
-          SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
-        run: |
-          python harvest_history.py
+          SCRAPER_API_KEY:  ${{ secrets.SCRAPER_API_KEY }}
+          TOTAL_REQUESTS:   "4800"   # uses all 5000 free credits (200 buffer)
+          CONCURRENCY:      "20"     # ScraperAPI recommended max concurrency
+          REQUEST_TIMEOUT:  "60"     # ScraperAPI needs longer timeouts
+          PROGRESS_EVERY:   "100"
+          MAX_RUNTIME_SEC:  "3000"   # 50 min
+        run: python harvest_final_prices.py
 
-      - name: Upload harvest artifacts
+      - name: Commit results
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: harvest-debug
-          path: |
-            debug/
-            checkpoints/
-            cars.csv
-            master.csv
-            rotation_state.json
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Commit updated files
-        if: success()
-        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          [ -f cars.csv ] && git add cars.csv
-          [ -f master.csv ] && git add master.csv
-          [ -f rotation_state.json ] && git add rotation_state.json
-          [ -d checkpoints ] && git add checkpoints
-          [ -d debug ] && git add debug
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git commit -m "Update harvested vehicle data"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cars.csv master.csv checkpoint_*.csv 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "auto: $(python3 -c "import pandas as pd; df=pd.read_csv('cars.csv') if __import__('os').path.exists('cars.csv') else None; print(f'{len(df):,} priced records' if df is not None else 'harvest complete')" 2>/dev/null || echo 'harvest complete') $(date -u +'%Y-%m-%d')"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
